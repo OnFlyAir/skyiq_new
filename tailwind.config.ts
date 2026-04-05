@@ -14,6 +14,15 @@ export default {
     },
     extend: {
       colors: {
+        skyiq: {
+          blue: "#1a3a5c",
+          "light-blue": "#87ceeb",
+          dark: "#1a1a2e",
+          accent: "#2563eb",
+          success: "#16a34a",
+          warning: "#f59e0b",
+          danger: "#dc2626",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
