@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
+// Lovable sync test
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
