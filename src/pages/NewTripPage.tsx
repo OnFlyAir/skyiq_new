@@ -199,23 +199,17 @@ export default function NewTripPage() {
           <h2 className="text-lg font-semibold text-gray-900">How would you like to add legs?</h2>
 
           {/* Upload itinerary */}
-          <label className="flex items-center gap-4 p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-skyiq-accent cursor-pointer transition-colors">
+          <button
+            onClick={handleFakeUpload}
+            disabled={uploading}
+            className="flex items-center gap-4 w-full p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-skyiq-accent transition-colors text-left"
+          >
             <Upload className="w-8 h-8 text-skyiq-accent shrink-0" />
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900">Upload Itinerary</h3>
-              <p className="text-sm text-gray-500">Upload your trip sheet PDF and we'll extract the details</p>
+              <p className="text-sm text-gray-500">Simulates a successful PDF upload with sample KTEB↔KPBI legs</p>
             </div>
-            <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file);
-              }}
-              disabled={uploading}
-            />
-          </label>
+          </button>
 
           {uploading && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
