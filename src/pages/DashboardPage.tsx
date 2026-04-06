@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plane, Settings, ChevronRight, TrendingUp } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import Walkthrough from '@/components/Walkthrough';
 import type { Trip, Operator } from '@/types/database';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
@@ -51,9 +51,11 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <Walkthrough />
+
       {/* Operator name */}
       <h1 className="text-xl font-semibold text-center text-foreground mb-8">
-        {operator?.name || 'skyIQ'}
+        {operator?.name || 'SkyIQ'}
       </h1>
 
       {/* Logo area */}
@@ -65,7 +67,7 @@ export default function DashboardPage() {
       <div className="flex gap-4 justify-center mb-12">
         <Link
           to="/trips/new"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all text-left"
+          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
         >
           <Plane className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Plan a trip</h3>
@@ -74,7 +76,7 @@ export default function DashboardPage() {
 
         <Link
           to="/fleet"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all text-left"
+          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
         >
           <Settings className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Manage Fleet</h3>
@@ -83,7 +85,7 @@ export default function DashboardPage() {
 
         <Link
           to="/savings"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all text-left"
+          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
         >
           <TrendingUp className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Savings</h3>

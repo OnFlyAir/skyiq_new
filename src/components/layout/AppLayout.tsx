@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Plane, Menu, X, Home, Settings, DollarSign, LogOut } from 'lucide-react';
+import { Plane, Menu, X, Home, Settings, DollarSign, LogOut, Search } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function AppLayout() {
@@ -29,7 +29,7 @@ export default function AppLayout() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -42,26 +42,30 @@ export default function AppLayout() {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <Link to="/dashboard" className="flex items-center gap-2">
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <Link to="/dashboard" className="flex items-center gap-2.5">
               <img src={skyiqLogo} alt="SkyIQ" className="w-8 h-8 object-contain" />
-              <span className="text-xl font-bold" style={{ color: '#1a3a5c' }}>skyIQ</span>
+              <span className="text-xl font-bold text-foreground tracking-tight">SkyIQ</span>
+              <span className="text-xs text-muted-foreground font-medium">Fly Smarter</span>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1 hover:bg-muted rounded"
+              className="lg:hidden p-1 hover:bg-secondary rounded text-muted-foreground"
             >
-              <X className="w-5 h-5 text-foreground" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Search */}
           <div className="p-4">
-            <input
-              type="text"
-              placeholder="Search Tail #/Trip"
-              className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search Tail # / Trip"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              />
+            </div>
           </div>
 
           {/* Navigation */}
@@ -73,8 +77,8 @@ export default function AppLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg mb-1 transition-colors ${
                   isActive(item.path)
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-primary/15 text-primary font-medium border border-primary/20'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
                 <item.icon className="w-4 h-4" />
@@ -85,26 +89,24 @@ export default function AppLayout() {
 
           {/* User section */}
           <div className="border-t border-border p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">
-                  {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-foreground">
-                    {profile?.first_name} {profile?.last_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">{profile?.role?.replace('_', ' ')}</p>
-                </div>
+            <Link to="/profile" className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-secondary transition-colors">
+              <div className="w-8 h-8 bg-primary/20 text-primary rounded-full flex items-center justify-center text-xs font-semibold">
+                {profile?.first_name?.[0]}{profile?.last_name?.[0]}
               </div>
-              <button
-                onClick={handleSignOut}
-                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
+              <div className="text-left flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {profile?.first_name} {profile?.last_name}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">{profile?.role?.replace('_', ' ')}</p>
+              </div>
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </button>
           </div>
         </div>
       </aside>
@@ -115,12 +117,12 @@ export default function AppLayout() {
         <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1 hover:bg-muted rounded"
+            className="p-1.5 hover:bg-secondary rounded text-muted-foreground"
           >
-            <Menu className="w-6 h-6 text-foreground" />
+            <Menu className="w-5 h-5" />
           </button>
           <img src={skyiqLogo} alt="SkyIQ" className="w-8 h-8 object-contain" />
-          <div className="w-6" />
+          <div className="w-8" />
         </header>
 
         {/* Page content */}
