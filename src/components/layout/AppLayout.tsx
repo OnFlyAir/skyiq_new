@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { Plane, Menu, X, Home, Settings, DollarSign, LogOut } from 'lucide-react';
-import skyiqLogoText from '@/assets/skyiq-logo-text.png';
 
 export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
@@ -44,7 +43,8 @@ export default function AppLayout() {
           {/* Logo */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <Link to="/dashboard" className="flex items-center gap-2">
-              <img src={skyiqLogoText} alt="SkyIQ" className="h-8 object-contain" />
+              <span className="text-xl font-bold" style={{ color: '#1a3a5c' }}>skyIQ</span>
+              <span className="text-sm text-muted-foreground">Fly Smarter</span>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -118,7 +118,7 @@ export default function AppLayout() {
           >
             <Menu className="w-6 h-6 text-foreground" />
           </button>
-          <img src={skyiqLogoText} alt="SkyIQ" className="h-6 object-contain" />
+          <span className="text-lg font-bold" style={{ color: '#1a3a5c' }}>skyIQ</span>
           <div className="w-6" />
         </header>
 
