@@ -91,43 +91,44 @@ export default function LoginPage() {
             setLoading(true);
             try {
               // Try sign in first, if fails sign up then sign in
-              let { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+              const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
               if (signInErr) {
-                const { data: signUpData, error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-                if (signUpErr) { setError(signUpErr.message); setLoading(false); return; }
-                // Wait a moment for the profile trigger to fire
+                await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
                 await new Promise(r => setTimeout(r, 1000));
                 const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
                 if (retryErr) { setError(retryErr.message); setLoading(false); return; }
               }
 
+              // Wait for auth to settle
+              await new Promise(r => setTimeout(r, 500));
+
               // Ensure dev user has an operator
-              const { data: profile } = await supabase
+              const { data: { user: currentUser } } = await supabase.auth.getUser();
+              if (!currentUser) { setError('Failed to get user'); setLoading(false); return; }
+
+              const { data: devProfile } = await supabase
                 .from('profiles')
                 .select('operator_id')
-                .eq('email', DEV_EMAIL)
+                .eq('id', currentUser.id)
                 .single();
 
-              if (profile && !profile.operator_id) {
-                const { data: { user: currentUser } } = await supabase.auth.getUser();
-                if (currentUser) {
-                  const { data: op } = await supabase
-                    .from('operators')
-                    .insert({ name: 'Dev Operator', created_by: currentUser.id })
-                    .select()
-                    .single();
-                  if (op) {
-                    await supabase
-                      .from('profiles')
-                      .update({ operator_id: op.id, role: 'operator_admin' })
-                      .eq('id', currentUser.id);
-                  }
+              if (devProfile && !devProfile.operator_id) {
+                const { data: op, error: opErr } = await supabase
+                  .from('operators')
+                  .insert({ name: 'Dev Operator', created_by: currentUser.id } as any)
+                  .select()
+                  .single();
+
+                if (op) {
+                  await supabase
+                    .from('profiles')
+                    .update({ operator_id: op.id, role: 'operator_admin' } as any)
+                    .eq('id', currentUser.id);
                 }
               }
 
-              // Refresh profile in React state so ProtectedRoute sees the operator_id
-              await refreshProfile();
-              navigate('/dashboard');
+              // Hard reload to ensure fresh auth state
+              window.location.href = '/dashboard';
             } catch (err: any) {
               setError(err.message || 'Auto-login failed');
               setLoading(false);
