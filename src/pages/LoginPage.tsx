@@ -125,6 +125,8 @@ export default function LoginPage() {
                 }
               }
 
+              // Refresh profile in React state so ProtectedRoute sees the operator_id
+              await refreshProfile();
               navigate('/dashboard');
             } catch (err: any) {
               setError(err.message || 'Auto-login failed');
