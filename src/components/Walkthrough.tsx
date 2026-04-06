@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plane, Upload, Settings, DollarSign, TrendingUp, Users, X, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Upload, Settings, DollarSign, TrendingUp, Users, X, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 interface WalkthroughStep {
   title: string;
@@ -11,7 +12,7 @@ const STEPS: WalkthroughStep[] = [
   {
     title: 'Welcome to SkyIQ',
     description: 'SkyIQ optimizes your fuel planning across every leg of your trip — factoring in fuel prices, fee waivers, weight limits, and volume discounts to find the best financial decision automatically.',
-    icon: <Plane className="w-8 h-8" />,
+    icon: <img src={skyiqLogo} alt="SkyIQ" className="w-8 h-8 object-contain" />,
   },
   {
     title: 'Plan a Trip',

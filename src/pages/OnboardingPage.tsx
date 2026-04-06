@@ -2,7 +2,8 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, Users, Plane, ArrowLeft } from 'lucide-react';
+import { Building2, Users, ArrowLeft } from 'lucide-react';
+import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function OnboardingPage() {
   const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose');
@@ -72,10 +73,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="max-w-md w-full text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Plane className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold text-foreground">SkyIQ</span>
-          </div>
+          <img src={skyiqLogo} alt="SkyIQ" className="w-20 h-20 object-contain mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to SkyIQ</h1>
           <p className="text-muted-foreground mb-8">Let's get you set up</p>
 
