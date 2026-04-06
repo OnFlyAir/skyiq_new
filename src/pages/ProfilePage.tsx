@@ -1,6 +1,6 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import type { Profile, Operator } from '@/types/database';
 
 export default function ProfilePage() {

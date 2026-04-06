@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Plus, Check, X } from 'lucide-react';
 import type { TripLeg, Trip, Aircraft, FuelPriceTier } from '@/types/database';
 
