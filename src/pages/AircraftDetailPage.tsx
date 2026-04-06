@@ -12,17 +12,10 @@ export default function AircraftDetailPage() {
   const [aircraft, setAircraft] = useState<Aircraft | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAircraft();
-  }, [id]);
+  useEffect(() => { loadAircraft(); }, [id]);
 
   async function loadAircraft() {
-    const { data } = await supabase
-      .from('aircraft')
-      .select('*')
-      .eq('id', id!)
-      .single();
-
+    const { data } = await supabase.from('aircraft').select('*').eq('id', id!).single();
     if (data) setAircraft(data as Aircraft);
     setLoading(false);
   }
@@ -36,12 +29,12 @@ export default function AircraftDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-skyiq-accent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
 
-  if (!aircraft) return <p>Aircraft not found.</p>;
+  if (!aircraft) return <p className="text-muted-foreground">Aircraft not found.</p>;
 
   const isAdmin = profile?.role === 'operator_admin' || profile?.role === 'super_admin';
 
@@ -72,27 +65,27 @@ export default function AircraftDetailPage() {
     <div className="max-w-2xl mx-auto">
       <button
         onClick={() => navigate('/fleet')}
-        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Fleet
       </button>
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-foreground">
           {aircraft.nickname || aircraft.tail_number}
         </h1>
         {isAdmin && (
           <div className="flex gap-2">
             <button
               onClick={() => navigate(`/fleet/${id}/edit`)}
-              className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+              className="p-2 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors"
               title="Edit"
             >
               <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 hover:bg-red-50 rounded-lg text-red-500"
+              className="p-2 hover:bg-destructive/10 rounded-lg text-destructive transition-colors"
               title="Delete"
             >
               <Trash2 className="w-4 h-4" />
@@ -101,11 +94,11 @@ export default function AircraftDetailPage() {
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl divide-y">
+      <div className="bg-card border border-border rounded-xl divide-y divide-border">
         {fields.map(([label, value]) => (
           <div key={label} className="flex justify-between px-4 py-3 text-sm">
-            <span className="text-gray-600">{label}</span>
-            <span className="font-medium text-gray-900">{value}</span>
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-medium text-foreground">{value}</span>
           </div>
         ))}
       </div>

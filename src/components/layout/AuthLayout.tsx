@@ -1,20 +1,20 @@
 import { Outlet } from 'react-router-dom';
-import skyiqLogoDark from '@/assets/skyiq-logo-dark.png';
+import { Plane } from 'lucide-react';
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 px-4 relative overflow-hidden">
-      {/* Decorative background shapes */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-blue-200/30 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-200/30 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 relative overflow-hidden">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-skyiq-cyan/5 via-transparent to-skyiq-cyan/3" />
 
       {/* Logo */}
-      <div className="mb-10 flex flex-col items-center relative z-10">
-        <img src={skyiqLogoDark} alt="SkyIQ" className="w-24 h-24 object-contain drop-shadow-md" />
+      <div className="mb-10 flex items-center gap-2 relative z-10">
+        <Plane className="w-7 h-7 text-primary" />
+        <span className="text-2xl font-bold text-foreground tracking-tight">SkyIQ</span>
       </div>
 
       {/* Auth card */}
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/60 p-10 relative z-10">
+      <div className="w-full max-w-md bg-card rounded-xl border border-border p-10 relative z-10">
         <Outlet />
       </div>
 

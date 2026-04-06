@@ -45,12 +45,7 @@ export default function AddAircraftPage() {
     setError('');
     setLoading(true);
 
-    const payload = {
-      ...formData,
-      operator_id: profile.operator_id,
-    };
-
-    // Convert numeric fields
+    const payload = { ...formData, operator_id: profile.operator_id };
     for (const field of AIRCRAFT_FIELDS) {
       if (field.type === 'number' && payload[field.key]) {
         payload[field.key] = Number(payload[field.key]);
@@ -58,21 +53,17 @@ export default function AddAircraftPage() {
     }
 
     const { error } = await supabase.from('aircraft').insert(payload as any);
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      navigate('/fleet');
-    }
+    if (error) { setError(error.message); setLoading(false); } else { navigate('/fleet'); }
   }
+
+  const inputCls = "flex-1 px-3 py-2.5 bg-secondary/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary focus:bg-card transition-all";
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Add an Aircraft</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Add an Aircraft</h1>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg">
           {error}
         </div>
       )}
@@ -80,7 +71,7 @@ export default function AddAircraftPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         {AIRCRAFT_FIELDS.map((field) => (
           <div key={field.key} className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label className="sm:w-64 text-sm font-medium text-gray-700 shrink-0">
+            <label className="sm:w-64 text-sm font-medium text-foreground/80 shrink-0">
               {field.label}
             </label>
             <input
@@ -88,23 +79,20 @@ export default function AddAircraftPage() {
               value={formData[field.key] ?? ''}
               onChange={(e) => updateField(field.key, e.target.value)}
               required={field.key !== 'nickname'}
-              className="flex-1 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-skyiq-accent focus:bg-white"
+              className={inputCls}
             />
           </div>
         ))}
 
-        {/* Aircraft Type Dropdown */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <label className="sm:w-64 text-sm font-medium text-gray-700 shrink-0">Type</label>
+          <label className="sm:w-64 text-sm font-medium text-foreground/80 shrink-0">Type</label>
           <select
             value={formData.aircraft_type as string}
             onChange={(e) => updateField('aircraft_type', e.target.value)}
-            className="flex-1 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-skyiq-accent focus:bg-white"
+            className={inputCls}
           >
             {Object.entries(AIRCRAFT_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
+              <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </div>
@@ -113,11 +101,11 @@ export default function AddAircraftPage() {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-skyiq-accent text-white font-medium rounded-lg hover:bg-skyiq-accent/90 disabled:opacity-50"
+            className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all"
           >
             {loading ? 'Adding...' : 'Add Aircraft'}
           </button>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Ensure this data is accurate. You can make edits from the manage fleet menu.
           </p>
         </div>
