@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Outlet, useNavigate, Link } from 'react-router-dom';
+import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { Plane, Menu, X, Home, Settings, DollarSign, LogOut } from 'lucide-react';
+import skyiqLogoText from '@/assets/skyiq-logo-text.png';
 
 export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -20,8 +22,10 @@ export default function AppLayout() {
     { label: 'Savings Accrued', icon: DollarSign, path: '/savings' },
   ];
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -32,22 +36,21 @@ export default function AppLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-card border-r border-border transform transition-transform duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <Link to="/dashboard" className="flex items-center gap-2">
-              <span className="text-xl font-bold text-skyiq-blue">skyIQ</span>
-              <span className="text-sm text-gray-500">Fly Smarter</span>
+              <img src={skyiqLogoText} alt="SkyIQ" className="h-8 object-contain" />
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-1 hover:bg-gray-100 rounded"
+              className="lg:hidden p-1 hover:bg-muted rounded"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
 
@@ -56,7 +59,7 @@ export default function AppLayout() {
             <input
               type="text"
               placeholder="Search Tail #/Trip"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-skyiq-accent focus:border-transparent"
+              className="w-full px-3 py-2 text-sm border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
@@ -67,7 +70,11 @@ export default function AppLayout() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg mb-1"
+                className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg mb-1 transition-colors ${
+                  isActive(item.path)
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
@@ -76,22 +83,22 @@ export default function AppLayout() {
           </nav>
 
           {/* User section */}
-          <div className="border-t p-4">
+          <div className="border-t border-border p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-skyiq-blue text-white rounded-full flex items-center justify-center text-xs font-medium">
+                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">
                   {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {profile?.first_name} {profile?.last_name}
                   </p>
-                  <p className="text-xs text-gray-500 capitalize">{profile?.role?.replace('_', ' ')}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{profile?.role?.replace('_', ' ')}</p>
                 </div>
               </div>
               <button
                 onClick={handleSignOut}
-                className="p-1.5 hover:bg-gray-100 rounded text-gray-500"
+                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
                 title="Sign out"
               >
                 <LogOut className="w-4 h-4" />
@@ -104,14 +111,14 @@ export default function AppLayout() {
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top bar (mobile) */}
-        <header className="lg:hidden flex items-center justify-between p-4 border-b bg-white">
+        <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1 hover:bg-muted rounded"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 text-foreground" />
           </button>
-          <span className="text-lg font-bold text-skyiq-blue">skyIQ</span>
+          <img src={skyiqLogoText} alt="SkyIQ" className="h-6 object-contain" />
           <div className="w-6" />
         </header>
 
