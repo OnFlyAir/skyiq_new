@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
