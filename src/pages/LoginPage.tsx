@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuthContext();
+  const { signIn, signUp, refreshProfile } = useAuthContext();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
