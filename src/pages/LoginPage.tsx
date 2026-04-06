@@ -97,7 +97,10 @@ export default function LoginPage() {
                 const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
                 if (retryErr) { setError(retryErr.message); setLoading(false); return; }
               }
-              window.location.href = '/dashboard';
+              // Wait for auth state to settle, then refresh profile and navigate
+              await new Promise(r => setTimeout(r, 500));
+              await refreshProfile();
+              navigate('/dashboard');
             } catch (err: any) {
               setError(err.message || 'Auto-login failed');
               setLoading(false);
