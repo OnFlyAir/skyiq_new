@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import { Plane } from 'lucide-react';
+import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function AuthLayout() {
   return (
@@ -8,9 +8,8 @@ export default function AuthLayout() {
       <div className="absolute inset-0 bg-gradient-to-br from-skyiq-cyan/5 via-transparent to-skyiq-cyan/3" />
 
       {/* Logo */}
-      <div className="mb-10 flex items-center gap-2 relative z-10">
-        <Plane className="w-7 h-7 text-primary" />
-        <span className="text-2xl font-bold text-foreground tracking-tight">SkyIQ</span>
+      <div className="mb-10 flex flex-col items-center relative z-10">
+        <img src={skyiqLogo} alt="SkyIQ" className="w-28 h-28 object-contain drop-shadow-md" />
       </div>
 
       {/* Auth card */}
