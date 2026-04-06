@@ -57,7 +57,7 @@ export default function DashboardPage() {
       {/* Logo area */}
       <div className="flex justify-center mb-12">
         <div className="text-center">
-          <div className="text-5xl font-bold text-skyiq-blue">skyIQ</div>
+          <div className="text-5xl font-bold" style={{ color: '#1a3a5c' }}>skyIQ</div>
           <p className="text-gray-500 mt-1">Fly Smarter</p>
         </div>
       </div>
