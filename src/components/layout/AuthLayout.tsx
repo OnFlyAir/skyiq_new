@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom';
-import skyiqLogoDark from '@/assets/skyiq-logo-dark.png';
+import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function AuthLayout() {
   return (
@@ -10,7 +10,7 @@ export default function AuthLayout() {
 
       {/* Logo */}
       <div className="mb-10 flex flex-col items-center relative z-10">
-        <img src={skyiqLogoDark} alt="SkyIQ" className="w-24 h-24 object-contain drop-shadow-md" />
+        <img src={skyiqLogo} alt="SkyIQ" className="w-28 h-28 object-contain drop-shadow-md" />
       </div>
 
       {/* Auth card */}

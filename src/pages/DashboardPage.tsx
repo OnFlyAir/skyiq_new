@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plane, Settings, ChevronRight, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Trip, Operator } from '@/types/database';
+import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function DashboardPage() {
   const { profile } = useAuthContext();
@@ -57,10 +58,7 @@ export default function DashboardPage() {
 
       {/* Logo area */}
       <div className="flex justify-center mb-12">
-        <div className="text-center">
-          <div className="text-5xl font-bold" style={{ color: '#1a3a5c' }}>skyIQ</div>
-          <p className="text-muted-foreground mt-1">Fly Smarter</p>
-        </div>
+        <img src={skyiqLogo} alt="SkyIQ - Fly Smarter" className="w-40 h-40 object-contain drop-shadow-md" />
       </div>
 
       {/* Action cards */}
