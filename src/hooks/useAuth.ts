@@ -98,6 +98,6 @@ export function useAuth() {
     signIn,
     signOut,
     resetPassword,
-    refreshProfile: () => user && fetchProfile(user.id),
+    refreshProfile: async () => { if (user) await fetchProfile(user.id); },
   };
 }
