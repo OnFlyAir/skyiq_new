@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Plane, Settings, ChevronRight } from 'lucide-react';
 import type { Trip, Operator } from '@/types/database';
 

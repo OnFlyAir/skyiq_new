@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { AIRCRAFT_TYPE_LABELS, type AircraftType } from '@/types/database';
 
 const AIRCRAFT_FIELDS = [

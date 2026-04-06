@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { AIRCRAFT_TYPE_LABELS, type Aircraft } from '@/types/database';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
