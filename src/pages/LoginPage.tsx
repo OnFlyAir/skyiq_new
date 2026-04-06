@@ -2,13 +2,16 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 
+const DEV_EMAIL = 'dev@skyiq.test';
+const DEV_PASSWORD = 'devpass123';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuthContext();
+  const { signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
