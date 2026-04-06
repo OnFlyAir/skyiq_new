@@ -88,14 +88,47 @@ export default function LoginPage() {
           onClick={async () => {
             setError('');
             setLoading(true);
-            // Try sign in first, if fails sign up then sign in
-            const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-            if (signInErr) {
-              await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-              const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-              if (retryErr) { setError(retryErr.message); setLoading(false); return; }
+            try {
+              // Try sign in first, if fails sign up then sign in
+              let { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+              if (signInErr) {
+                const { data: signUpData, error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+                if (signUpErr) { setError(signUpErr.message); setLoading(false); return; }
+                // Wait a moment for the profile trigger to fire
+                await new Promise(r => setTimeout(r, 1000));
+                const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+                if (retryErr) { setError(retryErr.message); setLoading(false); return; }
+              }
+
+              // Ensure dev user has an operator
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('operator_id')
+                .eq('email', DEV_EMAIL)
+                .single();
+
+              if (profile && !profile.operator_id) {
+                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                if (currentUser) {
+                  const { data: op } = await supabase
+                    .from('operators')
+                    .insert({ name: 'Dev Operator', created_by: currentUser.id })
+                    .select()
+                    .single();
+                  if (op) {
+                    await supabase
+                      .from('profiles')
+                      .update({ operator_id: op.id, role: 'operator_admin' })
+                      .eq('id', currentUser.id);
+                  }
+                }
+              }
+
+              navigate('/dashboard');
+            } catch (err: any) {
+              setError(err.message || 'Auto-login failed');
+              setLoading(false);
             }
-            navigate('/dashboard');
           }}
           className="w-full py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
         >
