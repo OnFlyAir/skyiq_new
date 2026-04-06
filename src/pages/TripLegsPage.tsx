@@ -46,7 +46,7 @@ export default function TripLegsPage() {
 
   async function saveLeg(leg: TripLeg) {
     const { id, created_at, updated_at, ...rest } = leg;
-    await supabase.from('trip_legs').update(rest).eq('id', id);
+    await supabase.from('trip_legs').update(rest as any).eq('id', id);
   }
 
   async function addLeg() {
