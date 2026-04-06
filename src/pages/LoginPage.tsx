@@ -1,7 +1,6 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
@@ -12,8 +11,19 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, refreshProfile } = useAuthContext();
+  const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      if (profile.operator_id) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/onboarding', { replace: true });
+      }
+    }
+  }, [authLoading, user, profile, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -24,9 +34,46 @@ export default function LoginPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      navigate('/dashboard');
     }
+    // Navigation handled by the useEffect above when auth state updates
+  }
+
+  async function handleDevLogin() {
+    setError('');
+    setLoading(true);
+    try {
+      const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+      if (signInErr) {
+        // Account doesn't exist yet, create it
+        const { error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+        if (signUpErr) {
+          setError(signUpErr.message);
+          setLoading(false);
+          return;
+        }
+        // Wait for trigger to create profile
+        await new Promise(r => setTimeout(r, 1000));
+        const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+        if (retryErr) {
+          setError(retryErr.message);
+          setLoading(false);
+          return;
+        }
+      }
+      // Navigation handled by the useEffect above when auth state updates
+    } catch (err: any) {
+      setError(err.message || 'Auto-login failed');
+      setLoading(false);
+    }
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-skyiq-accent" />
+      </div>
+    );
   }
 
   return (
@@ -86,26 +133,7 @@ export default function LoginPage() {
         <button
           type="button"
           disabled={loading}
-          onClick={async () => {
-            setError('');
-            setLoading(true);
-            try {
-              const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-              if (signInErr) {
-                await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-                await new Promise(r => setTimeout(r, 1000));
-                const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-                if (retryErr) { setError(retryErr.message); setLoading(false); return; }
-              }
-              // Wait for auth state to settle, then refresh profile and navigate
-              await new Promise(r => setTimeout(r, 500));
-              await refreshProfile();
-              navigate('/dashboard');
-            } catch (err: any) {
-              setError(err.message || 'Auto-login failed');
-              setLoading(false);
-            }
-          }}
+          onClick={handleDevLogin}
           className="w-full py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
         >
           {loading ? 'Logging in...' : '⚡ Dev Auto-Login'}

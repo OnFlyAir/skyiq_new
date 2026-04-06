@@ -25,7 +25,7 @@ export default function DashboardPage() {
         .from('operators')
         .select('*')
         .eq('id', profile!.operator_id!)
-        .single(),
+        .maybeSingle(),
       supabase
         .from('trips')
         .select('*, aircraft(tail_number, nickname)')
@@ -34,7 +34,7 @@ export default function DashboardPage() {
         .limit(10),
     ]);
 
-    if (operatorRes.data) setOperator(operatorRes.data);
+    if (operatorRes.data) setOperator(operatorRes.data as any);
     if (tripsRes.data) setRecentTrips(tripsRes.data as any);
     setLoading(false);
   }
@@ -84,7 +84,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent trips */}
-      {recentTrips.length > 0 && (
+      {recentTrips.length > 0 ? (
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
             Previous Trips
@@ -93,7 +93,7 @@ export default function DashboardPage() {
             {recentTrips.map((trip) => (
               <Link
                 key={trip.id}
-                to={`/trips/${trip.id}`}
+                to={`/trips/${trip.id}/summary`}
                 className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-skyiq-accent transition-colors"
               >
                 <div>
@@ -108,6 +108,10 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-400 text-sm">No trips yet. Plan your first trip to get started!</p>
         </div>
       )}
     </div>
