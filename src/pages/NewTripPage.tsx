@@ -16,7 +16,11 @@ export default function NewTripPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.operator_id) loadAircraft();
+    if (profile?.operator_id) {
+      loadAircraft();
+    } else {
+      setLoading(false);
+    }
   }, [profile]);
 
   async function loadAircraft() {

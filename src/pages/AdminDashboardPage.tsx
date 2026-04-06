@@ -21,7 +21,11 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.role === 'super_admin') loadStats();
+    if (profile?.role === 'super_admin') {
+      loadStats();
+    } else {
+      setLoading(false);
+    }
   }, [profile]);
 
   async function loadStats() {
