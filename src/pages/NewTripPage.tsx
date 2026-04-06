@@ -71,7 +71,7 @@ export default function NewTripPage() {
     }
   }
 
-  async function handleFileUpload(file: File) {
+  async function handleFakeUpload() {
     if (!selectedAircraft || !user || !profile?.operator_id) return;
     setUploading(true);
 
@@ -85,7 +85,7 @@ export default function NewTripPage() {
         aircraft_id: selectedAircraft,
         trip_number: number,
         status: 'draft',
-        current_fuel_on_board: 0,
+        current_fuel_on_board: 3200,
         created_by: user.id,
       })
       .select()
@@ -97,28 +97,53 @@ export default function NewTripPage() {
       return;
     }
 
-    // Upload file to storage
-    const filePath = `${profile.operator_id}/${trip.id}/${file.name}`;
-    const { error: uploadErr } = await supabase.storage
-      .from('trip-uploads')
-      .upload(filePath, file);
+    // Insert sample legs as if parsed from a PDF
+    const sampleLegs = [
+      {
+        trip_id: trip.id,
+        leg_number: 1,
+        departure_icao: 'KTEB',
+        destination_icao: 'KPBI',
+        fuel_burn: 2800,
+        reserve: 1800,
+        taxi_fuel_burn: 150,
+        max_takeoff_weight: 20200,
+        max_landing_weight: 18700,
+        crew_weights: [200, 200],
+        passenger_weights: [185, 165],
+        baggage_weight: 120,
+        departure_fee_cost: 350,
+        departure_fee_waived_with: 500,
+        fuel_price_tiers: [
+          { price_per_gallon: 6.75, min_quantity_gallons: 0 },
+          { price_per_gallon: 5.90, min_quantity_gallons: 200 },
+        ],
+      },
+      {
+        trip_id: trip.id,
+        leg_number: 2,
+        departure_icao: 'KPBI',
+        destination_icao: 'KTEB',
+        fuel_burn: 2900,
+        reserve: 1800,
+        taxi_fuel_burn: 150,
+        max_takeoff_weight: 20200,
+        max_landing_weight: 18700,
+        crew_weights: [200, 200],
+        passenger_weights: [185, 165, 200],
+        baggage_weight: 150,
+        departure_fee_cost: 0,
+        departure_fee_waived_with: 0,
+        fuel_price_tiers: [
+          { price_per_gallon: 7.10, min_quantity_gallons: 0 },
+          { price_per_gallon: 6.25, min_quantity_gallons: 150 },
+        ],
+      },
+    ];
 
-    if (uploadErr) {
-      alert('File upload failed: ' + uploadErr.message);
-      setUploading(false);
-      return;
-    }
-
-    // Record upload
-    await (supabase as any).from('trip_uploads').insert({
-      trip_id: trip.id,
-      uploaded_by: user.id,
-      file_name: file.name,
-      file_path: filePath,
-    });
+    await supabase.from('trip_legs').insert(sampleLegs);
 
     setUploading(false);
-    // Navigate to legs page — algorithm will parse and populate later
     navigate(`/trips/${trip.id}/legs`);
   }
 
