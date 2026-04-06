@@ -19,7 +19,11 @@ export default function SavingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.operator_id) loadSavings();
+    if (profile?.operator_id) {
+      loadSavings();
+    } else {
+      setLoading(false);
+    }
   }, [profile]);
 
   async function loadSavings() {
