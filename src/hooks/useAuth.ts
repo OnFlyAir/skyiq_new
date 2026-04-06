@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile } from '@/types/database';
@@ -8,6 +8,24 @@ export function useAuth() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileFetchedForRef = useRef<string | null>(null);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    // Prevent duplicate fetches for same user
+    if (profileFetchedForRef.current === userId && profile) return;
+    profileFetchedForRef.current = userId;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && data) {
+      setProfile(data as Profile);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -16,6 +34,23 @@ export function useAuth() {
       return;
     }
 
+    // Set up listener FIRST so we don't miss events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Fire and forget — don't await inside onAuthStateChange
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          profileFetchedForRef.current = null;
+          setLoading(false);
+        }
+      }
+    );
+
+    // Then restore existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -28,34 +63,8 @@ export function useAuth() {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
     return () => subscription.unsubscribe();
-  }, []);
-
-  async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (!error && data) {
-      setProfile(data as Profile);
-    }
-    setLoading(false);
-  }
+  }, [fetchProfile]);
 
   async function signUp(email: string, password: string, firstName: string, lastName: string) {
     const { data, error } = await supabase.auth.signUp({
@@ -80,6 +89,7 @@ export function useAuth() {
   }
 
   async function signOut() {
+    profileFetchedForRef.current = null;
     const { error } = await supabase.auth.signOut();
     return { error };
   }
@@ -88,6 +98,15 @@ export function useAuth() {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email);
     return { data, error };
   }
+
+  // refreshProfile uses getUser() to avoid stale closure issues
+  const refreshProfile = useCallback(async () => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser) {
+      profileFetchedForRef.current = null; // Force re-fetch
+      await fetchProfile(currentUser.id);
+    }
+  }, [fetchProfile]);
 
   return {
     user,
@@ -98,6 +117,6 @@ export function useAuth() {
     signIn,
     signOut,
     resetPassword,
-    refreshProfile: async () => { if (user) await fetchProfile(user.id); },
+    refreshProfile,
   };
 }
