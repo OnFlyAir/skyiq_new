@@ -34,7 +34,7 @@ export default function TripLegsPage() {
       .eq('trip_id', tripId!)
       .order('leg_number');
 
-    if (legData) setLegs(legData as TripLeg[]);
+    if (legData) setLegs(legData as unknown as TripLeg[]);
     setLoading(false);
   }
 
@@ -46,7 +46,7 @@ export default function TripLegsPage() {
 
   async function saveLeg(leg: TripLeg) {
     const { id, created_at, updated_at, ...rest } = leg;
-    await supabase.from('trip_legs').update(rest).eq('id', id);
+    await supabase.from('trip_legs').update(rest as any).eq('id', id);
   }
 
   async function addLeg() {
@@ -60,16 +60,16 @@ export default function TripLegsPage() {
         leg_number: nextNum,
         departure_icao: lastLeg?.destination_icao || '',
         destination_icao: '',
-        fuel_price_tiers: [{ price_per_gallon: 0, min_quantity_gallons: 0 }],
+        fuel_price_tiers: JSON.stringify([{ price_per_gallon: 0, min_quantity_gallons: 0 }]),
         reserve: aircraft?.preferred_reserve || 0,
         taxi_fuel_burn: aircraft?.taxi_fuel_burn || 0,
         max_takeoff_weight: aircraft?.max_takeoff_weight || 0,
         max_landing_weight: aircraft?.max_landing_weight || 0,
-      })
+      } as any)
       .select()
       .single();
 
-    if (data) setLegs((prev) => [...prev, data as TripLeg]);
+    if (data) setLegs((prev) => [...prev, data as unknown as TripLeg]);
   }
 
   async function toggleLeg(legId: string, active: boolean) {

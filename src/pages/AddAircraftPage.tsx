@@ -57,7 +57,7 @@ export default function AddAircraftPage() {
       }
     }
 
-    const { error } = await supabase.from('aircraft').insert(payload);
+    const { error } = await supabase.from('aircraft').insert(payload as any);
 
     if (error) {
       setError(error.message);

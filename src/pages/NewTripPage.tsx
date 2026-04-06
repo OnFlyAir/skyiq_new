@@ -106,7 +106,7 @@ export default function NewTripPage() {
     }
 
     // Record upload
-    await supabase.from('trip_uploads').insert({
+    await (supabase as any).from('trip_uploads').insert({
       trip_id: trip.id,
       uploaded_by: user.id,
       file_name: file.name,

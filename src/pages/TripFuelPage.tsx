@@ -37,7 +37,7 @@ export default function TripFuelPage() {
       .eq('is_active', true)
       .order('leg_number');
 
-    if (legData) setLegs(legData as TripLeg[]);
+    if (legData) setLegs(legData as unknown as TripLeg[]);
     setLoading(false);
   }
 

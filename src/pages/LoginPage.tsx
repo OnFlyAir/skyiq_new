@@ -2,13 +2,16 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 
+const DEV_EMAIL = 'dev@skyiq.test';
+const DEV_PASSWORD = 'devpass123';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuthContext();
+  const { signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
@@ -76,6 +79,29 @@ export default function LoginPage() {
           {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
+
+      {/* Dev auto-login */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={async () => {
+            setError('');
+            setLoading(true);
+            // Try sign in first, if fails sign up then sign in
+            const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+            if (signInErr) {
+              await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+              const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+              if (retryErr) { setError(retryErr.message); setLoading(false); return; }
+            }
+            navigate('/dashboard');
+          }}
+          className="w-full py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
+        >
+          {loading ? 'Logging in...' : '⚡ Dev Auto-Login'}
+        </button>
+      </div>
 
       <div className="mt-6 space-y-2 text-sm text-center">
         <p>
