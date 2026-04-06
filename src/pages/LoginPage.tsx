@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
@@ -11,7 +12,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuthContext();
+  const { signIn, signUp, refreshProfile } = useAuthContext();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
@@ -88,14 +89,22 @@ export default function LoginPage() {
           onClick={async () => {
             setError('');
             setLoading(true);
-            // Try sign in first, if fails sign up then sign in
-            const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-            if (signInErr) {
-              await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-              const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-              if (retryErr) { setError(retryErr.message); setLoading(false); return; }
+            try {
+              const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+              if (signInErr) {
+                await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+                await new Promise(r => setTimeout(r, 1000));
+                const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+                if (retryErr) { setError(retryErr.message); setLoading(false); return; }
+              }
+              // Wait for auth state to settle, then refresh profile and navigate
+              await new Promise(r => setTimeout(r, 500));
+              await refreshProfile();
+              navigate('/dashboard');
+            } catch (err: any) {
+              setError(err.message || 'Auto-login failed');
+              setLoading(false);
             }
-            navigate('/dashboard');
           }}
           className="w-full py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-sm"
         >
