@@ -90,7 +90,6 @@ export default function LoginPage() {
             setError('');
             setLoading(true);
             try {
-              // Try sign in first, if fails sign up then sign in
               const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
               if (signInErr) {
                 await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
@@ -98,36 +97,6 @@ export default function LoginPage() {
                 const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
                 if (retryErr) { setError(retryErr.message); setLoading(false); return; }
               }
-
-              // Wait for auth to settle
-              await new Promise(r => setTimeout(r, 500));
-
-              // Ensure dev user has an operator
-              const { data: { user: currentUser } } = await supabase.auth.getUser();
-              if (!currentUser) { setError('Failed to get user'); setLoading(false); return; }
-
-              const { data: devProfile } = await supabase
-                .from('profiles')
-                .select('operator_id')
-                .eq('id', currentUser.id)
-                .single();
-
-              if (devProfile && !devProfile.operator_id) {
-                const { data: op, error: opErr } = await supabase
-                  .from('operators')
-                  .insert({ name: 'Dev Operator', created_by: currentUser.id } as any)
-                  .select()
-                  .single();
-
-                if (op) {
-                  await supabase
-                    .from('profiles')
-                    .update({ operator_id: op.id, role: 'operator_admin' } as any)
-                    .eq('id', currentUser.id);
-                }
-              }
-
-              // Hard reload to ensure fresh auth state
               window.location.href = '/dashboard';
             } catch (err: any) {
               setError(err.message || 'Auto-login failed');
