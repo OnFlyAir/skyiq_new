@@ -14,378 +14,210 @@ export type Database = {
   }
   public: {
     Tables: {
-      aircraft: {
+      aircrafts: {
         Row: {
-          aircraft_type: string
-          baggage_weight_with_pax: number
-          baggage_weight_without_pax: number
-          basic_empty_weight: number
-          cabin_attendant_weight: number
-          created_at: string
-          cruise_fuel_burn: number
-          default_pax_weight: number
-          default_pic_weight: number
-          default_sic_weight: number
-          id: string
-          manufacturer: string
-          max_fuel_capacity: number
-          max_landing_weight: number
-          max_ramp_weight: number
-          max_takeoff_weight: number
-          model: string
-          nickname: string | null
-          operator_id: string
-          penalty_rate: number
-          preferred_reserve: number
+          basic_empty_weight: number | null
+          carry_type_id: number | null
+          cruise_fuel_burn: number | null
+          default_baggage_no_pax: number | null
+          default_baggage_with_pax: number | null
+          default_cabin_weight: number | null
+          default_pax_weight: number | null
+          default_pic_weight: number | null
+          default_sic_weight: number | null
+          id: number
+          is_enabled: boolean | null
+          manufacturer: string | null
+          max_fuel_capacity: number | null
+          max_landing_weight: number | null
+          max_ramp_weight: number | null
+          max_takeoff_weight: number | null
+          penalty_rate: number | null
+          preferred_reserve: number | null
           tail_number: string
-          taxi_fuel_burn: number
-          updated_at: string
+          taxi_fuel_burn: number | null
+          type: string | null
+          user_company: string | null
         }
         Insert: {
-          aircraft_type?: string
-          baggage_weight_with_pax?: number
-          baggage_weight_without_pax?: number
-          basic_empty_weight?: number
-          cabin_attendant_weight?: number
-          created_at?: string
-          cruise_fuel_burn?: number
-          default_pax_weight?: number
-          default_pic_weight?: number
-          default_sic_weight?: number
-          id?: string
-          manufacturer?: string
-          max_fuel_capacity?: number
-          max_landing_weight?: number
-          max_ramp_weight?: number
-          max_takeoff_weight?: number
-          model?: string
-          nickname?: string | null
-          operator_id: string
-          penalty_rate?: number
-          preferred_reserve?: number
-          tail_number: string
-          taxi_fuel_burn?: number
-          updated_at?: string
-        }
-        Update: {
-          aircraft_type?: string
-          baggage_weight_with_pax?: number
-          baggage_weight_without_pax?: number
-          basic_empty_weight?: number
-          cabin_attendant_weight?: number
-          created_at?: string
-          cruise_fuel_burn?: number
-          default_pax_weight?: number
-          default_pic_weight?: number
-          default_sic_weight?: number
-          id?: string
-          manufacturer?: string
-          max_fuel_capacity?: number
-          max_landing_weight?: number
-          max_ramp_weight?: number
-          max_takeoff_weight?: number
-          model?: string
-          nickname?: string | null
-          operator_id?: string
-          penalty_rate?: number
-          preferred_reserve?: number
+          basic_empty_weight?: number | null
+          carry_type_id?: number | null
+          cruise_fuel_burn?: number | null
+          default_baggage_no_pax?: number | null
+          default_baggage_with_pax?: number | null
+          default_cabin_weight?: number | null
+          default_pax_weight?: number | null
+          default_pic_weight?: number | null
+          default_sic_weight?: number | null
+          id?: number
+          is_enabled?: boolean | null
+          manufacturer?: string | null
+          max_fuel_capacity?: number | null
+          max_landing_weight?: number | null
+          max_ramp_weight?: number | null
+          max_takeoff_weight?: number | null
+          penalty_rate?: number | null
+          preferred_reserve?: number | null
           tail_number?: string
-          taxi_fuel_burn?: number
-          updated_at?: string
+          taxi_fuel_burn?: number | null
+          type?: string | null
+          user_company?: string | null
+        }
+        Update: {
+          basic_empty_weight?: number | null
+          carry_type_id?: number | null
+          cruise_fuel_burn?: number | null
+          default_baggage_no_pax?: number | null
+          default_baggage_with_pax?: number | null
+          default_cabin_weight?: number | null
+          default_pax_weight?: number | null
+          default_pic_weight?: number | null
+          default_sic_weight?: number | null
+          id?: number
+          is_enabled?: boolean | null
+          manufacturer?: string | null
+          max_fuel_capacity?: number | null
+          max_landing_weight?: number | null
+          max_ramp_weight?: number | null
+          max_takeoff_weight?: number | null
+          penalty_rate?: number | null
+          preferred_reserve?: number | null
+          tail_number?: string
+          taxi_fuel_burn?: number | null
+          type?: string | null
+          user_company?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "aircraft_operator_id_fkey"
-            columns: ["operator_id"]
+            foreignKeyName: "aircrafts_carry_type_id_fkey"
+            columns: ["carry_type_id"]
             isOneToOne: false
-            referencedRelation: "operators"
+            referencedRelation: "carry_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aircrafts_user_company_fkey"
+            columns: ["user_company"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      operator_invites: {
+      carry_types: {
         Row: {
-          created_at: string
-          email: string
-          id: string
-          invited_by: string
-          operator_id: string
-          role: string
-          status: string
+          cruise_fuel_burn: number | null
+          id: number
+          name: string
+          penalty_rate: number | null
         }
         Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          invited_by: string
-          operator_id: string
-          role?: string
-          status?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          invited_by?: string
-          operator_id?: string
-          role?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operator_invites_operator_id_fkey"
-            columns: ["operator_id"]
-            isOneToOne: false
-            referencedRelation: "operators"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      operators: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
+          cruise_fuel_burn?: number | null
+          id?: number
           name?: string
-          updated_at?: string
+          penalty_rate?: number | null
+        }
+        Update: {
+          cruise_fuel_burn?: number | null
+          id?: number
+          name?: string
+          penalty_rate?: number | null
         }
         Relationships: []
       }
+      email_lists: {
+        Row: {
+          emails: Json | null
+          id: number
+          user_id: string | null
+        }
+        Insert: {
+          emails?: Json | null
+          id?: number
+          user_id?: string | null
+        }
+        Update: {
+          emails?: Json | null
+          id?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_lists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
-          created_at: string
+          company: string | null
+          created_on: string
           email: string
           first_name: string
           id: string
+          is_enabled: boolean | null
           last_name: string
-          operator_id: string | null
-          role: string
-          updated_at: string
+          role_name: string | null
         }
         Insert: {
-          created_at?: string
+          company?: string | null
+          created_on?: string
           email: string
           first_name?: string
           id: string
+          is_enabled?: boolean | null
           last_name?: string
-          operator_id?: string | null
-          role?: string
-          updated_at?: string
+          role_name?: string | null
         }
         Update: {
-          created_at?: string
+          company?: string | null
+          created_on?: string
           email?: string
           first_name?: string
           id?: string
+          is_enabled?: boolean | null
           last_name?: string
-          operator_id?: string | null
-          role?: string
-          updated_at?: string
+          role_name?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_operator_id_fkey"
-            columns: ["operator_id"]
-            isOneToOne: false
-            referencedRelation: "operators"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trip_leg_results: {
-        Row: {
-          created_at: string
-          fuel_cost: number
-          fuel_to_uplift_gallons: number
-          fuel_to_uplift_lbs: number
-          id: string
-          landing_fuel_lbs: number
-          landing_weight_lbs: number
-          starting_fuel_lbs: number
-          takeoff_weight_lbs: number
-          total_cost: number
-          trip_leg_id: string
-          waived_fees: string
-        }
-        Insert: {
-          created_at?: string
-          fuel_cost?: number
-          fuel_to_uplift_gallons?: number
-          fuel_to_uplift_lbs?: number
-          id?: string
-          landing_fuel_lbs?: number
-          landing_weight_lbs?: number
-          starting_fuel_lbs?: number
-          takeoff_weight_lbs?: number
-          total_cost?: number
-          trip_leg_id: string
-          waived_fees?: string
-        }
-        Update: {
-          created_at?: string
-          fuel_cost?: number
-          fuel_to_uplift_gallons?: number
-          fuel_to_uplift_lbs?: number
-          id?: string
-          landing_fuel_lbs?: number
-          landing_weight_lbs?: number
-          starting_fuel_lbs?: number
-          takeoff_weight_lbs?: number
-          total_cost?: number
-          trip_leg_id?: string
-          waived_fees?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trip_leg_results_trip_leg_id_fkey"
-            columns: ["trip_leg_id"]
-            isOneToOne: false
-            referencedRelation: "trip_legs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      trip_legs: {
-        Row: {
-          baggage_weight: number
-          created_at: string
-          crew_weights: Json
-          departure_fee_cost: number
-          departure_fee_waived_with: number
-          departure_icao: string
-          destination_icao: string
-          fuel_burn: number
-          fuel_price_tiers: Json
-          id: string
-          is_active: boolean
-          leg_number: number
-          max_landing_weight: number
-          max_takeoff_weight: number
-          passenger_weights: Json
-          reserve: number
-          taxi_fuel_burn: number
-          trip_id: string
-          updated_at: string
-        }
-        Insert: {
-          baggage_weight?: number
-          created_at?: string
-          crew_weights?: Json
-          departure_fee_cost?: number
-          departure_fee_waived_with?: number
-          departure_icao?: string
-          destination_icao?: string
-          fuel_burn?: number
-          fuel_price_tiers?: Json
-          id?: string
-          is_active?: boolean
-          leg_number?: number
-          max_landing_weight?: number
-          max_takeoff_weight?: number
-          passenger_weights?: Json
-          reserve?: number
-          taxi_fuel_burn?: number
-          trip_id: string
-          updated_at?: string
-        }
-        Update: {
-          baggage_weight?: number
-          created_at?: string
-          crew_weights?: Json
-          departure_fee_cost?: number
-          departure_fee_waived_with?: number
-          departure_icao?: string
-          destination_icao?: string
-          fuel_burn?: number
-          fuel_price_tiers?: Json
-          id?: string
-          is_active?: boolean
-          leg_number?: number
-          max_landing_weight?: number
-          max_takeoff_weight?: number
-          passenger_weights?: Json
-          reserve?: number
-          taxi_fuel_burn?: number
-          trip_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trip_legs_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trips: {
         Row: {
-          aircraft_id: string
-          created_at: string
-          created_by: string
-          current_fuel_on_board: number
-          id: string
-          operator_id: string
-          status: string
-          total_cost: number | null
-          total_savings: number | null
-          trip_number: string
-          updated_at: string
+          created_on: string | null
+          details: Json | null
+          id: number
+          itinerary_details: Json | null
+          itinerary_num: string | null
+          savings: number | null
+          user_company: string | null
         }
         Insert: {
-          aircraft_id: string
-          created_at?: string
-          created_by: string
-          current_fuel_on_board?: number
-          id?: string
-          operator_id: string
-          status?: string
-          total_cost?: number | null
-          total_savings?: number | null
-          trip_number?: string
-          updated_at?: string
+          created_on?: string | null
+          details?: Json | null
+          id?: number
+          itinerary_details?: Json | null
+          itinerary_num?: string | null
+          savings?: number | null
+          user_company?: string | null
         }
         Update: {
-          aircraft_id?: string
-          created_at?: string
-          created_by?: string
-          current_fuel_on_board?: number
-          id?: string
-          operator_id?: string
-          status?: string
-          total_cost?: number | null
-          total_savings?: number | null
-          trip_number?: string
-          updated_at?: string
+          created_on?: string | null
+          details?: Json | null
+          id?: number
+          itinerary_details?: Json | null
+          itinerary_num?: string | null
+          savings?: number | null
+          user_company?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "trips_aircraft_id_fkey"
-            columns: ["aircraft_id"]
+            foreignKeyName: "trips_user_company_fkey"
+            columns: ["user_company"]
             isOneToOne: false
-            referencedRelation: "aircraft"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "trips_operator_id_fkey"
-            columns: ["operator_id"]
-            isOneToOne: false
-            referencedRelation: "operators"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -395,7 +227,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

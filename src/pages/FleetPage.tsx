@@ -6,26 +6,22 @@ import { Plus, Plane } from 'lucide-react';
 import type { Aircraft } from '@/types/database';
 
 export default function FleetPage() {
-  const { profile } = useAuthContext();
+  const { user } = useAuthContext();
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.operator_id) {
-      loadAircraft();
-    } else {
-      setLoading(false);
-    }
-  }, [profile]);
+    if (user) { loadAircraft(); } else { setLoading(false); }
+  }, [user]);
 
   async function loadAircraft() {
     const { data } = await supabase
-      .from('aircraft')
+      .from('aircrafts')
       .select('*')
-      .eq('operator_id', profile!.operator_id!)
-      .order('created_at', { ascending: true });
+      .eq('user_company', user!.id)
+      .order('tail_number');
 
-    if (data) setAircraft(data as Aircraft[]);
+    if (data) setAircraft(data as unknown as Aircraft[]);
     setLoading(false);
   }
 
@@ -43,25 +39,16 @@ export default function FleetPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {aircraft.map((ac) => (
-          <Link
-            key={ac.id}
-            to={`/fleet/${ac.id}`}
-            className="flex flex-col items-center p-6 bg-card border border-border rounded-xl hover:border-primary transition-all"
-          >
+          <Link key={ac.id} to={`/fleet/${ac.id}`} className="flex flex-col items-center p-6 bg-card border border-border rounded-xl hover:border-primary transition-all">
             <Plane className="w-16 h-16 text-muted-foreground mb-3" />
-            <span className="font-medium text-foreground">{ac.nickname || ac.tail_number}</span>
+            <span className="font-medium text-foreground">{ac.tail_number}</span>
           </Link>
         ))}
 
-        {(profile?.role === 'operator_admin' || profile?.role === 'super_admin') && (
-          <Link
-            to="/fleet/add"
-            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-secondary/50 transition-all"
-          >
-            <Plus className="w-12 h-12 text-muted-foreground mb-3" />
-            <span className="font-medium text-muted-foreground">Add Aircraft</span>
-          </Link>
-        )}
+        <Link to="/fleet/add" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-secondary/50 transition-all">
+          <Plus className="w-12 h-12 text-muted-foreground mb-3" />
+          <span className="font-medium text-muted-foreground">Add Aircraft</span>
+        </Link>
       </div>
     </div>
   );

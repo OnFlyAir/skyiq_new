@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-skyiq-accent" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -21,12 +21,7 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
     return <Navigate to="/login" replace />;
   }
 
-  // If user has no operator, send to onboarding (unless they're a super admin)
-  if (profile && !profile.operator_id && profile.role !== 'super_admin') {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  if (requireRole && profile && !requireRole.includes(profile.role)) {
+  if (requireRole && profile && !requireRole.includes(profile.role_name)) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -11,7 +11,6 @@ export function useAuth() {
   const profileFetchedForRef = useRef<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    // Prevent duplicate fetches for same user
     if (profileFetchedForRef.current === userId && profile) return;
     profileFetchedForRef.current = userId;
 
@@ -22,7 +21,7 @@ export function useAuth() {
       .maybeSingle();
 
     if (!error && data) {
-      setProfile(data as Profile);
+      setProfile(data as unknown as Profile);
     }
     setLoading(false);
   }, []);
@@ -34,13 +33,11 @@ export function useAuth() {
       return;
     }
 
-    // Set up listener FIRST so we don't miss events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Fire and forget — don't await inside onAuthStateChange
           fetchProfile(session.user.id);
         } else {
           setProfile(null);
@@ -50,7 +47,6 @@ export function useAuth() {
       }
     );
 
-    // Then restore existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -81,10 +77,7 @@ export function useAuth() {
   }
 
   async function signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     return { data, error };
   }
 
@@ -99,11 +92,10 @@ export function useAuth() {
     return { data, error };
   }
 
-  // refreshProfile uses getUser() to avoid stale closure issues
   const refreshProfile = useCallback(async () => {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser) {
-      profileFetchedForRef.current = null; // Force re-fetch
+      profileFetchedForRef.current = null;
       await fetchProfile(currentUser.id);
     }
   }, [fetchProfile]);

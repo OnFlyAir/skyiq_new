@@ -1,27 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import type { Trip, TripLeg, TripLegResult, Aircraft } from '@/types/database';
-
-interface LegWithResult extends TripLeg {
-  result: TripLegResult | null;
-}
+import type { Trip } from '@/types/database';
 
 export default function TripSummaryPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
-  const [aircraft, setAircraft] = useState<Aircraft | null>(null);
-  const [legs, setLegs] = useState<LegWithResult[]>([]);
-  const [viewMode, setViewMode] = useState<'full' | 'quick'>('full');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadSummary(); }, [tripId]);
 
   async function loadSummary() {
-    const { data: tripData } = await supabase.from('trips').select('*, aircraft(*)').eq('id', tripId!).single();
-    if (tripData) { setTrip(tripData as any); setAircraft((tripData as any).aircraft); }
-    const { data: legData } = await supabase.from('trip_legs').select('*, trip_leg_results(*)').eq('trip_id', tripId!).eq('is_active', true).order('leg_number');
-    if (legData) { setLegs(legData.map((l: any) => ({ ...l, result: l.trip_leg_results?.[0] || null }))); }
+    const { data } = await supabase.from('trips').select('*').eq('id', Number(tripId)).single();
+    if (data) setTrip(data as unknown as Trip);
     setLoading(false);
   }
 
@@ -33,129 +24,70 @@ export default function TripSummaryPage() {
     );
   }
 
-  const totalCost = legs.reduce((sum, l) => sum + (l.result?.total_cost || 0), 0);
+  if (!trip) return <p className="text-muted-foreground">Trip not found.</p>;
+
+  const details = trip.details as any;
+  const itinerary = trip.itinerary_details as any;
+  const legs = itinerary?.legs || [];
+  const results = details?.legs || details?.results || [];
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-1">
-        Trip {trip?.trip_number} Summary
-      </h1>
+      <h1 className="text-2xl font-bold text-foreground mb-1">Trip {trip.itinerary_num} Summary</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        {viewMode === 'full' ? 'Fuel Plan Summary' : 'Quick Ref Fuel Plan'} for flight on{' '}
-        {aircraft?.nickname || aircraft?.tail_number}
+        {trip.savings > 0 && (
+          <span className="text-primary font-semibold">Estimated Savings: ${trip.savings.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        )}
       </p>
 
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setViewMode('full')}
-          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-            viewMode === 'full' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Full Summary
-        </button>
-        <button
-          onClick={() => setViewMode('quick')}
-          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-            viewMode === 'quick' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Quick Ref
-        </button>
-      </div>
-
       <div className="space-y-6">
-        {legs.map((leg) => (
-          <div key={leg.id} className="border border-border rounded-lg overflow-hidden">
-            <div className="bg-secondary px-4 py-2 text-sm font-medium text-foreground">
-              {viewMode === 'full' ? `Leg ${leg.leg_number}: ` : ''}{leg.departure_icao} → {leg.destination_icao}
-            </div>
-
-            <table className="w-full text-sm">
-              <tbody>
-                <tr className="border-t border-border">
-                  <td className="px-4 py-2 font-semibold text-foreground">
-                    {viewMode === 'full' ? 'Fuel to Uplift (gal., lbs.)' : 'Uplift (gal., lbs.)'}
-                  </td>
-                  <td className="px-4 py-2 font-bold text-primary">
-                    {leg.result ? `${leg.result.fuel_to_uplift_gallons} gal., ${leg.result.fuel_to_uplift_lbs} lbs.` : 'Awaiting algorithm'}
-                  </td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="px-4 py-2 text-muted-foreground">Starting Fuel (lbs.)</td>
-                  <td className="px-4 py-2 text-foreground">{leg.result?.starting_fuel_lbs ?? '-'} lbs.</td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="px-4 py-2 text-muted-foreground">Fuel Burn</td>
-                  <td className="px-4 py-2 text-foreground">{leg.fuel_burn} lbs.</td>
-                </tr>
-
-                {viewMode === 'full' && (
+        {legs.map((leg: any, i: number) => {
+          const result = results[i];
+          return (
+            <div key={i} className="border border-border rounded-lg overflow-hidden">
+              <div className="bg-secondary px-4 py-2 text-sm font-medium text-foreground">
+                Leg {i + 1}: {leg.departure_icao} → {leg.destination_icao}
+              </div>
+              <div className="p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Fuel Burn</span>
+                  <span className="text-foreground">{leg.fuel_burn} lbs</span>
+                </div>
+                {result && (
                   <>
-                    <tr className="border-t border-border">
-                      <td className="px-4 py-2 text-muted-foreground">Landing Fuel (lbs.)</td>
-                      <td className="px-4 py-2 text-foreground">{leg.result?.landing_fuel_lbs ?? '-'} lbs.</td>
-                    </tr>
-                    <tr className="border-t border-border">
-                      <td className="px-4 py-2 text-muted-foreground">Takeoff Weight (lbs.)</td>
-                      <td className="px-4 py-2 text-foreground">{leg.result?.takeoff_weight_lbs ?? '-'} lbs.</td>
-                    </tr>
-                    <tr className="border-t border-border">
-                      <td className="px-4 py-2 text-muted-foreground">Landing Weight (lbs.)</td>
-                      <td className="px-4 py-2 text-foreground">{leg.result?.landing_weight_lbs ?? '-'} lbs.</td>
-                    </tr>
-                    <tr className="border-t border-border">
-                      <td className="px-4 py-2 text-muted-foreground">Fuel Cost ($)</td>
-                      <td className="px-4 py-2 text-foreground">
-                        {leg.result ? `$${leg.result.fuel_cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
-                      </td>
-                    </tr>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fuel to Uplift</span>
+                      <span className="font-bold text-primary">{result.fuel_to_uplift_gallons || result.uplift_gallons || '-'} gal</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fuel Cost</span>
+                      <span className="text-foreground">${(result.fuel_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Cost</span>
+                      <span className="font-semibold text-foreground">${(result.total_cost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
                   </>
                 )}
-
-                <tr className="border-t border-border">
-                  <td className="px-4 py-2 text-muted-foreground">Waived Fees (y/n)</td>
-                  <td className="px-4 py-2 text-foreground">{leg.result?.waived_fees ?? '-'}</td>
-                </tr>
-
-                {viewMode === 'full' && (
-                  <tr className="border-t border-border">
-                    <td className="px-4 py-2 font-semibold text-foreground">Total Cost ($)</td>
-                    <td className="px-4 py-2 font-semibold text-foreground">
-                      {leg.result ? `$${leg.result.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {viewMode === 'full' && totalCost > 0 && (
-        <p className="text-lg font-bold text-foreground mt-6">
-          Total Cost: ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-        </p>
-      )}
+      {!details || Object.keys(details).length === 0 ? (
+        <p className="mt-6 text-muted-foreground text-sm">No optimization results yet. Go to the fuel page to run optimization.</p>
+      ) : null}
 
       <div className="flex flex-wrap gap-3 mt-6">
-        {viewMode === 'quick' && (
-          <button onClick={() => setViewMode('full')} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-            Full Plan Summary for flight on {aircraft?.nickname || aircraft?.tail_number}
-          </button>
-        )}
-        {viewMode === 'full' && (
-          <>
-            <button onClick={() => setViewMode('quick')} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-              Quick Ref Fuel Plan for flight on {aircraft?.nickname || aircraft?.tail_number}
-            </button>
-            <Link to={`/trips/${tripId}/email`} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
-              Send Email
-            </Link>
-          </>
-        )}
+        <Link to={`/trips/${tripId}/email`} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+          Send Email
+        </Link>
         <Link to={`/trips/${tripId}/legs`} className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
           Edit Itinerary
+        </Link>
+        <Link to="/dashboard" className="px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+          Dashboard
         </Link>
       </div>
     </div>

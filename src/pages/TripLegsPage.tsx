@@ -1,70 +1,91 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Check, X } from 'lucide-react';
-import type { TripLeg, Trip, Aircraft, FuelPriceTier } from '@/types/database';
+import { Plus } from 'lucide-react';
+import type { Trip } from '@/types/database';
+
+interface LegData {
+  departure_icao: string;
+  destination_icao: string;
+  fuel_burn: number;
+  reserve: number;
+  taxi_fuel_burn: number;
+  max_takeoff_weight: number;
+  max_landing_weight: number;
+  crew_weights: number[];
+  passenger_weights: number[];
+  baggage_weight: number;
+  departure_fee_cost: number;
+  departure_fee_waived_with: number;
+  fuel_price_tiers: { price_per_gallon: number; min_quantity_gallons: number }[];
+}
+
+const emptyLeg = (): LegData => ({
+  departure_icao: '',
+  destination_icao: '',
+  fuel_burn: 0,
+  reserve: 0,
+  taxi_fuel_burn: 0,
+  max_takeoff_weight: 0,
+  max_landing_weight: 0,
+  crew_weights: [],
+  passenger_weights: [],
+  baggage_weight: 0,
+  departure_fee_cost: 0,
+  departure_fee_waived_with: 0,
+  fuel_price_tiers: [{ price_per_gallon: 0, min_quantity_gallons: 0 }],
+});
 
 export default function TripLegsPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const [trip, setTrip] = useState<Trip | null>(null);
-  const [aircraft, setAircraft] = useState<Aircraft | null>(null);
-  const [legs, setLegs] = useState<TripLeg[]>([]);
+  const [legs, setLegs] = useState<LegData[]>([emptyLeg()]);
+  const [fuelOnBoard, setFuelOnBoard] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadTripData(); }, [tripId]);
+  useEffect(() => { loadTrip(); }, [tripId]);
 
-  async function loadTripData() {
-    const { data: tripData } = await supabase.from('trips').select('*, aircraft(*)').eq('id', tripId!).single();
-    if (tripData) { setTrip(tripData as any); setAircraft((tripData as any).aircraft); }
-    const { data: legData } = await supabase.from('trip_legs').select('*').eq('trip_id', tripId!).order('leg_number');
-    if (legData) setLegs(legData as unknown as TripLeg[]);
+  async function loadTrip() {
+    const { data } = await supabase.from('trips').select('*').eq('id', Number(tripId)).single();
+    if (data) {
+      const t = data as unknown as Trip;
+      setTrip(t);
+      if (t.itinerary_details && Array.isArray((t.itinerary_details as any).legs)) {
+        setLegs((t.itinerary_details as any).legs);
+        setFuelOnBoard((t.itinerary_details as any).fuel_on_board || 0);
+      }
+    }
     setLoading(false);
   }
 
-  async function updateLeg(legId: string, field: string, value: any) {
-    setLegs((prev) => prev.map((l) => (l.id === legId ? { ...l, [field]: value } : l)));
+  function updateLeg(index: number, field: string, value: any) {
+    setLegs((prev) => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
   }
 
-  async function saveLeg(leg: TripLeg) {
-    const { id, created_at, updated_at, ...rest } = leg;
-    await supabase.from('trip_legs').update(rest as any).eq('id', id);
+  function addLeg() {
+    const last = legs[legs.length - 1];
+    setLegs((prev) => [...prev, { ...emptyLeg(), departure_icao: last?.destination_icao || '' }]);
   }
 
-  async function addLeg() {
-    const nextNum = legs.length + 1;
-    const lastLeg = legs[legs.length - 1];
-    const { data } = await supabase
-      .from('trip_legs')
-      .insert({ trip_id: tripId!, leg_number: nextNum, departure_icao: lastLeg?.destination_icao || '', destination_icao: '', fuel_price_tiers: JSON.stringify([{ price_per_gallon: 0, min_quantity_gallons: 0 }]), reserve: aircraft?.preferred_reserve || 0, taxi_fuel_burn: aircraft?.taxi_fuel_burn || 0, max_takeoff_weight: aircraft?.max_takeoff_weight || 0, max_landing_weight: aircraft?.max_landing_weight || 0 } as any)
-      .select().single();
-    if (data) setLegs((prev) => [...prev, data as unknown as TripLeg]);
-  }
-
-  async function toggleLeg(legId: string, active: boolean) {
-    await supabase.from('trip_legs').update({ is_active: active }).eq('id', legId);
-    setLegs((prev) => prev.map((l) => (l.id === legId ? { ...l, is_active: active } : l)));
-  }
-
-  function addFuelTier(legId: string) {
-    setLegs((prev) => prev.map((l) => l.id !== legId ? l : { ...l, fuel_price_tiers: [...l.fuel_price_tiers, { price_per_gallon: 0, min_quantity_gallons: 0 }] }));
-  }
-
-  function removeFuelTier(legId: string) {
-    setLegs((prev) => prev.map((l) => (l.id !== legId || l.fuel_price_tiers.length <= 1) ? l : { ...l, fuel_price_tiers: l.fuel_price_tiers.slice(0, -1) }));
-  }
-
-  function updateFuelTier(legId: string, index: number, field: keyof FuelPriceTier, value: number) {
-    setLegs((prev) => prev.map((l) => {
-      if (l.id !== legId) return l;
+  function updateFuelTier(legIndex: number, tierIndex: number, field: string, value: number) {
+    setLegs((prev) => prev.map((l, i) => {
+      if (i !== legIndex) return l;
       const tiers = [...l.fuel_price_tiers];
-      tiers[index] = { ...tiers[index], [field]: value };
+      tiers[tierIndex] = { ...tiers[tierIndex], [field]: value };
       return { ...l, fuel_price_tiers: tiers };
     }));
   }
 
+  function addFuelTier(legIndex: number) {
+    setLegs((prev) => prev.map((l, i) => i !== legIndex ? l : { ...l, fuel_price_tiers: [...l.fuel_price_tiers, { price_per_gallon: 0, min_quantity_gallons: 0 }] }));
+  }
+
   async function handleNext() {
-    for (const leg of legs) { await saveLeg(leg); }
+    // Save legs into the trip's itinerary_details
+    await supabase.from('trips').update({
+      itinerary_details: { legs, fuel_on_board: fuelOnBoard } as any,
+    } as any).eq('id', Number(tripId));
     navigate(`/trips/${tripId}/fuel`);
   }
 
@@ -80,145 +101,105 @@ export default function TripLegsPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-1">Plan a Trip</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Trip Details for flight on{' '}
-        <span className="font-medium bg-secondary px-2 py-1 rounded text-foreground">
-          {aircraft?.nickname || aircraft?.tail_number}
-        </span>
-      </p>
+      <h1 className="text-2xl font-bold text-foreground mb-1">Trip Legs</h1>
+      <p className="text-sm text-muted-foreground mb-6">Trip {trip?.itinerary_num}</p>
 
-      {legs.map((leg) => (
-        <div
-          key={leg.id}
-          className={`mb-8 p-5 bg-card border rounded-xl ${
-            leg.is_active ? 'border-border' : 'border-destructive/30 opacity-60'
-          }`}
-        >
-          <h3 className="font-semibold text-foreground mb-4">Leg {leg.leg_number}:</h3>
+      <div className="mb-6">
+        <label className="text-sm font-medium text-foreground/80 block mb-1">Current Fuel on Board (lbs.)</label>
+        <input type="number" value={fuelOnBoard || ''} onChange={(e) => setFuelOnBoard(Number(e.target.value))} className={inputCls} />
+      </div>
 
+      {legs.map((leg, idx) => (
+        <div key={idx} className="mb-8 p-5 bg-card border border-border rounded-xl">
+          <h3 className="font-semibold text-foreground mb-4">Leg {idx + 1}</h3>
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground block mb-1">Departure</label>
-                <input value={leg.departure_icao} onChange={(e) => updateLeg(leg.id, 'departure_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
+                <input value={leg.departure_icao} onChange={(e) => updateLeg(idx, 'departure_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
               </div>
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground block mb-1">Destination</label>
-                <input value={leg.destination_icao} onChange={(e) => updateLeg(leg.id, 'destination_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
+                <input value={leg.destination_icao} onChange={(e) => updateLeg(idx, 'destination_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
               </div>
             </div>
 
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs text-muted-foreground block mb-1">Fee Cost (USD)</label>
-                <input type="number" value={leg.departure_fee_cost || ''} onChange={(e) => updateLeg(leg.id, 'departure_fee_cost', Number(e.target.value))} className={inputCls} placeholder="$ 0.00" />
+                <input type="number" value={leg.departure_fee_cost || ''} onChange={(e) => updateLeg(idx, 'departure_fee_cost', Number(e.target.value))} className={inputCls} />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground block mb-1">Waived With</label>
-                <input type="number" value={leg.departure_fee_waived_with || ''} onChange={(e) => updateLeg(leg.id, 'departure_fee_waived_with', Number(e.target.value))} className={inputCls} placeholder="0" />
+                <label className="text-xs text-muted-foreground block mb-1">Waived With (gal)</label>
+                <input type="number" value={leg.departure_fee_waived_with || ''} onChange={(e) => updateLeg(idx, 'departure_fee_waived_with', Number(e.target.value))} className={inputCls} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Crew Weights (lbs.) comma-separated</label>
-              <input value={leg.crew_weights?.join(', ') || ''} onChange={(e) => updateLeg(leg.id, 'crew_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} placeholder="180, 230" />
+              <label className="text-xs text-muted-foreground block mb-1">Crew Weights (comma-separated)</label>
+              <input value={leg.crew_weights?.join(', ') || ''} onChange={(e) => updateLeg(idx, 'crew_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} placeholder="180, 230" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Passenger Weights (lbs.) comma-separated</label>
-              <input value={leg.passenger_weights?.join(', ') || ''} onChange={(e) => updateLeg(leg.id, 'passenger_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} placeholder="x,x,x" />
+              <label className="text-xs text-muted-foreground block mb-1">Passenger Weights (comma-separated)</label>
+              <input value={leg.passenger_weights?.join(', ') || ''} onChange={(e) => updateLeg(idx, 'passenger_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Baggage</label>
-              <input type="number" value={leg.baggage_weight || ''} onChange={(e) => updateLeg(leg.id, 'baggage_weight', Number(e.target.value))} className={inputCls} />
+              <label className="text-xs text-muted-foreground block mb-1">Baggage (lbs.)</label>
+              <input type="number" value={leg.baggage_weight || ''} onChange={(e) => updateLeg(idx, 'baggage_weight', Number(e.target.value))} className={inputCls} />
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Departure Fuel Prices</label>
-              {leg.fuel_price_tiers.map((tier, i) => (
-                <div key={i} className="flex gap-3 mb-2">
+              <label className="text-xs text-muted-foreground block mb-1">Fuel Prices</label>
+              {leg.fuel_price_tiers.map((tier, ti) => (
+                <div key={ti} className="flex gap-3 mb-2">
                   <div className="flex-1">
-                    <label className="text-xs text-muted-foreground">Price Per Gallon ($USD)</label>
-                    <input type="number" step="0.01" value={tier.price_per_gallon || ''} onChange={(e) => updateFuelTier(leg.id, i, 'price_per_gallon', Number(e.target.value))} className={inputCls} />
+                    <label className="text-xs text-muted-foreground">$/gal</label>
+                    <input type="number" step="0.01" value={tier.price_per_gallon || ''} onChange={(e) => updateFuelTier(idx, ti, 'price_per_gallon', Number(e.target.value))} className={inputCls} />
                   </div>
                   <div className="flex-1">
-                    <label className="text-xs text-muted-foreground">Min Quantity per Rate (gal)</label>
-                    <input type="number" value={tier.min_quantity_gallons || ''} onChange={(e) => updateFuelTier(leg.id, i, 'min_quantity_gallons', Number(e.target.value))} className={inputCls} />
+                    <label className="text-xs text-muted-foreground">Min qty (gal)</label>
+                    <input type="number" value={tier.min_quantity_gallons || ''} onChange={(e) => updateFuelTier(idx, ti, 'min_quantity_gallons', Number(e.target.value))} className={inputCls} />
                   </div>
                 </div>
               ))}
-              <div className="flex gap-2 mt-1">
-                <button type="button" onClick={() => addFuelTier(leg.id)} className="text-xs px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                  Add fuel price option
-                </button>
-                <button type="button" onClick={() => removeFuelTier(leg.id)} className="text-xs px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                  Remove fuel price option
-                </button>
-              </div>
+              <button type="button" onClick={() => addFuelTier(idx)} className="text-xs px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+                Add price tier
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Reserve</label>
-                <input type="number" value={leg.reserve || ''} onChange={(e) => updateLeg(leg.id, 'reserve', Number(e.target.value))} className={inputCls} />
+                <label className="text-xs text-muted-foreground block mb-1">Reserve (lbs.)</label>
+                <input type="number" value={leg.reserve || ''} onChange={(e) => updateLeg(idx, 'reserve', Number(e.target.value))} className={inputCls} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Taxi Fuel Burn (lbs.)</label>
-                <input type="number" value={leg.taxi_fuel_burn || ''} onChange={(e) => updateLeg(leg.id, 'taxi_fuel_burn', Number(e.target.value))} className={inputCls} />
+                <input type="number" value={leg.taxi_fuel_burn || ''} onChange={(e) => updateLeg(idx, 'taxi_fuel_burn', Number(e.target.value))} className={inputCls} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Max Takeoff Weight (lbs.)</label>
-                <input type="number" value={leg.max_takeoff_weight || ''} onChange={(e) => updateLeg(leg.id, 'max_takeoff_weight', Number(e.target.value))} className={inputCls} />
+                <input type="number" value={leg.max_takeoff_weight || ''} onChange={(e) => updateLeg(idx, 'max_takeoff_weight', Number(e.target.value))} className={inputCls} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Max Landing Weight (lbs.)</label>
-                <input type="number" value={leg.max_landing_weight || ''} onChange={(e) => updateLeg(leg.id, 'max_landing_weight', Number(e.target.value))} className={inputCls} />
+                <input type="number" value={leg.max_landing_weight || ''} onChange={(e) => updateLeg(idx, 'max_landing_weight', Number(e.target.value))} className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Fuel Burn (lbs.)</label>
+                <input type="number" value={leg.fuel_burn || ''} onChange={(e) => updateLeg(idx, 'fuel_burn', Number(e.target.value))} className={inputCls} />
               </div>
             </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Be Sure to Adjust Max Takeoff & Max Landing weights to ensure sufficient Runway.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">
-            <button
-              onClick={() => { saveLeg(leg); }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg border ${
-                leg.is_active
-                  ? 'border-skyiq-success/50 text-skyiq-success bg-skyiq-success/10'
-                  : 'border-border text-muted-foreground'
-              }`}
-            >
-              <Check className="w-4 h-4 inline mr-1" />
-              Yes
-            </button>
-            <button
-              onClick={() => toggleLeg(leg.id, !leg.is_active)}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors"
-            >
-              <X className="w-4 h-4 inline mr-1" />
-              Leg Not Needed
-            </button>
           </div>
         </div>
       ))}
 
-      <button
-        onClick={addLeg}
-        className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground mb-6 transition-colors"
-      >
+      <button onClick={addLeg} className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground mb-6 transition-colors">
         <Plus className="w-4 h-4" /> Add Leg
       </button>
 
-      <div className="flex gap-3">
-        <button
-          onClick={handleNext}
-          className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all"
-        >
-          Next — Starting fuel and fuel burns
-        </button>
-      </div>
+      <button onClick={handleNext} className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all">
+        Next — Confirm & Optimize
+      </button>
     </div>
   );
 }
