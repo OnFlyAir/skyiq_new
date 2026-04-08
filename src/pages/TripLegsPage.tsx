@@ -92,32 +92,63 @@ export default function TripLegsPage() {
     setLoading(false);
   }
 
-  async function handleFileSelect(file: File) {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`${API_URL}/api/parse-itinerary`, { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
-      const result = await res.json();
-      if (result.error) throw new Error(result.error);
+  // Attach onChange via useEffect to avoid detachment on re-render
+  useEffect(() => {
+    const input = fileInputRef.current;
+    if (!input) return;
 
-      const parsed = result.data;
-      const mappedLegs = mapApiLegs(parsed.legs || []);
-      setLegs(mappedLegs.length > 0 ? mappedLegs : [emptyLeg()]);
-      setFuelOnBoard(parsed.starting_fuel || 0);
-
-      if (parsed.itinerary_num && trip) {
-        setTrip({ ...trip, itinerary_num: parsed.itinerary_num });
+    const handler = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) {
+        console.log('No file selected');
+        return;
       }
+      console.log(`File selected: ${file.name}`);
+      setUploading(true);
 
-      toast.success(`Parsed ${mappedLegs.length} leg${mappedLegs.length !== 1 ? 's' : ''} from trip sheet`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to parse trip sheet');
-    } finally {
-      setUploading(false);
-    }
-  }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        console.log(`POSTing to ${API_URL}/api/parse-itinerary`);
+        const res = await fetch(`${API_URL}/api/parse-itinerary`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Upload failed (${res.status}): ${errorText}`);
+        }
+
+        const result = await res.json();
+        console.log('API Response:', result);
+
+        if (result.error) throw new Error(result.error);
+
+        const parsed = result.data;
+        const mappedLegs = mapApiLegs(parsed.legs || []);
+        setLegs(mappedLegs.length > 0 ? mappedLegs : [emptyLeg()]);
+        setFuelOnBoard(parsed.starting_fuel || 0);
+
+        if (parsed.itinerary_num) {
+          setTrip((prev) => prev ? { ...prev, itinerary_num: parsed.itinerary_num } : prev);
+        }
+
+        toast.success(`Parsed ${mappedLegs.length} leg${mappedLegs.length !== 1 ? 's' : ''} from trip sheet`);
+      } catch (err: any) {
+        console.error('Upload/parse error:', err);
+        toast.error(err.message || 'Failed to parse trip sheet');
+      } finally {
+        setUploading(false);
+        target.value = '';
+      }
+    };
+
+    input.addEventListener('change', handler);
+    return () => input.removeEventListener('change', handler);
+  }, []);
 
   function updateLeg(index: number, field: string, value: any) {
     setLegs((prev) => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
