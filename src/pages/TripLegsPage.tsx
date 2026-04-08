@@ -92,16 +92,12 @@ export default function TripLegsPage() {
     setLoading(false);
   }
 
-  async function handleUpload(endpoint: string) {
-    if (!selectedFile) {
-      toast.error('Please select a file first');
-      return;
-    }
+  async function handleFileSelect(file: File) {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', body: formData });
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/api/parse-itinerary`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Upload failed (${res.status})`);
       const result = await res.json();
       if (result.error) throw new Error(result.error);
