@@ -76,7 +76,6 @@ export default function TripLegsPage() {
   const [fuelOnBoard, setFuelOnBoard] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => { loadTrip(); }, [tripId]);
 
@@ -93,16 +92,12 @@ export default function TripLegsPage() {
     setLoading(false);
   }
 
-  async function handleUpload(endpoint: string) {
-    if (!selectedFile) {
-      toast.error('Please select a file first');
-      return;
-    }
+  async function handleFileSelect(file: File) {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', body: formData });
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/api/parse-itinerary`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Upload failed (${res.status})`);
       const result = await res.json();
       if (result.error) throw new Error(result.error);
@@ -170,32 +165,25 @@ export default function TripLegsPage() {
 
       {/* Upload OFP Section */}
       <div className="mb-6 p-5 bg-card border border-dashed border-border rounded-xl">
-        <h3 className="font-semibold text-foreground mb-3">Upload Trip Sheet</h3>
-        <p className="text-xs text-muted-foreground mb-3">Upload a PDF trip sheet / OFP to auto-fill leg data.</p>
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf"
           className="hidden"
-          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileSelect(file);
+            e.target.value = '';
+          }}
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            {selectedFile ? selectedFile.name : 'Choose PDF'}
-          </button>
-          <button
-            onClick={() => handleUpload('/api/parse-itinerary')}
-            disabled={!selectedFile || uploading}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            Parse
-          </button>
-        </div>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm w-full justify-center"
+        >
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          {uploading ? 'Parsing trip sheet…' : 'Upload & Parse Trip Sheet (PDF)'}
+        </button>
       </div>
 
       <div className="mb-6">
