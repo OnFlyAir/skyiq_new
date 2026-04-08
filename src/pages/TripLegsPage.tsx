@@ -201,11 +201,6 @@ export default function TripLegsPage() {
           type="file"
           accept=".pdf"
           className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFileSelect(file);
-            e.target.value = '';
-          }}
         />
         <button
           onClick={() => fileInputRef.current?.click()}
