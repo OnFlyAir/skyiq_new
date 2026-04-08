@@ -18,11 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user && profile) {
-      if (profile.operator_id) {
-        navigate('/dashboard', { replace: true });
-      } else {
-        navigate('/onboarding', { replace: true });
-      }
+      navigate('/dashboard', { replace: true });
     }
   }, [authLoading, user, profile, navigate]);
 
