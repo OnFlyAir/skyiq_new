@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { API_URL } from '@/lib/config';
 import type { Trip } from '@/types/database';
 
 export default function TripFuelPage() {
@@ -23,8 +24,7 @@ export default function TripFuelPage() {
     setOptimizing(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await fetch(`${apiUrl}/optimize`, {
+      const response = await fetch(`${API_URL}/optimize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(trip.itinerary_details),
