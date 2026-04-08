@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Walkthrough />
+      
 
       <h1 className="text-xl font-semibold text-center text-foreground mb-8">
         {profile?.company || 'SkyIQ'}
