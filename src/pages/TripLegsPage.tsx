@@ -76,7 +76,6 @@ export default function TripLegsPage() {
   const [fuelOnBoard, setFuelOnBoard] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => { loadTrip(); }, [tripId]);
 
