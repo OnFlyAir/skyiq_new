@@ -195,14 +195,6 @@ export default function TripLegsPage() {
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             Parse
           </button>
-          <button
-            onClick={() => handleUpload('/api/parse-itinerary-ai')}
-            disabled={!selectedFile || uploading}
-            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Try AI Parser
-          </button>
         </div>
       </div>
 
