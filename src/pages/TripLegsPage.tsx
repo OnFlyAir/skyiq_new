@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Upload, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_URL } from '@/lib/config';
 import type { Trip } from '@/types/database';
