@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plane, Settings, ChevronRight, TrendingUp } from 'lucide-react';
-import Walkthrough from '@/components/Walkthrough';
+
 import type { Trip } from '@/types/database';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Walkthrough />
+      
 
       <h1 className="text-xl font-semibold text-center text-foreground mb-8">
         {profile?.company || 'SkyIQ'}
