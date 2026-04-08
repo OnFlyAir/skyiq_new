@@ -4,40 +4,27 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plane, Settings, ChevronRight, TrendingUp } from 'lucide-react';
 import Walkthrough from '@/components/Walkthrough';
-import type { Trip, Operator } from '@/types/database';
+import type { Trip } from '@/types/database';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function DashboardPage() {
-  const { profile } = useAuthContext();
-  const [operator, setOperator] = useState<Operator | null>(null);
-  const [recentTrips, setRecentTrips] = useState<(Trip & { aircraft: { tail_number: string; nickname: string | null } })[]>([]);
+  const { user, profile } = useAuthContext();
+  const [recentTrips, setRecentTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.operator_id) {
-      loadDashboardData();
-    } else {
-      setLoading(false);
-    }
-  }, [profile]);
+    if (user) { loadDashboardData(); } else { setLoading(false); }
+  }, [user]);
 
   async function loadDashboardData() {
-    const [operatorRes, tripsRes] = await Promise.all([
-      supabase
-        .from('operators')
-        .select('*')
-        .eq('id', profile!.operator_id!)
-        .maybeSingle(),
-      supabase
-        .from('trips')
-        .select('*, aircraft(tail_number, nickname)')
-        .eq('operator_id', profile!.operator_id!)
-        .order('created_at', { ascending: false })
-        .limit(10),
-    ]);
+    const { data } = await supabase
+      .from('trips')
+      .select('*')
+      .eq('user_company', user!.id)
+      .order('created_on', { ascending: false })
+      .limit(10);
 
-    if (operatorRes.data) setOperator(operatorRes.data as any);
-    if (tripsRes.data) setRecentTrips(tripsRes.data as any);
+    if (data) setRecentTrips(data as unknown as Trip[]);
     setLoading(false);
   }
 
@@ -53,66 +40,41 @@ export default function DashboardPage() {
     <div className="max-w-2xl mx-auto">
       <Walkthrough />
 
-      {/* Operator name */}
       <h1 className="text-xl font-semibold text-center text-foreground mb-8">
-        {operator?.name || 'SkyIQ'}
+        {profile?.company || 'SkyIQ'}
       </h1>
 
-      {/* Logo area */}
       <div className="flex justify-center mb-12">
         <img src={skyiqLogo} alt="SkyIQ - Fly Smarter" className="w-40 h-40 object-contain drop-shadow-md" />
       </div>
 
-      {/* Action cards */}
       <div className="flex gap-4 justify-center mb-12">
-        <Link
-          to="/trips/new"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
-        >
+        <Link to="/trips/new" className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group">
           <Plane className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Plan a trip</h3>
           <p className="text-xs text-muted-foreground mt-1">Fool-proof fuel planning</p>
         </Link>
-
-        <Link
-          to="/fleet"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
-        >
+        <Link to="/fleet" className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group">
           <Settings className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Manage Fleet</h3>
           <p className="text-xs text-muted-foreground mt-1">View/Edit aircraft, add tail#'s</p>
         </Link>
-
-        <Link
-          to="/savings"
-          className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group"
-        >
+        <Link to="/savings" className="flex-1 max-w-[200px] p-5 bg-card border border-border rounded-xl hover:border-primary transition-all text-left group">
           <TrendingUp className="w-5 h-5 text-primary mb-2" />
           <h3 className="font-semibold text-foreground">Savings</h3>
           <p className="text-xs text-muted-foreground mt-1">Track fuel cost savings</p>
         </Link>
       </div>
 
-      {/* Recent trips */}
       {recentTrips.length > 0 ? (
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Previous Trips
-          </h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Previous Trips</h2>
           <div className="space-y-2">
             {recentTrips.map((trip) => (
-              <Link
-                key={trip.id}
-                to={`/trips/${trip.id}/summary`}
-                className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:border-primary transition-colors"
-              >
+              <Link key={trip.id} to={`/trips/${trip.id}/summary`} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:border-primary transition-colors">
                 <div>
-                  <p className="font-medium text-foreground">
-                    Trip {trip.trip_number} - {trip.aircraft?.nickname || trip.aircraft?.tail_number}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(trip.created_at).toLocaleDateString()}
-                  </p>
+                  <p className="font-medium text-foreground">Trip {trip.itinerary_num || trip.id}</p>
+                  <p className="text-sm text-muted-foreground">{new Date(trip.created_on).toLocaleDateString()}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Link>
