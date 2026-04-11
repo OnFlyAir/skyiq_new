@@ -132,8 +132,9 @@ export default function NewTripPage() {
                 toast({ title: "Error", description: "Failed to create trip", variant: "destructive" });
                 return;
               }
-              // Navigate to legs page with the file in state so it auto-parses
-              navigate(`/trips/${data.id}/legs`, { state: { autoParseFile: file } });
+              // Store file reference for the legs page to pick up
+              pendingParseFile.current = file;
+              navigate(`/trips/${data.id}/legs`);
             }}
           />
           <Button
