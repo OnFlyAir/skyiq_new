@@ -82,22 +82,53 @@ interface ParsedFee {
 
 // --- AI call ---
 
-const PROMPT = `I need you to output a JSON object that contains data from the attached PDF document. Please extract structured data from the string related to trip details, ensuring accuracy and completeness. Follow these specific guidelines for each data point:
-Crew Itinerary Id
-Aircraft Tail Number
-Extract and provide the Tail Number. Tail number is a 2-6 digit code and does not include a manufacturer name.
-Trip Segments (Per Leg of the Trip)
-Departure & Destination: Extract airport codes. Do not provide times for departure or arrival.
-Fuel Cost: Provide a list of all the cost per gallon at each airport. In each fuel cost, include the price of the fuel and the minimum amount of fuel needed to use that price. If only one fuel price is listed, the minimum amount of fuel should be set to 1.
-Passengers & Weight
-If a passenger weight is specified, use that value.
-If not specified, assume -1 lbs per passenger.
-Provide a comma-delimited list of all passenger weights.
-Fee Waivers
-Identify all fees that include "waived with" or "ww" or "ww/". List the price of the fee, the number of gallons needed to waive it, and the port associated with it. If no port is listed, set port to the destination.
-Return only fees that are waivable. If no fees are waivable, return an empty list.
+const PROMPT = `You are an aviation trip sheet parser. Extract structured data from the following trip sheet / crew itinerary document. Be thorough and accurate.
 
-Output Format:
+## WHAT TO EXTRACT
+
+### 1. Crew Itinerary ID
+- Look for labels like "Crew Itinerary", "Trip ID", "Trip #", "Itinerary #", "CI#", or similar.
+- This is usually an alphanumeric code (e.g., "CI-1234", "T2456", "ABC123").
+- Do NOT confuse this with a flight number or leg number.
+
+### 2. Aircraft Tail Number
+- Look for "Tail #", "Tail Number", "Aircraft", "A/C", "Registration", or similar.
+- This is a 2-6 character alphanumeric code like "N7814", "N123AB".
+- Do NOT include manufacturer names (e.g., NOT "Challenger 300" — just the tail number).
+
+### 3. Trip Segments (one per leg of the trip)
+For EACH leg, extract:
+
+**Departure & Destination:**
+- ICAO airport codes (4 characters, e.g., KJFK, KLAX, KTEB).
+- Sometimes shown as IATA (3 chars like JFK) — convert to ICAO if possible.
+
+**Fuel Prices at Departure Airport:**
+- Look in "Fuel Quotes", "Fuel Prices", "FBO" sections, or any table/list showing $/gallon.
+- Often formatted as "$X.XX/gal" or just a decimal price.
+- There may be TIERED pricing: a base price and a discounted price if you buy more than X gallons (e.g., "$5.20/gal, $4.80 over 200 gal").
+- For each price tier, record: { "price": dollars_per_gallon, "min_fuel": minimum_gallons_for_that_price }.
+- If only one price with no minimum stated, set min_fuel to 1.
+- IMPORTANT: Fuel prices are PER GALLON, typically between $3.00 and $12.00. Do not confuse total fuel costs with per-gallon prices.
+
+**Passenger Weights:**
+- Look for passenger manifest, PAX weights, or passenger list sections.
+- If individual weights are given, use them.
+- If only a count is given without weights, use -1 for each passenger.
+- If no passengers, return an empty list [].
+
+**Fee Waivers:**
+- Look for fees marked with "waived with", "ww", "ww/", "waived w/", or "waived at X gallons".
+- These are FBO fees (facility fees, ramp fees, handling fees) that get waived if you purchase enough fuel.
+- For each waivable fee, extract:
+  - fee_name: the name/description of the fee
+  - price: the dollar amount of the fee
+  - gallons_needed_to_waive: how many gallons you must buy to waive it
+  - airport: which airport this fee applies to (ICAO code). If not specified, use the DEPARTURE airport for that leg.
+- Only include fees that ARE waivable. Skip non-waivable fees.
+- Common fee names: "Facility Fee", "Ramp Fee", "Handling Fee", "Infrastructure Fee", "Landing Fee".
+
+## OUTPUT FORMAT (JSON only, no markdown, no comments):
 {
     "crew_itinerary_id": string,
     "aircraft_tail_number": string,
@@ -123,29 +154,39 @@ Output Format:
         ]
     }]
 }
-Do not include any summaries or comments in the output. Do not include the word "json". All comments that start with '//' must be removed`;
+
+IMPORTANT RULES:
+- Return ONLY valid JSON. No summaries, no comments, no markdown fences.
+- All airport codes must be ICAO format (4 characters starting with K for US airports).
+- Fuel prices are per gallon (typically $3-$12 range).
+- If you cannot find a value, use reasonable defaults: empty string for text, 0 for numbers, empty array for lists.
+- Do not include "//" comments in the JSON output.`;
 
 async function parseWithAI(text: string): Promise<string | null> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
-  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+  const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content: `${PROMPT}\nthe string is ###${text}###` }],
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: PROMPT },
+        { role: "user", content: `Here is the trip sheet content:\n\n${text}` },
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     if (response.status === 429) throw new Error("Rate limited — please try again in a moment");
-    if (response.status === 402) throw new Error("AI credits exhausted — please add funds in Settings > Workspace > Usage");
-    throw new Error(`AI API error (${response.status}): ${errorText}`);
+    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
@@ -153,7 +194,6 @@ async function parseWithAI(text: string): Promise<string | null> {
 }
 
 function extractJson(raw: string): string {
-  // Strip markdown code fences if present
   const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) return fenceMatch[1].trim();
   return raw.trim();
@@ -163,14 +203,14 @@ function convertToTrip(jsonStr: string): ParsedTrip {
   const parsed: ParsedData = JSON.parse(extractJson(jsonStr));
 
   const legs: ParsedLeg[] = parsed.trip_segments.map((segment) => {
-    const fees: ParsedFee[] = segment.fee_waivers
+    const fees: ParsedFee[] = (segment.fee_waivers || [])
       .filter((w) => w.price > 0 && w.gallons_needed_to_waive > 0)
       .map((w) => ({
         name: w.fee_name,
         amount: w.price,
         is_waivable: true,
         waived_at: w.gallons_needed_to_waive,
-        airport: w.airport,
+        airport: w.airport || segment.departure,
       }));
 
     return {
@@ -178,11 +218,11 @@ function convertToTrip(jsonStr: string): ParsedTrip {
       departure: segment.departure,
       destination: segment.destination,
       arrival_fuel_price: "",
-      departure_fuel_price: segment.fuel_prices,
+      departure_fuel_price: segment.fuel_prices || [],
       fees,
       reserve: 0,
       fuel_burn: 0,
-      passengers: segment.passengers_weights,
+      passengers: segment.passengers_weights || [],
       baggage: 0,
       distance: 0,
       crew_weight: [0],

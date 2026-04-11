@@ -6,15 +6,24 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { pendingParseFile } from "@/lib/pending-parse-file";
 import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
+import type { Aircraft } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -373,44 +382,69 @@ function LegEditor({
   );
 }
 
+// --- Helper to extract defaults from an Aircraft record ---
+function getAircraftDefaults(ac: Aircraft | null) {
+  return {
+    reserve: ac?.preferred_reserve ?? 0,
+    taxiFuelBurn: ac?.taxi_fuel_burn ?? 0,
+    maxTakeoff: ac?.max_takeoff_weight ?? 0,
+    maxLanding: ac?.max_landing_weight ?? 0,
+    maxRamp: ac?.max_ramp_weight ?? 0,
+    defaultPaxWeight: ac?.default_pax_weight ?? 180,
+    defaultBaggageWithPax: ac?.default_baggage_with_pax ?? 0,
+    defaultBaggageNoPax: ac?.default_baggage_no_pax ?? 0,
+    defaultPicWeight: ac?.default_pic_weight ?? 180,
+    defaultSicWeight: ac?.default_sic_weight ?? 180,
+    defaultCabinWeight: ac?.default_cabin_weight ?? 0,
+    maxFuelCapacity: ac?.max_fuel_capacity ?? 0,
+    basicEmptyWeight: ac?.basic_empty_weight ?? 0,
+    penaltyRate: ac?.penalty_rate ?? 0,
+    cruiseFuelBurn: ac?.cruise_fuel_burn ?? 0,
+  };
+}
+
 // --- Main Page ---
 export default function TripLegsPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuthContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoParseTriggered = useRef(false);
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
-  const [aircraft, setAircraft] = useState<Record<string, unknown> | null>(null);
+  const [aircraft, setAircraft] = useState<Aircraft | null>(null);
+  const [aircraftList, setAircraftList] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addLegOpen, setAddLegOpen] = useState(false);
 
-  // Load trip + aircraft data
+  // Load trip + aircraft data + fleet list
   useEffect(() => {
     async function load() {
-      if (!tripId) return;
-      const { data: tripData, error } = await supabase
-        .from("trips")
-        .select("*")
-        .eq("id", parseInt(tripId))
-        .single();
+      if (!tripId || !user) return;
 
-      if (error || !tripData) {
+      // Load fleet list and trip in parallel
+      const [tripRes, fleetRes] = await Promise.all([
+        supabase.from("trips").select("*").eq("id", parseInt(tripId)).single(),
+        supabase.from("aircrafts").select("*").eq("user_company", user.id).eq("is_enabled", true).order("tail_number"),
+      ]);
+
+      if (tripRes.error || !tripRes.data) {
         toast({ title: "Error", description: "Could not load trip", variant: "destructive" });
         navigate("/dashboard");
         return;
       }
 
-      const itinerary = tripData.itinerary_details as unknown as TripFormData | null;
+      setAircraftList((fleetRes.data ?? []) as unknown as Aircraft[]);
+
+      const itinerary = tripRes.data.itinerary_details as unknown as TripFormData | null;
       if (itinerary && itinerary.legs && itinerary.legs.length > 0) {
         setTripForm(itinerary);
       } else {
-        // Fresh trip — create with one empty leg
         setTripForm({
-          itineraryNum: tripData.itinerary_num || "",
+          itineraryNum: tripRes.data.itinerary_num || "",
           startingFuel: 0,
           aircraftId: "",
           basicEmptyWeight: 0,
@@ -423,36 +457,46 @@ export default function TripLegsPage() {
 
       // Load aircraft if we have one
       if (itinerary?.aircraftId) {
-        const { data: acData } = await supabase
-          .from("aircrafts")
-          .select("*")
-          .eq("tail_number", itinerary.aircraftId)
-          .eq("is_enabled", true)
-          .single();
-        if (acData) setAircraft(acData);
+        const match = (fleetRes.data ?? []).find(
+          (ac: any) => ac.tail_number === itinerary.aircraftId
+        );
+        if (match) setAircraft(match as unknown as Aircraft);
       }
 
       setLoading(false);
     }
     load();
-  }, [tripId]);
+  }, [tripId, user]);
 
-  const aircraftDefaults = {
-    reserve: (aircraft as Record<string, number>)?.preferred_reserve ?? 0,
-    taxiFuelBurn: (aircraft as Record<string, number>)?.taxi_fuel_burn ?? 0,
-    maxTakeoff: (aircraft as Record<string, number>)?.max_takeoff_weight ?? 0,
-    maxLanding: (aircraft as Record<string, number>)?.max_landing_weight ?? 0,
-    maxRamp: (aircraft as Record<string, number>)?.max_ramp_weight ?? 0,
-    defaultPaxWeight: (aircraft as Record<string, number>)?.default_pax_weight ?? 180,
-    defaultBaggageWithPax: (aircraft as Record<string, number>)?.default_baggage_with_pax ?? 0,
-    defaultBaggageNoPax: (aircraft as Record<string, number>)?.default_baggage_no_pax ?? 0,
-    defaultPicWeight: (aircraft as Record<string, number>)?.default_pic_weight ?? 180,
-    defaultSicWeight: (aircraft as Record<string, number>)?.default_sic_weight ?? 180,
-    defaultCabinWeight: (aircraft as Record<string, number>)?.default_cabin_weight ?? 0,
-    maxFuelCapacity: (aircraft as Record<string, number>)?.max_fuel_capacity ?? 0,
-    basicEmptyWeight: (aircraft as Record<string, number>)?.basic_empty_weight ?? 0,
-    penaltyRate: (aircraft as Record<string, number>)?.penalty_rate ?? 0,
-    cruiseFuelBurn: (aircraft as Record<string, number>)?.cruise_fuel_burn ?? 0,
+  const aircraftDefaults = getAircraftDefaults(aircraft);
+
+  // --- Switch aircraft handler ---
+  const handleAircraftChange = async (tailNumber: string) => {
+    if (!tripForm) return;
+    const match = aircraftList.find((ac) => ac.tail_number === tailNumber);
+    if (!match) return;
+    setAircraft(match);
+    const defs = getAircraftDefaults(match);
+
+    // Update all legs with new aircraft defaults
+    const updatedLegs = tripForm.legs.map((leg) => ({
+      ...leg,
+      baggage: leg.passengerWeights !== "0" && leg.passengerWeights !== ""
+        ? defs.defaultBaggageWithPax
+        : defs.defaultBaggageNoPax,
+      reserve: defs.reserve,
+      taxiFuelBurn: defs.taxiFuelBurn,
+      maxTakeoffWeight: defs.maxTakeoff,
+      maxLandingWeight: defs.maxLanding,
+      maxRampWeight: defs.maxRamp,
+      crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+    }));
+
+    setTripForm({
+      ...tripForm,
+      aircraftId: tailNumber,
+      legs: updatedLegs,
+    });
   };
 
   // Auto-parse PDF if navigated from NewTripPage with a pending file
@@ -518,31 +562,49 @@ export default function TripLegsPage() {
         maxFuelCapacity: aircraftDefaults.maxFuelCapacity,
       });
 
+      // Use itinerary_num from parsed sheet as trip ID
+      const parsedItineraryNum = parsed.itinerary_num || tripForm.itineraryNum;
+
       setTripForm({
         ...tripForm,
-        itineraryNum: parsed.itinerary_num || tripForm.itineraryNum,
+        itineraryNum: parsedItineraryNum,
         aircraftId: parsed.aircraft || tripForm.aircraftId,
         legs: newLegs,
       });
 
+      // Match aircraft from parsed tail number
       if (parsed.aircraft) {
-        const { data: acData } = await supabase
-          .from("aircrafts")
-          .select("*")
-          .eq("tail_number", parsed.aircraft)
-          .eq("is_enabled", true)
-          .single();
-        if (acData) setAircraft(acData);
+        const match = aircraftList.find(
+          (ac) => ac.tail_number.toUpperCase() === parsed.aircraft.toUpperCase()
+        );
+        if (match) {
+          setAircraft(match);
+          // Re-apply defaults from matched aircraft
+          const defs = getAircraftDefaults(match);
+          const refilledLegs = newLegs.map((leg) => ({
+            ...leg,
+            reserve: defs.reserve,
+            taxiFuelBurn: defs.taxiFuelBurn,
+            maxTakeoffWeight: defs.maxTakeoff,
+            maxLandingWeight: defs.maxLanding,
+            maxRampWeight: defs.maxRamp,
+            crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+          }));
+          setTripForm((prev) =>
+            prev
+              ? { ...prev, aircraftId: match.tail_number, itineraryNum: parsedItineraryNum, legs: refilledLegs }
+              : prev
+          );
+        }
       }
 
-      toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s)` });
+      toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
     } catch (err) {
       console.error("Parse error:", err);
       const message = err instanceof Error ? err.message : "Failed to parse itinerary";
       toast({ title: "Parse error", description: message, variant: "destructive" });
     } finally {
       setParsing(false);
-      // Reset input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -572,7 +634,6 @@ export default function TripLegsPage() {
     if (!tripForm || !tripId) return;
     setSaving(true);
 
-    // Apply aircraft data to trip form
     const updatedForm: TripFormData = {
       ...tripForm,
       basicEmptyWeight: aircraftDefaults.basicEmptyWeight,
@@ -615,13 +676,53 @@ export default function TripLegsPage() {
     <>
     {parsing && <ParsingLoader />}
     <div className="max-w-2xl mx-auto space-y-4 p-4">
-      {/* Header */}
+      {/* Header with Trip ID */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">Trip Legs</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Trip Legs</h1>
+          {tripForm.itineraryNum && (
+            <p className="text-sm text-muted-foreground">Trip: {tripForm.itineraryNum}</p>
+          )}
+        </div>
       </div>
+
+      {/* Aircraft Selector */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3">
+            <Plane className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground">Aircraft</Label>
+              <Select
+                value={tripForm.aircraftId || ""}
+                onValueChange={handleAircraftChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select aircraft" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aircraftList.map((ac) => (
+                    <SelectItem key={ac.id} value={ac.tail_number}>
+                      {ac.tail_number} — {ac.manufacturer} {ac.type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 mt-4"
+              onClick={() => navigate("/fleet/add")}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add New
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* PDF Upload */}
       <Card className="border-dashed border-2">
