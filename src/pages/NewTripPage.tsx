@@ -2,6 +2,8 @@
 // Route: /trips/new
 // Creates a trip record in Supabase, then navigates to the legs editor.
 
+import { pendingParseFile } from "@/lib/pending-parse-file";
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
