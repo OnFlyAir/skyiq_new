@@ -568,7 +568,7 @@ export default function TripLegsPage() {
     const { error } = await supabase
       .from("trips")
       .update({
-        itinerary_details: updatedForm as any,
+        itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
         itinerary_num: updatedForm.itineraryNum,
       })
       .eq("id", parseInt(tripId));

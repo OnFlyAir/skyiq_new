@@ -98,8 +98,8 @@ export default function TripFuelPage() {
       const { error } = await supabase
         .from("trips")
         .update({
-          details: summary as unknown as Record<string, unknown> as any,
-          itinerary_details: updatedForm as unknown as Record<string, unknown> as any,
+          details: summary as unknown as import('@/integrations/supabase/types').Json,
+          itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
           savings: summary.savings,
         })
         .eq("id", parseInt(tripId));
@@ -199,7 +199,7 @@ export default function TripFuelPage() {
         <Button
           onClick={handleOptimize}
           disabled={optimizing || fuelBurns.some((b) => b <= 0)}
-          className="flex-1 bg-primary hover:bg-primary/90"
+          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
         >
           {optimizing ? (
             <>
