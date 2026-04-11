@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import type { TripSummary } from "@/types/trip";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,7 +41,7 @@ export default function DashboardPage() {
           itinerary_num: t.itinerary_num || `Trip #${t.id}`,
           created_on: t.created_on,
           savings: t.savings ?? 0,
-          details: t.details as TripSummary | null,
+          details: t.details as unknown as TripSummary | null,
         })),
       );
       setLoading(false);
@@ -71,7 +71,7 @@ export default function DashboardPage() {
           onClick={() => navigate("/trips/new")}
         >
           <CardContent className="pt-6 text-center">
-            <Plane className="h-10 w-10 mx-auto mb-3 text-[#1a3a5c]" />
+            <Plane className="h-10 w-10 mx-auto mb-3 text-primary" />
             <p className="font-semibold">Plan a Trip</p>
             <p className="text-xs text-muted-foreground mt-1">Fool-proof fuel planning</p>
           </CardContent>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
           onClick={() => navigate("/fleet")}
         >
           <CardContent className="pt-6 text-center">
-            <Settings className="h-10 w-10 mx-auto mb-3 text-[#1a3a5c]" />
+            <Settings className="h-10 w-10 mx-auto mb-3 text-primary" />
             <p className="font-semibold">Manage Fleet</p>
             <p className="text-xs text-muted-foreground mt-1">View & edit aircraft</p>
           </CardContent>
@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
               <p>No trips yet. Plan your first trip to get started!</p>
-              <Button asChild className="mt-3 bg-[#1a3a5c]">
+              <Button asChild className="mt-3 bg-primary">
                 <Link to="/trips/new">Plan a Trip</Link>
               </Button>
             </CardContent>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
             {recentTrips.map((trip) => (
               <Card
                 key={trip.id}
-                className="cursor-pointer hover:bg-gray-50 transition-colors"
+                className="cursor-pointer hover:bg-muted transition-colors"
                 onClick={() => navigate(`/trips/${trip.id}/summary`)}
               >
                 <CardContent className="py-3 flex items-center justify-between">

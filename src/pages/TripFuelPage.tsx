@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { formToTripInput, runFuelOptimization, resultToSummary } from "@/lib/fuel-service";
 import type { TripFormData, TripSummary } from "@/types/trip";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export default function TripFuelPage() {
         return;
       }
 
-      const itinerary = data.itinerary_details as TripFormData;
+      const itinerary = data.itinerary_details as unknown as TripFormData;
       if (!itinerary?.legs || itinerary.legs.length === 0) {
         toast({ title: "Error", description: "No legs found — go back and add legs first", variant: "destructive" });
         navigate(`/trips/${tripId}/legs`);
@@ -98,8 +98,8 @@ export default function TripFuelPage() {
       const { error } = await supabase
         .from("trips")
         .update({
-          details: summary as unknown as Record<string, unknown>,
-          itinerary_details: updatedForm as unknown as Record<string, unknown>,
+          details: summary as unknown as Record<string, unknown> as any,
+          itinerary_details: updatedForm as unknown as Record<string, unknown> as any,
           savings: summary.savings,
         })
         .eq("id", parseInt(tripId));
@@ -199,7 +199,7 @@ export default function TripFuelPage() {
         <Button
           onClick={handleOptimize}
           disabled={optimizing || fuelBurns.some((b) => b <= 0)}
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
         >
           {optimizing ? (
             <>

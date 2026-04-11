@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +56,7 @@ export default function TripEmailPage() {
         .single();
 
       if (emailList?.emails) {
-        const saved = (emailList.emails as EmailEntry[])
+        const saved = (emailList.emails as unknown as EmailEntry[])
           .slice(0, 10)
           .map((e) => ({ ...e, isChecked: false }));
         if (saved.length > 0) {
@@ -98,8 +98,15 @@ export default function TripEmailPage() {
     setSending(true);
 
     try {
-      // Call send-email Edge Function (or for now, just save the email list)
-      // In production, this would call: supabase.functions.invoke("send-trip-email", { body: { tripId, emails: toSend } })
+      // Call send-trip-email edge function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("send-trip-email", {
+        body: {
+          tripId: parseInt(tripId),
+          emails: toSend.map((e) => ({ email: e.email })),
+        },
+      });
+
+      if (fnError) throw fnError;
 
       // Save/update email list for this user
       const updatedEmails = toSend.map((e) => ({
@@ -115,8 +122,7 @@ export default function TripEmailPage() {
         .single();
 
       if (existing) {
-        // Merge: update existing emails, add new ones
-        const existingEmails = (existing.emails as EmailEntry[]) ?? [];
+        const existingEmails = (existing.emails as unknown as EmailEntry[]) ?? [];
         const merged = [...existingEmails];
         for (const e of updatedEmails) {
           const idx = merged.findIndex((m) => m.email === e.email);
@@ -128,12 +134,12 @@ export default function TripEmailPage() {
         }
         await supabase
           .from("email_lists")
-          .update({ emails: merged })
+          .update({ emails: merged as any })
           .eq("id", existing.id);
       } else {
         await supabase
           .from("email_lists")
-          .insert({ user_id: user.id, emails: updatedEmails });
+          .insert({ user_id: user.id, emails: updatedEmails as any });
       }
 
       setSent(true);
@@ -163,7 +169,7 @@ export default function TripEmailPage() {
         <p className="text-sm text-muted-foreground">
           Trip summary for {tripDisplayNum} has been sent to your recipients.
         </p>
-        <Button asChild className="bg-[#1a3a5c]">
+        <Button asChild className="bg-primary">
           <Link to={`/trips/${tripId}/summary`}>Back to Summary</Link>
         </Button>
       </div>
@@ -227,7 +233,7 @@ export default function TripEmailPage() {
       <Button
         onClick={handleSend}
         disabled={sending}
-        className="w-full bg-[#1a3a5c] hover:bg-[#2563eb]"
+        className="w-full bg-primary hover:bg-primary/90"
       >
         {sending ? (
           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>

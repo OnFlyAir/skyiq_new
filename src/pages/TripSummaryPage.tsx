@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import type { TripSummary, TripSummaryLeg } from "@/types/trip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,7 +132,7 @@ export default function TripSummaryPage() {
         return;
       }
 
-      const details = data.details as TripSummary | null;
+      const details = data.details as unknown as TripSummary | null;
       if (!details || !details.legs || details.legs.length === 0) {
         toast({ title: "No results", description: "Run the optimizer first", variant: "destructive" });
         navigate(`/trips/${tripId}/fuel`);
@@ -215,7 +215,7 @@ export default function TripSummaryPage() {
           </Link>
         </Button>
         <Button
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
           disabled={hasErrors}
           onClick={() => !hasErrors && navigate(`/trips/${tripId}/email`)}
         >
