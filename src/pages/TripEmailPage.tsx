@@ -128,12 +128,12 @@ export default function TripEmailPage() {
         }
         await supabase
           .from("email_lists")
-          .update({ emails: merged })
+          .update({ emails: merged as unknown as import("@/integrations/supabase/types").Json })
           .eq("id", existing.id);
       } else {
         await supabase
           .from("email_lists")
-          .insert({ user_id: user.id, emails: updatedEmails });
+          .insert({ user_id: user.id, emails: updatedEmails as unknown as import("@/integrations/supabase/types").Json });
       }
 
       setSent(true);
