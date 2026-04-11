@@ -81,13 +81,13 @@ export default function AdminDfyPage() {
 
   async function loadData() {
     const [clientsRes, requestsRes, profilesRes] = await Promise.all([
-      supabase.from("dfy_clients").select("*").order("created_at", { ascending: false }),
-      supabase.from("dfy_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("dfy_clients" as any).select("*").order("created_at", { ascending: false }),
+      supabase.from("dfy_requests" as any).select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, email, company"),
     ]);
 
-    const clientsList = (clientsRes.data ?? []) as DfyClient[];
-    const requestsList = (requestsRes.data ?? []) as DfyRequest[];
+    const clientsList = (clientsRes.data ?? []) as unknown as DfyClient[];
+    const requestsList = (requestsRes.data ?? []) as unknown as DfyRequest[];
 
     // Attach client to each request
     const enriched = requestsList.map((r) => ({
@@ -108,7 +108,7 @@ export default function AdminDfyPage() {
     }
     setSavingClient(true);
 
-    const { error } = await supabase.from("dfy_clients").insert({
+    const { error } = await supabase.from("dfy_clients" as any).insert({
       company_name: newClient.company_name,
       contact_name: newClient.contact_name,
       contact_email: newClient.contact_email,
@@ -138,7 +138,7 @@ export default function AdminDfyPage() {
       updates.sent_at = new Date().toISOString();
     }
 
-    const { error } = await supabase.from("dfy_requests").update(updates).eq("id", requestId);
+    const { error } = await supabase.from("dfy_requests" as any).update(updates as any).eq("id", requestId);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;

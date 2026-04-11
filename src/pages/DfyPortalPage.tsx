@@ -51,18 +51,18 @@ export default function DfyPortalPage() {
 
   async function loadData() {
     const { data: clients } = await supabase
-      .from("dfy_clients")
+      .from("dfy_clients" as any)
       .select("id, company_name, pricing_tier, status")
       .eq("user_id", user!.id)
       .eq("status", "active")
       .limit(1);
 
     if (clients && clients.length > 0) {
-      const c = clients[0];
+      const c = clients[0] as any;
       setClient(c as DfyClient);
 
       const { data: reqs } = await supabase
-        .from("dfy_requests")
+        .from("dfy_requests" as any)
         .select("id, status, created_at, admin_notes, pdf_storage_path")
         .eq("client_id", c.id)
         .order("created_at", { ascending: false });
@@ -85,12 +85,12 @@ export default function DfyPortalPage() {
       if (uploadErr) throw uploadErr;
 
       const { error: insertErr } = await supabase
-        .from("dfy_requests")
+        .from("dfy_requests" as any)
         .insert({
           client_id: client.id,
           pdf_storage_path: fileName,
           status: "pending",
-        });
+        } as any);
 
       if (insertErr) throw insertErr;
 
