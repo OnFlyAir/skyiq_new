@@ -114,7 +114,7 @@ export default function AdminDfyPage() {
       contact_email: newClient.contact_email,
       pricing_tier: newClient.pricing_tier,
       user_id: newClient.user_id,
-    });
+    } as any);
 
     setSavingClient(false);
     if (error) {

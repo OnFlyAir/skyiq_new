@@ -67,7 +67,7 @@ export default function DfyPortalPage() {
         .eq("client_id", c.id)
         .order("created_at", { ascending: false });
 
-      setRequests((reqs ?? []) as DfyRequest[]);
+      setRequests((reqs ?? []) as unknown as DfyRequest[]);
     }
     setLoading(false);
   }
