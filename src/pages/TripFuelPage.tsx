@@ -133,6 +133,8 @@ export default function TripFuelPage() {
     .filter(({ leg }) => leg.isConfirmed && leg.legNum > 0);
 
   return (
+    <>
+    {optimizing && <ParsingLoader title="Optimizing fuel plan…" subtitle="Finding the cheapest fueling strategy" />}
     <div className="max-w-2xl mx-auto space-y-6 p-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/legs`)}>
@@ -213,5 +215,6 @@ export default function TripFuelPage() {
         </Button>
       </div>
     </div>
+    </>
   );
 }
