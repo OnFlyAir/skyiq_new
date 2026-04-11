@@ -113,7 +113,6 @@ export default function NewTripPage() {
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file || !user) return;
-              // Create trip first, then navigate — legs page handles the upload
               setCreating(true);
               const { data, error } = await supabase
                 .from("trips")
@@ -127,7 +126,12 @@ export default function NewTripPage() {
                 .select("id")
                 .single();
               setCreating(false);
-              if (data) navigate(`/trips/${data.id}/legs`);
+              if (error || !data) {
+                toast({ title: "Error", description: "Failed to create trip", variant: "destructive" });
+                return;
+              }
+              // Navigate to legs page with the file in state so it auto-parses
+              navigate(`/trips/${data.id}/legs`, { state: { autoParseFile: file } });
             }}
           />
           <Button
