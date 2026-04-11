@@ -8,7 +8,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { pendingParseFile } from "@/lib/pending-parse-file";
-import { pendingParseFile } from "@/lib/pending-parse-file";
 import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
