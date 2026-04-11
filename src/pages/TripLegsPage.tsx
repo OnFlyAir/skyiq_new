@@ -6,7 +6,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { extractPdfText, parseItinerary, parsedLegsToFormData } from "@/lib/itinerary-service";
+import { parsedLegsToFormData } from "@/lib/itinerary-service";
+import { API_URL } from "@/lib/config";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -455,11 +456,27 @@ export default function TripLegsPage() {
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File) => {
     if (!tripForm) return;
+    console.log("File selected:", file.name);
     setParsing(true);
 
     try {
-      const pdfText = await extractPdfText(file);
-      const parsed = await parseItinerary(pdfText);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      console.log("Sending to API:", `${API_URL}/api/parse-itinerary`);
+      const response = await fetch(`${API_URL}/api/parse-itinerary`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error("API error response:", errBody);
+        throw new Error(`Parse failed (${response.status}): ${errBody}`);
+      }
+
+      const parsed = await response.json();
+      console.log("Parse response:", parsed);
 
       if (parsed.errors && parsed.errors.length > 0) {
         toast({
@@ -485,7 +502,6 @@ export default function TripLegsPage() {
         maxFuelCapacity: aircraftDefaults.maxFuelCapacity,
       });
 
-      // Update trip form with parsed data
       setTripForm({
         ...tripForm,
         itineraryNum: parsed.itinerary_num || tripForm.itineraryNum,
@@ -493,7 +509,6 @@ export default function TripLegsPage() {
         legs: newLegs,
       });
 
-      // Try to load aircraft by parsed tail number
       if (parsed.aircraft) {
         const { data: acData } = await supabase
           .from("aircrafts")
@@ -506,10 +521,13 @@ export default function TripLegsPage() {
 
       toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s)` });
     } catch (err) {
+      console.error("Parse error:", err);
       const message = err instanceof Error ? err.message : "Failed to parse itinerary";
       toast({ title: "Parse error", description: message, variant: "destructive" });
     } finally {
       setParsing(false);
+      // Reset input so same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
