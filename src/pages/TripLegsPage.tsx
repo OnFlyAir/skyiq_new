@@ -4,7 +4,7 @@
 // Each leg has: departure/destination, fuel prices (tiered), fees, crew, pax, weights.
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { API_URL } from "@/lib/config";
