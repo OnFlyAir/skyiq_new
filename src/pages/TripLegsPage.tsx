@@ -476,9 +476,13 @@ export default function TripLegsPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      console.log("Sending to API:", `${API_URL}/api/parse-itinerary`);
-      const response = await fetch(`${API_URL}/api/parse-itinerary`, {
+      const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
+      console.log("Sending to edge function:", edgeFnUrl);
+      const response = await fetch(edgeFnUrl, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
         body: formData,
       });
 
