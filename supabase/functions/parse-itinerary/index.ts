@@ -162,35 +162,47 @@ IMPORTANT RULES:
 - If you cannot find a value, use reasonable defaults: empty string for text, 0 for numbers, empty array for lists.
 - Do not include "//" comments in the JSON output.`;
 
-async function parseWithAI(text: string): Promise<string | null> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY") ?? "";
-  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+async function parseWithAI(text: string, retries = 3): Promise<string | null> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: PROMPT },
-        { role: "user", content: `Here is the trip sheet content:\n\n${text}` },
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-    }),
-  });
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: PROMPT },
+          { role: "user", content: `Here is the trip sheet content:\n\n${text}` },
+        ],
+      }),
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    if (response.status === 429) throw new Error("Rate limited — please try again in a moment");
-    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+    if (response.status === 429) {
+      const delay = Math.pow(2, attempt) * 2000;
+      console.log(`Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+      await new Promise(r => setTimeout(r, delay));
+      continue;
+    }
+
+    if (response.status === 402) {
+      throw new Error("AI credits exhausted — please add funds in Settings > Workspace > Usage");
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AI API error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content?.trim() ?? null;
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() ?? null;
+  throw new Error("Rate limited after multiple retries — please try again later");
 }
 
 function extractJson(raw: string): string {
