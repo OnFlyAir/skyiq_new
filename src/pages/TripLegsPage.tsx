@@ -6,7 +6,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { extractPdfText, parseItinerary, parsedLegsToFormData } from "@/lib/itinerary-service";
+import { parsedLegsToFormData } from "@/lib/itinerary-service";
+import { API_URL } from "@/lib/config";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
