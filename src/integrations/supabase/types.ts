@@ -184,6 +184,77 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          aircraft_count: number
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"]
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          monthly_amount_cents: number
+          quickbooks_customer_id: string | null
+          quickbooks_invoice_id: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string
+          trial_reminder_sent: boolean
+          trial_starts_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aircraft_count?: number
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          monthly_amount_cents?: number
+          quickbooks_customer_id?: string | null
+          quickbooks_invoice_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string
+          trial_reminder_sent?: boolean
+          trial_starts_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aircraft_count?: number
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          monthly_amount_cents?: number
+          quickbooks_customer_id?: string | null
+          quickbooks_invoice_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string
+          trial_reminder_sent?: boolean
+          trial_starts_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           created_on: string | null
@@ -227,10 +298,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_subscription_price: {
+        Args: { plane_count: number }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      billing_cycle: "four_weekly" | "annual"
+      subscription_status:
+        | "trial"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -357,6 +438,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      billing_cycle: ["four_weekly", "annual"],
+      subscription_status: [
+        "trial",
+        "active",
+        "past_due",
+        "canceled",
+        "expired",
+      ],
+    },
   },
 } as const
