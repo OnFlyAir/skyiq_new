@@ -36,8 +36,8 @@ export function parsedLegsToFormData(
 
     return {
       legNum: leg.leg_num,
-      departure: leg.departure,
-      destination: leg.destination,
+      departure: leg.departure?.toUpperCase() ?? "",
+      destination: leg.destination?.toUpperCase() ?? "",
       departureFuelPrices: leg.departure_fuel_price.length > 0
         ? leg.departure_fuel_price
         : [{ min_fuel: 0, price: 0 }],
