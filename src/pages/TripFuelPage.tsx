@@ -42,7 +42,7 @@ export default function TripFuelPage() {
         return;
       }
 
-      const itinerary = data.itinerary_details as TripFormData;
+      const itinerary = data.itinerary_details as unknown as TripFormData;
       if (!itinerary?.legs || itinerary.legs.length === 0) {
         toast({ title: "Error", description: "No legs found — go back and add legs first", variant: "destructive" });
         navigate(`/trips/${tripId}/legs`);
@@ -98,8 +98,8 @@ export default function TripFuelPage() {
       const { error } = await supabase
         .from("trips")
         .update({
-          details: summary as unknown as Record<string, unknown>,
-          itinerary_details: updatedForm as unknown as Record<string, unknown>,
+          details: summary as unknown as Record<string, unknown> as any,
+          itinerary_details: updatedForm as unknown as Record<string, unknown> as any,
           savings: summary.savings,
         })
         .eq("id", parseInt(tripId));

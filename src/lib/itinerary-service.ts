@@ -1,59 +1,6 @@
-// Service layer for calling the parse-itinerary Edge Function
-// and converting parsed results into form-ready leg data.
+// Service layer for converting parsed itinerary results into form-ready leg data.
 
 import type { ParsedTrip, LegFormData } from "../types/trip";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-/**
- * Extract text from a PDF file using pdf.js on the client side.
- * This avoids needing a PDF library in the Edge Function.
- */
-export async function extractPdfText(file: File): Promise<string> {
-  // Dynamic import of pdf.js (should be installed as a dependency)
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-  let fullText = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items
-      .map((item: any) => item.str ?? "")
-      .join(" ");
-    fullText += pageText + "\n";
-  }
-
-  return fullText;
-}
-
-/**
- * Call the parse-itinerary Edge Function with extracted PDF text.
- */
-export async function parseItinerary(
-  pdfText: string,
-  model: string = "gpt-4o-mini",
-): Promise<ParsedTrip> {
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/parse-itinerary`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify({ text: pdfText, model }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Parse failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
 
 /**
  * Convert a parsed trip into form-ready leg data, applying aircraft defaults.
