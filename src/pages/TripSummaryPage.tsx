@@ -132,7 +132,7 @@ export default function TripSummaryPage() {
         return;
       }
 
-      const details = data.details as TripSummary | null;
+      const details = data.details as unknown as TripSummary | null;
       if (!details || !details.legs || details.legs.length === 0) {
         toast({ title: "No results", description: "Run the optimizer first", variant: "destructive" });
         navigate(`/trips/${tripId}/fuel`);

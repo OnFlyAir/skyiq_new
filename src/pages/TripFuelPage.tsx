@@ -42,7 +42,7 @@ export default function TripFuelPage() {
         return;
       }
 
-      const itinerary = data.itinerary_details as TripFormData;
+      const itinerary = data.itinerary_details as unknown as TripFormData;
       if (!itinerary?.legs || itinerary.legs.length === 0) {
         toast({ title: "Error", description: "No legs found — go back and add legs first", variant: "destructive" });
         navigate(`/trips/${tripId}/legs`);

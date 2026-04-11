@@ -41,7 +41,7 @@ export default function DashboardPage() {
           itinerary_num: t.itinerary_num || `Trip #${t.id}`,
           created_on: t.created_on,
           savings: t.savings ?? 0,
-          details: t.details as TripSummary | null,
+          details: t.details as unknown as TripSummary | null,
         })),
       );
       setLoading(false);

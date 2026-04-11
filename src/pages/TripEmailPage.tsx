@@ -56,7 +56,7 @@ export default function TripEmailPage() {
         .single();
 
       if (emailList?.emails) {
-        const saved = (emailList.emails as EmailEntry[])
+        const saved = (emailList.emails as unknown as EmailEntry[])
           .slice(0, 10)
           .map((e) => ({ ...e, isChecked: false }));
         if (saved.length > 0) {
@@ -116,7 +116,7 @@ export default function TripEmailPage() {
 
       if (existing) {
         // Merge: update existing emails, add new ones
-        const existingEmails = (existing.emails as EmailEntry[]) ?? [];
+        const existingEmails = (existing.emails as unknown as EmailEntry[]) ?? [];
         const merged = [...existingEmails];
         for (const e of updatedEmails) {
           const idx = merged.findIndex((m) => m.email === e.email);
