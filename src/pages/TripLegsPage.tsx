@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { API_URL } from "@/lib/config";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
@@ -689,7 +689,7 @@ export default function TripLegsPage() {
         <Button
           onClick={handleNext}
           disabled={!allConfirmed || saving || tripForm.legs.length === 0}
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
         >
           {saving ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
