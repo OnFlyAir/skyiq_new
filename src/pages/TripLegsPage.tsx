@@ -377,8 +377,10 @@ function LegEditor({
 export default function TripLegsPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoParseTriggered = useRef(false);
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
   const [aircraft, setAircraft] = useState<Record<string, unknown> | null>(null);
