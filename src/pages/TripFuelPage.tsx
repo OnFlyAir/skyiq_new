@@ -4,6 +4,7 @@
 // calls the optimize-fuel Edge Function, stores results, and navigates to summary.
 
 import { useState, useEffect } from "react";
+import ParsingLoader from "@/components/ParsingLoader";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formToTripInput, runFuelOptimization, resultToSummary } from "@/lib/fuel-service";

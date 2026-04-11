@@ -18,7 +18,7 @@ const FACTS = [
   "Dynamic programming finds the mathematically optimal solution, not just a good guess.",
 ];
 
-export default function ParsingLoader() {
+export default function ParsingLoader({ title = "Parsing your itinerary…", subtitle = "Our AI is reading your trip sheet" }: { title?: string; subtitle?: string }) {
   const [factIndex, setFactIndex] = useState(
     () => Math.floor(Math.random() * FACTS.length)
   );
