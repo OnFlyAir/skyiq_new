@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { API_URL } from "@/lib/config";
+import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
