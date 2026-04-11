@@ -98,8 +98,8 @@ export default function TripFuelPage() {
       const { error } = await supabase
         .from("trips")
         .update({
-          details: summary as unknown as Record<string, unknown>,
-          itinerary_details: updatedForm as unknown as Record<string, unknown>,
+          details: summary as unknown as import('@/integrations/supabase/types').Json,
+          itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
           savings: summary.savings,
         })
         .eq("id", parseInt(tripId));
