@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Plane, Menu, X, Home, Settings, DollarSign, LogOut, Search } from 'lucide-react';
+import { Plane, Menu, X, Home, Settings, DollarSign, LogOut, Search, CreditCard } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function AppLayout() {
@@ -20,6 +20,7 @@ export default function AppLayout() {
     { label: 'Plan a Trip', icon: Plane, path: '/trips/new' },
     { label: 'Manage Fleet', icon: Settings, path: '/fleet' },
     { label: 'Savings Accrued', icon: DollarSign, path: '/savings' },
+    { label: 'Subscription', icon: CreditCard, path: '/subscription' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
