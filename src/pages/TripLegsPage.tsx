@@ -456,6 +456,17 @@ export default function TripLegsPage() {
     cruiseFuelBurn: (aircraft as Record<string, number>)?.cruise_fuel_burn ?? 0,
   };
 
+  // Auto-parse PDF if navigated from NewTripPage with a file
+  useEffect(() => {
+    const file = (location.state as { autoParseFile?: File } | null)?.autoParseFile;
+    if (file && tripForm && !autoParseTriggered.current) {
+      autoParseTriggered.current = true;
+      handlePdfUpload(file);
+      // Clear location state so refresh doesn't re-trigger
+      window.history.replaceState({}, document.title);
+    }
+  }, [tripForm, location.state]);
+
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File) => {
     if (!tripForm) return;
