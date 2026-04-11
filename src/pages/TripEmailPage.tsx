@@ -56,7 +56,7 @@ export default function TripEmailPage() {
         .single();
 
       if (emailList?.emails) {
-        const saved = (emailList.emails as EmailEntry[])
+        const saved = (emailList.emails as unknown as EmailEntry[])
           .slice(0, 10)
           .map((e) => ({ ...e, isChecked: false }));
         if (saved.length > 0) {
@@ -98,8 +98,15 @@ export default function TripEmailPage() {
     setSending(true);
 
     try {
-      // Call send-email Edge Function (or for now, just save the email list)
-      // In production, this would call: supabase.functions.invoke("send-trip-email", { body: { tripId, emails: toSend } })
+      // Call send-trip-email edge function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("send-trip-email", {
+        body: {
+          tripId: parseInt(tripId),
+          emails: toSend.map((e) => ({ email: e.email })),
+        },
+      });
+
+      if (fnError) throw fnError;
 
       // Save/update email list for this user
       const updatedEmails = toSend.map((e) => ({
@@ -115,8 +122,7 @@ export default function TripEmailPage() {
         .single();
 
       if (existing) {
-        // Merge: update existing emails, add new ones
-        const existingEmails = (existing.emails as EmailEntry[]) ?? [];
+        const existingEmails = (existing.emails as unknown as EmailEntry[]) ?? [];
         const merged = [...existingEmails];
         for (const e of updatedEmails) {
           const idx = merged.findIndex((m) => m.email === e.email);
@@ -128,12 +134,12 @@ export default function TripEmailPage() {
         }
         await supabase
           .from("email_lists")
-          .update({ emails: merged })
+          .update({ emails: merged as any })
           .eq("id", existing.id);
       } else {
         await supabase
           .from("email_lists")
-          .insert({ user_id: user.id, emails: updatedEmails });
+          .insert({ user_id: user.id, emails: updatedEmails as any });
       }
 
       setSent(true);
