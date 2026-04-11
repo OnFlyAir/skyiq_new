@@ -7,7 +7,6 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
-import { API_URL } from "@/lib/config";
 import { pendingParseFile } from "@/lib/pending-parse-file";
 import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
@@ -476,9 +475,13 @@ export default function TripLegsPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      console.log("Sending to API:", `${API_URL}/api/parse-itinerary`);
-      const response = await fetch(`${API_URL}/api/parse-itinerary`, {
+      const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
+      console.log("Sending to edge function:", edgeFnUrl);
+      const response = await fetch(edgeFnUrl, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
         body: formData,
       });
 

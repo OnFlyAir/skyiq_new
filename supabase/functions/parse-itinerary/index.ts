@@ -1,16 +1,13 @@
 // Supabase Edge Function: parse-itinerary
-// Accepts a PDF file upload, extracts text, sends to OpenAI for structured parsing.
+// Accepts a PDF text upload, sends to AI for structured parsing.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-// OpenAI API key — will be set as a Supabase secret in production
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
 
 // --- Types ---
 
@@ -83,12 +80,9 @@ interface ParsedFee {
   airport: string;
 }
 
-// --- Extract text from PDF using pdf-parse equivalent for Deno ---
-// For Supabase Edge Functions, we use the OpenAI API directly with the PDF content
-// encoded as base64, since GPT-4o can read PDFs natively.
+// --- AI call ---
 
-async function parseTextWithOpenAI(text: string, model: string): Promise<string | null> {
-  const prompt = `I need you to output a JSON object that contains data from the attached PDF document. Please extract structured data from the string related to trip details, ensuring accuracy and completeness. Follow these specific guidelines for each data point:
+const PROMPT = `I need you to output a JSON object that contains data from the attached PDF document. Please extract structured data from the string related to trip details, ensuring accuracy and completeness. Follow these specific guidelines for each data point:
 Crew Itinerary Id
 Aircraft Tail Number
 Extract and provide the Tail Number. Tail number is a 2-6 digit code and does not include a manufacturer name.
@@ -129,32 +123,44 @@ Output Format:
         ]
     }]
 }
-Do not include any summaries or comments in the output. Do not include the word "json". All comments that start with '//' must be removed
-the string is ###${text}###`;
+Do not include any summaries or comments in the output. Do not include the word "json". All comments that start with '//' must be removed`;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+async function parseWithAI(text: string): Promise<string | null> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: prompt }],
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "user", content: `${PROMPT}\nthe string is ###${text}###` }],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+    if (response.status === 429) throw new Error("Rate limited — please try again in a moment");
+    if (response.status === 402) throw new Error("AI credits exhausted — please add funds in Settings > Workspace > Usage");
+    throw new Error(`AI API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content?.trim() ?? null;
 }
 
+function extractJson(raw: string): string {
+  // Strip markdown code fences if present
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) return fenceMatch[1].trim();
+  return raw.trim();
+}
+
 function convertToTrip(jsonStr: string): ParsedTrip {
-  const parsed: ParsedData = JSON.parse(jsonStr);
+  const parsed: ParsedData = JSON.parse(extractJson(jsonStr));
 
   const legs: ParsedLeg[] = parsed.trip_segments.map((segment) => {
     const fees: ParsedFee[] = segment.fee_waivers
@@ -203,10 +209,6 @@ function convertToTrip(jsonStr: string): ParsedTrip {
   };
 }
 
-// --- PDF text extraction using pdf-lib for Deno ---
-// Note: For production, consider using a PDF parsing library.
-// For now, we'll accept either raw text or base64-encoded PDF.
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -222,31 +224,20 @@ serve(async (req) => {
   try {
     const contentType = req.headers.get("content-type") ?? "";
     let pdfText = "";
-    let model = "gpt-4o-mini";
 
     if (contentType.includes("multipart/form-data")) {
-      // Handle file upload
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
-      model = (formData.get("model") as string) ?? "gpt-4o-mini";
-
       if (!file) {
         return new Response(
           JSON.stringify({ error: "No file provided" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-
-      // Read file as array buffer and convert to base64 for OpenAI
-      // Since GPT-4o can process PDFs, we'll extract text client-side
-      // and send it, OR send the raw text from pdf.js on the frontend
-      const text = await file.text();
-      pdfText = text;
+      pdfText = await file.text();
     } else {
-      // Handle JSON body with pre-extracted text
       const body = await req.json();
       pdfText = body.text ?? "";
-      model = body.model ?? "gpt-4o-mini";
     }
 
     if (!pdfText) {
@@ -256,41 +247,26 @@ serve(async (req) => {
       );
     }
 
-    if (!OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Parse with OpenAI
-    const aiResponse = await parseTextWithOpenAI(pdfText, model);
+    const aiResponse = await parseWithAI(pdfText);
 
     if (!aiResponse) {
       return new Response(
-        JSON.stringify({ error: "OpenAI returned empty response" }),
+        JSON.stringify({ error: "AI returned empty response" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Convert AI response to trip structure
     const trip = convertToTrip(aiResponse);
 
     return new Response(
       JSON.stringify(trip),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: `Parse failed: ${message}` }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
