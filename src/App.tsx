@@ -31,6 +31,8 @@ import TripEmailPage from "@/pages/TripEmailPage";
 import SavingsPage from "@/pages/SavingsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import NotFound from "@/pages/NotFound";
 
@@ -86,8 +88,11 @@ function App() {
               <Route path="/savings" element={<SavingsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
 
+              <Route path="/subscription" element={<SubscriptionPage />} />
+
               {/* Admin — role-gated inside the component */}
               <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
             </Route>
 
             {/* Redirects */}
