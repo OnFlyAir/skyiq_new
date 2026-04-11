@@ -402,7 +402,7 @@ export default function TripLegsPage() {
         return;
       }
 
-      const itinerary = tripData.itinerary_details as TripFormData | null;
+      const itinerary = tripData.itinerary_details as unknown as TripFormData | null;
       if (itinerary && itinerary.legs && itinerary.legs.length > 0) {
         setTripForm(itinerary);
       } else {
