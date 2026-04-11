@@ -1,313 +1,686 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Plus, Upload, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { API_URL } from '@/lib/config';
-import type { Trip } from '@/types/database';
+// TripLegsPage — Step 1 of trip planning: configure each leg of the trip.
+// Route: /trips/:tripId/legs
+// Supports PDF upload (AI parsing), manual entry, and per-leg editing.
+// Each leg has: departure/destination, fuel prices (tiered), fees, crew, pax, weights.
 
-interface LegData {
-  departure_icao: string;
-  destination_icao: string;
-  fuel_burn: number;
-  reserve: number;
-  taxi_fuel_burn: number;
-  max_takeoff_weight: number;
-  max_landing_weight: number;
-  crew_weights: number[];
-  passenger_weights: number[];
-  baggage_weight: number;
-  departure_fee_cost: number;
-  departure_fee_waived_with: number;
-  fuel_price_tiers: { price_per_gallon: number; min_quantity_gallons: number }[];
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { extractPdfText, parseItinerary, parsedLegsToFormData } from "@/lib/itinerary-service";
+import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  FileUp,
+  Loader2,
+  Plus,
+  Trash2,
+  X,
+  Plane,
+  Info,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+// --- Default empty leg ---
+function emptyLeg(legNum: number): LegFormData {
+  return {
+    legNum,
+    departure: "",
+    destination: "",
+    departureFuelPrices: [{ min_fuel: 0, price: 0 }],
+    waivedFee: { name: "", amount: 0, isWaivable: false, waivedAt: 0, airport: "" },
+    passengerWeights: "0",
+    baggage: 0,
+    crewWeight: "180, 180, 0",
+    fuelBurn: 0,
+    reserve: 0,
+    taxiFuelBurn: 0,
+    maxTakeoffWeight: 0,
+    maxLandingWeight: 0,
+    maxRampWeight: 0,
+    isConfirmed: false,
+  };
 }
 
-const emptyLeg = (): LegData => ({
-  departure_icao: '',
-  destination_icao: '',
-  fuel_burn: 0,
-  reserve: 0,
-  taxi_fuel_burn: 0,
-  max_takeoff_weight: 0,
-  max_landing_weight: 0,
-  crew_weights: [],
-  passenger_weights: [],
-  baggage_weight: 0,
-  departure_fee_cost: 0,
-  departure_fee_waived_with: 0,
-  fuel_price_tiers: [{ price_per_gallon: 0, min_quantity_gallons: 0 }],
-});
-
-function mapApiLegs(apiLegs: any[]): LegData[] {
-  return apiLegs.map((leg) => {
-    const fuelTiers = (leg.departure_fuel_price || []).map((t: any) => ({
-      price_per_gallon: t.price || 0,
-      min_quantity_gallons: t.min_fuel || 0,
-    }));
-
-    const fees = leg.fees || [];
-    const totalFeeCost = fees.reduce((sum: number, f: any) => sum + (f.amount || 0), 0);
-    const waivableFee = fees.find((f: any) => f.is_waivable);
-
-    return {
-      departure_icao: leg.departure || '',
-      destination_icao: leg.destination || '',
-      fuel_burn: leg.fuel_burn || 0,
-      reserve: leg.reserve || 0,
-      taxi_fuel_burn: 0,
-      max_takeoff_weight: 0,
-      max_landing_weight: 0,
-      crew_weights: leg.crew_weight || [],
-      passenger_weights: leg.passengers || [],
-      baggage_weight: leg.baggage || 0,
-      departure_fee_cost: totalFeeCost,
-      departure_fee_waived_with: waivableFee?.waived_at || 0,
-      fuel_price_tiers: fuelTiers.length > 0 ? fuelTiers : [{ price_per_gallon: 0, min_quantity_gallons: 0 }],
-    } as LegData;
-  });
+// --- Fuel Price Tier Row ---
+function FuelPriceRow({
+  tier,
+  index,
+  onChange,
+  onRemove,
+  canRemove,
+}: {
+  tier: FuelTier;
+  index: number;
+  onChange: (index: number, field: keyof FuelTier, value: number) => void;
+  onRemove: (index: number) => void;
+  canRemove: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1">
+        <Input
+          type="number"
+          placeholder="Min gal"
+          value={tier.min_fuel || ""}
+          onChange={(e) => onChange(index, "min_fuel", parseFloat(e.target.value) || 0)}
+          className="text-sm"
+        />
+      </div>
+      <div className="flex-1">
+        <Input
+          type="number"
+          step="0.01"
+          placeholder="$/gal"
+          value={tier.price || ""}
+          onChange={(e) => onChange(index, "price", parseFloat(e.target.value) || 0)}
+          className="text-sm"
+        />
+      </div>
+      {canRemove && (
+        <Button variant="ghost" size="icon" onClick={() => onRemove(index)} className="h-8 w-8">
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
 }
 
+// --- Single Leg Editor ---
+function LegEditor({
+  leg,
+  onUpdate,
+  onConfirm,
+  onUnconfirm,
+  onRemove,
+  aircraftDefaults,
+}: {
+  leg: LegFormData;
+  onUpdate: (leg: LegFormData) => void;
+  onConfirm: () => void;
+  onUnconfirm: () => void;
+  onRemove: () => void;
+  aircraftDefaults: { reserve: number; taxiFuelBurn: number; maxTakeoff: number; maxLanding: number; maxRamp: number };
+}) {
+  const isConfirmed = leg.isConfirmed;
+
+  const updateField = <K extends keyof LegFormData>(field: K, value: LegFormData[K]) => {
+    onUpdate({ ...leg, [field]: value });
+  };
+
+  const updateFuelTier = (index: number, field: keyof FuelTier, value: number) => {
+    const tiers = [...leg.departureFuelPrices];
+    tiers[index] = { ...tiers[index], [field]: value };
+    updateField("departureFuelPrices", tiers);
+  };
+
+  const addFuelTier = () => {
+    updateField("departureFuelPrices", [...leg.departureFuelPrices, { min_fuel: 0, price: 0 }]);
+  };
+
+  const removeFuelTier = (index: number) => {
+    updateField("departureFuelPrices", leg.departureFuelPrices.filter((_, i) => i !== index));
+  };
+
+  // Apply aircraft defaults on first render if values are 0
+  useEffect(() => {
+    if (leg.reserve === 0 && aircraftDefaults.reserve > 0) {
+      onUpdate({
+        ...leg,
+        reserve: aircraftDefaults.reserve,
+        taxiFuelBurn: aircraftDefaults.taxiFuelBurn,
+        maxTakeoffWeight: aircraftDefaults.maxTakeoff,
+        maxLandingWeight: aircraftDefaults.maxLanding,
+        maxRampWeight: aircraftDefaults.maxRamp,
+      });
+    }
+  }, []);
+
+  return (
+    <Card className={`transition-all ${isConfirmed ? "border-green-300 bg-green-50/30" : ""}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Plane className="h-4 w-4" />
+            Leg {leg.legNum}
+            {isConfirmed && <Check className="h-4 w-4 text-green-600" />}
+          </CardTitle>
+          <div className="flex items-center gap-1">
+            {!isConfirmed ? (
+              <Button
+                size="sm"
+                onClick={onConfirm}
+                disabled={!leg.departure || !leg.destination}
+                className="bg-green-600 hover:bg-green-700 text-xs"
+              >
+                <Check className="h-3 w-3 mr-1" /> Confirm
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={onUnconfirm} className="text-xs">
+                Edit
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-700">
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      {!isConfirmed && (
+        <CardContent className="space-y-4">
+          {/* Route */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Departure (ICAO)</Label>
+              <Input
+                value={leg.departure}
+                onChange={(e) => updateField("departure", e.target.value.toUpperCase())}
+                placeholder="KJFK"
+                maxLength={4}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Destination (ICAO)</Label>
+              <Input
+                value={leg.destination}
+                onChange={(e) => updateField("destination", e.target.value.toUpperCase())}
+                placeholder="KLAX"
+                maxLength={4}
+              />
+            </div>
+          </div>
+
+          {/* Fuel Prices */}
+          <div>
+            <Label className="text-xs flex items-center gap-1">
+              Departure Fuel Prices
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent><p className="max-w-[200px] text-xs">Tiered pricing: if you buy more than the minimum gallons, the lower price applies to all gallons.</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Label>
+            <div className="space-y-2 mt-1">
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground px-1">
+                <span>Min Gallons</span>
+                <span>Price/Gal</span>
+              </div>
+              {leg.departureFuelPrices.map((tier, i) => (
+                <FuelPriceRow
+                  key={i}
+                  tier={tier}
+                  index={i}
+                  onChange={updateFuelTier}
+                  onRemove={removeFuelTier}
+                  canRemove={leg.departureFuelPrices.length > 1}
+                />
+              ))}
+              <Button variant="outline" size="sm" onClick={addFuelTier} className="text-xs w-full">
+                <Plus className="h-3 w-3 mr-1" /> Add price tier
+              </Button>
+            </div>
+          </div>
+
+          {/* Fee Waiver */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <Label className="text-xs">Fee Amount ($)</Label>
+              <Input
+                type="number"
+                value={leg.waivedFee.amount || ""}
+                onChange={(e) => updateField("waivedFee", { ...leg.waivedFee, amount: parseFloat(e.target.value) || 0, isWaivable: true })}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Waived at (gal)</Label>
+              <Input
+                type="number"
+                value={leg.waivedFee.waivedAt || ""}
+                onChange={(e) => updateField("waivedFee", { ...leg.waivedFee, waivedAt: parseFloat(e.target.value) || 0, isWaivable: true })}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Fee Airport</Label>
+              <Input
+                value={leg.waivedFee.airport}
+                onChange={(e) => updateField("waivedFee", { ...leg.waivedFee, airport: e.target.value.toUpperCase() })}
+                placeholder={leg.departure || "ICAO"}
+                maxLength={4}
+              />
+            </div>
+          </div>
+
+          {/* Crew & Passengers */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs flex items-center gap-1">
+                Crew Weights (PIC, SIC, FA)
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent><p className="text-xs">Comma-separated: PIC, SIC, Flight Attendant</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <Input
+                value={leg.crewWeight}
+                onChange={(e) => updateField("crewWeight", e.target.value)}
+                placeholder="180, 180, 0"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Passenger Weights</Label>
+              <Input
+                value={leg.passengerWeights}
+                onChange={(e) => updateField("passengerWeights", e.target.value)}
+                placeholder="180, 200"
+              />
+            </div>
+          </div>
+
+          {/* Baggage */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">Baggage (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.baggage || ""}
+                onChange={(e) => updateField("baggage", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Reserve (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.reserve || ""}
+                onChange={(e) => updateField("reserve", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Taxi Burn (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.taxiFuelBurn || ""}
+                onChange={(e) => updateField("taxiFuelBurn", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+
+          {/* Weight Limits */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs">Max Takeoff (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.maxTakeoffWeight || ""}
+                onChange={(e) => updateField("maxTakeoffWeight", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Max Landing (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.maxLandingWeight || ""}
+                onChange={(e) => updateField("maxLandingWeight", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Max Ramp (lbs)</Label>
+              <Input
+                type="number"
+                value={leg.maxRampWeight || ""}
+                onChange={(e) => updateField("maxRampWeight", parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      )}
+
+      {/* Confirmed summary */}
+      {isConfirmed && (
+        <CardContent className="pt-0">
+          <p className="text-sm text-muted-foreground">
+            {leg.departure} → {leg.destination}
+            {leg.departureFuelPrices[0]?.price > 0 && ` | $${leg.departureFuelPrices[0].price}/gal`}
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+// --- Main Page ---
 export default function TripLegsPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [legs, setLegs] = useState<LegData[]>([emptyLeg()]);
-  const [fuelOnBoard, setFuelOnBoard] = useState(0);
+
+  const [tripForm, setTripForm] = useState<TripFormData | null>(null);
+  const [aircraft, setAircraft] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [addLegOpen, setAddLegOpen] = useState(false);
 
-  useEffect(() => { loadTrip(); }, [tripId]);
-
-  async function loadTrip() {
-    const { data } = await supabase.from('trips').select('*').eq('id', Number(tripId)).single();
-    if (data) {
-      const t = data as unknown as Trip;
-      setTrip(t);
-      if (t.itinerary_details && Array.isArray((t.itinerary_details as any).legs)) {
-        setLegs((t.itinerary_details as any).legs);
-        setFuelOnBoard((t.itinerary_details as any).fuel_on_board || 0);
-      }
-    }
-    setLoading(false);
-  }
-
-  // Attach onChange via useEffect to avoid detachment on re-render
+  // Load trip + aircraft data
   useEffect(() => {
-    const input = fileInputRef.current;
-    if (!input) return;
+    async function load() {
+      if (!tripId) return;
+      const { data: tripData, error } = await supabase
+        .from("trips")
+        .select("*")
+        .eq("id", parseInt(tripId))
+        .single();
 
-    const handler = async (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (!file) {
-        console.log('No file selected');
+      if (error || !tripData) {
+        toast({ title: "Error", description: "Could not load trip", variant: "destructive" });
+        navigate("/dashboard");
         return;
       }
-      console.log(`File selected: ${file.name}`);
-      setUploading(true);
 
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        console.log(`POSTing to ${API_URL}/api/parse-itinerary`);
-        const res = await fetch(`${API_URL}/api/parse-itinerary`, {
-          method: 'POST',
-          body: formData,
+      const itinerary = tripData.itinerary_details as TripFormData | null;
+      if (itinerary && itinerary.legs && itinerary.legs.length > 0) {
+        setTripForm(itinerary);
+      } else {
+        // Fresh trip — create with one empty leg
+        setTripForm({
+          itineraryNum: tripData.itinerary_num || "",
+          startingFuel: 0,
+          aircraftId: "",
+          basicEmptyWeight: 0,
+          maxFuelReserve: 0,
+          penalty: 0,
+          lbsPerHour: 0,
+          legs: [emptyLeg(1)],
         });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Upload failed (${res.status}): ${errorText}`);
-        }
-
-        const result = await res.json();
-        console.log('API Response:', result);
-
-        if (result.error) throw new Error(result.error);
-
-        const parsed = result.data;
-        const mappedLegs = mapApiLegs(parsed.legs || []);
-        setLegs(mappedLegs.length > 0 ? mappedLegs : [emptyLeg()]);
-        setFuelOnBoard(parsed.starting_fuel || 0);
-
-        if (parsed.itinerary_num) {
-          setTrip((prev) => prev ? { ...prev, itinerary_num: parsed.itinerary_num } : prev);
-        }
-
-        toast.success(`Parsed ${mappedLegs.length} leg${mappedLegs.length !== 1 ? 's' : ''} from trip sheet`);
-      } catch (err: any) {
-        console.error('Upload/parse error:', err);
-        toast.error(err.message || 'Failed to parse trip sheet');
-      } finally {
-        setUploading(false);
-        target.value = '';
       }
+
+      // Load aircraft if we have one
+      if (itinerary?.aircraftId) {
+        const { data: acData } = await supabase
+          .from("aircrafts")
+          .select("*")
+          .eq("tail_number", itinerary.aircraftId)
+          .eq("is_enabled", true)
+          .single();
+        if (acData) setAircraft(acData);
+      }
+
+      setLoading(false);
+    }
+    load();
+  }, [tripId]);
+
+  const aircraftDefaults = {
+    reserve: (aircraft as Record<string, number>)?.preferred_reserve ?? 0,
+    taxiFuelBurn: (aircraft as Record<string, number>)?.taxi_fuel_burn ?? 0,
+    maxTakeoff: (aircraft as Record<string, number>)?.max_takeoff_weight ?? 0,
+    maxLanding: (aircraft as Record<string, number>)?.max_landing_weight ?? 0,
+    maxRamp: (aircraft as Record<string, number>)?.max_ramp_weight ?? 0,
+    defaultPaxWeight: (aircraft as Record<string, number>)?.default_pax_weight ?? 180,
+    defaultBaggageWithPax: (aircraft as Record<string, number>)?.default_baggage_with_pax ?? 0,
+    defaultBaggageNoPax: (aircraft as Record<string, number>)?.default_baggage_no_pax ?? 0,
+    defaultPicWeight: (aircraft as Record<string, number>)?.default_pic_weight ?? 180,
+    defaultSicWeight: (aircraft as Record<string, number>)?.default_sic_weight ?? 180,
+    defaultCabinWeight: (aircraft as Record<string, number>)?.default_cabin_weight ?? 0,
+    maxFuelCapacity: (aircraft as Record<string, number>)?.max_fuel_capacity ?? 0,
+    basicEmptyWeight: (aircraft as Record<string, number>)?.basic_empty_weight ?? 0,
+    penaltyRate: (aircraft as Record<string, number>)?.penalty_rate ?? 0,
+    cruiseFuelBurn: (aircraft as Record<string, number>)?.cruise_fuel_burn ?? 0,
+  };
+
+  // --- PDF Upload Handler ---
+  const handlePdfUpload = async (file: File) => {
+    if (!tripForm) return;
+    setParsing(true);
+
+    try {
+      const pdfText = await extractPdfText(file);
+      const parsed = await parseItinerary(pdfText);
+
+      if (parsed.errors && parsed.errors.length > 0) {
+        toast({
+          title: "Parse warnings",
+          description: parsed.errors[0],
+          variant: "destructive",
+        });
+      }
+
+      // Convert to form legs with aircraft defaults
+      const newLegs = parsedLegsToFormData(parsed, {
+        defaultPaxWeight: aircraftDefaults.defaultPaxWeight,
+        defaultBaggageWithPax: aircraftDefaults.defaultBaggageWithPax,
+        defaultBaggageNoPax: aircraftDefaults.defaultBaggageNoPax,
+        defaultPicWeight: aircraftDefaults.defaultPicWeight,
+        defaultSicWeight: aircraftDefaults.defaultSicWeight,
+        defaultCabinWeight: aircraftDefaults.defaultCabinWeight,
+        preferredReserve: aircraftDefaults.reserve,
+        taxiFuelBurn: aircraftDefaults.taxiFuelBurn,
+        maxTakeoffWeight: aircraftDefaults.maxTakeoff,
+        maxLandingWeight: aircraftDefaults.maxLanding,
+        maxRampWeight: aircraftDefaults.maxRamp,
+        maxFuelCapacity: aircraftDefaults.maxFuelCapacity,
+      });
+
+      // Update trip form with parsed data
+      setTripForm({
+        ...tripForm,
+        itineraryNum: parsed.itinerary_num || tripForm.itineraryNum,
+        aircraftId: parsed.aircraft || tripForm.aircraftId,
+        legs: newLegs,
+      });
+
+      // Try to load aircraft by parsed tail number
+      if (parsed.aircraft) {
+        const { data: acData } = await supabase
+          .from("aircrafts")
+          .select("*")
+          .eq("tail_number", parsed.aircraft)
+          .eq("is_enabled", true)
+          .single();
+        if (acData) setAircraft(acData);
+      }
+
+      toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s)` });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to parse itinerary";
+      toast({ title: "Parse error", description: message, variant: "destructive" });
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  // --- Leg management ---
+  const updateLeg = (index: number, updated: LegFormData) => {
+    if (!tripForm) return;
+    const legs = [...tripForm.legs];
+    legs[index] = updated;
+    setTripForm({ ...tripForm, legs });
+  };
+
+  const addLeg = () => {
+    if (!tripForm) return;
+    const nextNum = Math.max(...tripForm.legs.map((l) => l.legNum), 0) + 1;
+    setTripForm({ ...tripForm, legs: [...tripForm.legs, emptyLeg(nextNum)] });
+    setAddLegOpen(false);
+  };
+
+  const removeLeg = (index: number) => {
+    if (!tripForm || tripForm.legs.length <= 1) return;
+    setTripForm({ ...tripForm, legs: tripForm.legs.filter((_, i) => i !== index) });
+  };
+
+  // --- Save & Navigate ---
+  const handleNext = async () => {
+    if (!tripForm || !tripId) return;
+    setSaving(true);
+
+    // Apply aircraft data to trip form
+    const updatedForm: TripFormData = {
+      ...tripForm,
+      basicEmptyWeight: aircraftDefaults.basicEmptyWeight,
+      maxFuelReserve: aircraftDefaults.maxFuelCapacity,
+      penalty: aircraftDefaults.penaltyRate,
+      lbsPerHour: aircraftDefaults.cruiseFuelBurn,
     };
 
-    input.addEventListener('change', handler);
-    return () => input.removeEventListener('change', handler);
-  }, []);
+    const { error } = await supabase
+      .from("trips")
+      .update({
+        itinerary_details: updatedForm as unknown as Record<string, unknown>,
+        itinerary_num: updatedForm.itineraryNum,
+      })
+      .eq("id", parseInt(tripId));
 
-  function updateLeg(index: number, field: string, value: any) {
-    setLegs((prev) => prev.map((l, i) => (i === index ? { ...l, [field]: value } : l)));
-  }
+    setSaving(false);
 
-  function addLeg() {
-    const last = legs[legs.length - 1];
-    setLegs((prev) => [...prev, { ...emptyLeg(), departure_icao: last?.destination_icao || '' }]);
-  }
+    if (error) {
+      toast({ title: "Error", description: "Failed to save legs", variant: "destructive" });
+      return;
+    }
 
-  function updateFuelTier(legIndex: number, tierIndex: number, field: string, value: number) {
-    setLegs((prev) => prev.map((l, i) => {
-      if (i !== legIndex) return l;
-      const tiers = [...l.fuel_price_tiers];
-      tiers[tierIndex] = { ...tiers[tierIndex], [field]: value };
-      return { ...l, fuel_price_tiers: tiers };
-    }));
-  }
-
-  function addFuelTier(legIndex: number) {
-    setLegs((prev) => prev.map((l, i) => i !== legIndex ? l : { ...l, fuel_price_tiers: [...l.fuel_price_tiers, { price_per_gallon: 0, min_quantity_gallons: 0 }] }));
-  }
-
-  async function handleNext() {
-    await supabase.from('trips').update({
-      itinerary_details: { legs, fuel_on_board: fuelOnBoard } as any,
-    } as any).eq('id', Number(tripId));
     navigate(`/trips/${tripId}/fuel`);
-  }
+  };
+
+  const allConfirmed = tripForm?.legs.every((l) => l.isConfirmed) ?? false;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const inputCls = "w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all";
+  if (!tripForm) return null;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-1">Trip Legs</h1>
-      <p className="text-sm text-muted-foreground mb-6">Trip {trip?.itinerary_num}</p>
-
-      {/* Upload OFP Section */}
-      <div className="mb-6 p-5 bg-card border border-dashed border-border rounded-xl">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm w-full justify-center"
-        >
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          {uploading ? 'Parsing trip sheet…' : 'Upload & Parse Trip Sheet (PDF)'}
-        </button>
+    <div className="max-w-2xl mx-auto space-y-4 p-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">Trip Legs</h1>
       </div>
 
-      <div className="mb-6">
-        <label className="text-sm font-medium text-foreground/80 block mb-1">Current Fuel on Board (lbs.)</label>
-        <input type="number" value={fuelOnBoard || ''} onChange={(e) => setFuelOnBoard(Number(e.target.value))} className={inputCls} />
-      </div>
-
-      {legs.map((leg, idx) => (
-        <div key={idx} className="mb-8 p-5 bg-card border border-border rounded-xl">
-          <h3 className="font-semibold text-foreground mb-4">Leg {idx + 1}</h3>
-          <div className="space-y-3">
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="text-xs text-muted-foreground block mb-1">Departure</label>
-                <input value={leg.departure_icao} onChange={(e) => updateLeg(idx, 'departure_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-muted-foreground block mb-1">Destination</label>
-                <input value={leg.destination_icao} onChange={(e) => updateLeg(idx, 'destination_icao', e.target.value.toUpperCase())} placeholder="ICAO" className={inputCls} />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="text-xs text-muted-foreground block mb-1">Fee Cost (USD)</label>
-                <input type="number" value={leg.departure_fee_cost || ''} onChange={(e) => updateLeg(idx, 'departure_fee_cost', Number(e.target.value))} className={inputCls} />
-              </div>
-              <div className="flex-1">
-                <label className="text-xs text-muted-foreground block mb-1">Waived With (gal)</label>
-                <input type="number" value={leg.departure_fee_waived_with || ''} onChange={(e) => updateLeg(idx, 'departure_fee_waived_with', Number(e.target.value))} className={inputCls} />
-              </div>
-            </div>
-
+      {/* PDF Upload */}
+      <Card className="border-dashed border-2">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Crew Weights (comma-separated)</label>
-              <input value={leg.crew_weights?.join(', ') || ''} onChange={(e) => updateLeg(idx, 'crew_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} placeholder="180, 230" />
+              <p className="font-medium text-sm">Upload Itinerary (PDF)</p>
+              <p className="text-xs text-muted-foreground">AI will parse your trip sheet and fill in the legs</p>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Passenger Weights (comma-separated)</label>
-              <input value={leg.passenger_weights?.join(', ') || ''} onChange={(e) => updateLeg(idx, 'passenger_weights', e.target.value.split(',').map(Number).filter(Boolean))} className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Baggage (lbs.)</label>
-              <input type="number" value={leg.baggage_weight || ''} onChange={(e) => updateLeg(idx, 'baggage_weight', Number(e.target.value))} className={inputCls} />
-            </div>
-
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Fuel Prices</label>
-              {leg.fuel_price_tiers.map((tier, ti) => (
-                <div key={ti} className="flex gap-3 mb-2">
-                  <div className="flex-1">
-                    <label className="text-xs text-muted-foreground">$/gal</label>
-                    <input type="number" step="0.01" value={tier.price_per_gallon || ''} onChange={(e) => updateFuelTier(idx, ti, 'price_per_gallon', Number(e.target.value))} className={inputCls} />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-muted-foreground">Min qty (gal)</label>
-                    <input type="number" value={tier.min_quantity_gallons || ''} onChange={(e) => updateFuelTier(idx, ti, 'min_quantity_gallons', Number(e.target.value))} className={inputCls} />
-                  </div>
-                </div>
-              ))}
-              <button type="button" onClick={() => addFuelTier(idx)} className="text-xs px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                Add price tier
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Reserve (lbs.)</label>
-                <input type="number" value={leg.reserve || ''} onChange={(e) => updateLeg(idx, 'reserve', Number(e.target.value))} className={inputCls} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Taxi Fuel Burn (lbs.)</label>
-                <input type="number" value={leg.taxi_fuel_burn || ''} onChange={(e) => updateLeg(idx, 'taxi_fuel_burn', Number(e.target.value))} className={inputCls} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Max Takeoff Weight (lbs.)</label>
-                <input type="number" value={leg.max_takeoff_weight || ''} onChange={(e) => updateLeg(idx, 'max_takeoff_weight', Number(e.target.value))} className={inputCls} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Max Landing Weight (lbs.)</label>
-                <input type="number" value={leg.max_landing_weight || ''} onChange={(e) => updateLeg(idx, 'max_landing_weight', Number(e.target.value))} className={inputCls} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">Fuel Burn (lbs.)</label>
-                <input type="number" value={leg.fuel_burn || ''} onChange={(e) => updateLeg(idx, 'fuel_burn', Number(e.target.value))} className={inputCls} />
-              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePdfUpload(file);
+                }}
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={parsing}
+              >
+                {parsing ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Parsing...</>
+                ) : (
+                  <><FileUp className="h-4 w-4 mr-2" /> Upload PDF</>
+                )}
+              </Button>
             </div>
           </div>
-        </div>
-      ))}
+        </CardContent>
+      </Card>
 
-      <button onClick={addLeg} className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground mb-6 transition-colors">
-        <Plus className="w-4 h-4" /> Add Leg
-      </button>
+      {/* Leg Editors */}
+      <div className="space-y-3">
+        {tripForm.legs.map((leg, index) => (
+          <LegEditor
+            key={`${leg.legNum}-${index}`}
+            leg={leg}
+            onUpdate={(updated) => updateLeg(index, updated)}
+            onConfirm={() => updateLeg(index, { ...leg, isConfirmed: true })}
+            onUnconfirm={() => updateLeg(index, { ...leg, isConfirmed: false })}
+            onRemove={() => removeLeg(index)}
+            aircraftDefaults={aircraftDefaults}
+          />
+        ))}
+      </div>
 
-      <button onClick={handleNext} className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all">
-        Next — Confirm & Optimize
-      </button>
+      {/* Add Leg */}
+      <Dialog open={addLegOpen} onOpenChange={setAddLegOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full">
+            <Plus className="h-4 w-4 mr-2" /> Add Leg
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a Leg</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Button onClick={addLeg} className="w-full">
+              <Plus className="h-4 w-4 mr-2" /> Add Blank Leg
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setAddLegOpen(false);
+                fileInputRef.current?.click();
+              }}
+            >
+              <FileUp className="h-4 w-4 mr-2" /> Upload Additional Itinerary
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Next Button */}
+      <div className="flex gap-3 pt-2">
+        <Button
+          onClick={handleNext}
+          disabled={!allConfirmed || saving || tripForm.legs.length === 0}
+          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <ArrowRight className="h-4 w-4 mr-2" />
+          )}
+          Next: Fuel Burns
+        </Button>
+      </div>
     </div>
   );
 }

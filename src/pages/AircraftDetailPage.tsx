@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { Aircraft } from '@/types/database';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 
 export default function AircraftDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,9 +63,14 @@ export default function AircraftDetailPage() {
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">{aircraft.tail_number}</h1>
-        <button onClick={handleDelete} className="p-2 hover:bg-destructive/10 rounded-lg text-destructive transition-colors" title="Delete">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate(`/fleet/${id}/edit`)} className="p-2 hover:bg-primary/10 rounded-lg text-primary transition-colors" title="Edit">
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button onClick={handleDelete} className="p-2 hover:bg-destructive/10 rounded-lg text-destructive transition-colors" title="Delete">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-xl divide-y divide-border">

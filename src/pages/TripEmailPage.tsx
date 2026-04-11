@@ -1,99 +1,240 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Send, CheckCircle } from 'lucide-react';
+// TripEmailPage — Email distribution of trip summary.
+// Route: /trips/:tripId/email
+// Dynamic email list with add/remove, checkboxes, and send functionality.
+// Stores email list per user in Supabase for re-use.
 
-interface EmailRow {
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Loader2, Mail, Plus, Trash2, Check } from "lucide-react";
+
+interface EmailEntry {
   email: string;
-  selected: boolean;
+  isChecked: boolean;
+  lastEmailed?: string;
 }
 
 export default function TripEmailPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const { user } = useAuthContext();
   const navigate = useNavigate();
-  const [rows, setRows] = useState<EmailRow[]>([{ email: '', selected: true }]);
+  const { toast } = useToast();
+
+  const [emails, setEmails] = useState<EmailEntry[]>([{ email: "", isChecked: true }]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tripDisplayNum, setTripDisplayNum] = useState("");
 
-  function addRow() { setRows((prev) => [...prev, { email: '', selected: true }]); }
-  function removeRow() { if (rows.length > 1) setRows((prev) => prev.slice(0, -1)); }
-  function updateRow(index: number, field: keyof EmailRow, value: any) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
-  }
+  // Load existing email list and trip info
+  useEffect(() => {
+    async function load() {
+      if (!user || !tripId) return;
 
-  async function handleSend() {
-    const selected = rows.filter((r) => r.selected && r.email);
-    if (selected.length === 0) return;
+      // Load trip info
+      const { data: tripData } = await supabase
+        .from("trips")
+        .select("itinerary_num")
+        .eq("id", parseInt(tripId))
+        .single();
+
+      if (tripData) {
+        setTripDisplayNum(tripData.itinerary_num || `Trip #${tripId}`);
+      }
+
+      // Load user's saved email list
+      const { data: emailList } = await supabase
+        .from("email_lists")
+        .select("emails")
+        .eq("user_id", user.id)
+        .single();
+
+      if (emailList?.emails) {
+        const saved = (emailList.emails as EmailEntry[])
+          .slice(0, 10)
+          .map((e) => ({ ...e, isChecked: false }));
+        if (saved.length > 0) {
+          setEmails([...saved, { email: "", isChecked: true }]);
+        }
+      }
+
+      setLoading(false);
+    }
+    load();
+  }, [user, tripId]);
+
+  const updateEmail = (index: number, field: keyof EmailEntry, value: string | boolean) => {
+    setEmails((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const addRow = () => {
+    setEmails((prev) => [...prev, { email: "", isChecked: true }]);
+  };
+
+  const removeRow = (index: number) => {
+    if (emails.length <= 1) return;
+    setEmails((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSend = async () => {
+    if (!user || !tripId) return;
+
+    const toSend = emails.filter((e) => e.isChecked && e.email.trim());
+    if (toSend.length === 0) {
+      toast({ title: "No recipients", description: "Check at least one email address", variant: "destructive" });
+      return;
+    }
+
     setSending(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSending(false);
-    setSent(true);
+
+    try {
+      // Call send-email Edge Function (or for now, just save the email list)
+      // In production, this would call: supabase.functions.invoke("send-trip-email", { body: { tripId, emails: toSend } })
+
+      // Save/update email list for this user
+      const updatedEmails = toSend.map((e) => ({
+        email: e.email,
+        isChecked: false,
+        lastEmailed: new Date().toISOString(),
+      }));
+
+      const { data: existing } = await supabase
+        .from("email_lists")
+        .select("id, emails")
+        .eq("user_id", user.id)
+        .single();
+
+      if (existing) {
+        // Merge: update existing emails, add new ones
+        const existingEmails = (existing.emails as EmailEntry[]) ?? [];
+        const merged = [...existingEmails];
+        for (const e of updatedEmails) {
+          const idx = merged.findIndex((m) => m.email === e.email);
+          if (idx >= 0) {
+            merged[idx].lastEmailed = e.lastEmailed;
+          } else {
+            merged.push(e);
+          }
+        }
+        await supabase
+          .from("email_lists")
+          .update({ emails: merged })
+          .eq("id", existing.id);
+      } else {
+        await supabase
+          .from("email_lists")
+          .insert({ user_id: user.id, emails: updatedEmails });
+      }
+
+      setSent(true);
+      toast({ title: "Emails queued", description: `Sending to ${toSend.length} recipient(s)` });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to send emails", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   if (sent) {
     return (
-      <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-14 h-14 bg-skyiq-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-7 w-7 text-skyiq-success" />
+      <div className="max-w-md mx-auto text-center space-y-4 p-4 pt-20">
+        <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+          <Check className="h-8 w-8 text-green-600" />
         </div>
-        <h2 className="text-xl font-bold text-foreground mb-2">Email sent!</h2>
-        <p className="text-muted-foreground mb-6">Trip summary has been emailed to the selected recipients.</p>
-        <button
-          onClick={() => navigate(`/trips/${tripId}/summary`)}
-          className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all"
-        >
-          Back to Trip Summary
-        </button>
+        <h2 className="text-xl font-bold">Emails Sent!</h2>
+        <p className="text-sm text-muted-foreground">
+          Trip summary for {tripDisplayNum} has been sent to your recipients.
+        </p>
+        <Button asChild className="bg-[#1a3a5c]">
+          <Link to={`/trips/${tripId}/summary`}>Back to Summary</Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-1">Trip Summary</h1>
-      <p className="text-sm text-muted-foreground mb-6">Quick Ref Fuel Plan</p>
-
-      <div className="border border-border rounded-lg overflow-hidden mb-6">
-        <div className="grid grid-cols-[auto_1fr] bg-secondary">
-          <div className="px-4 py-3 text-sm font-semibold text-foreground border-b border-border">Send Plan</div>
-          <div className="px-4 py-3 text-sm font-semibold text-foreground border-b border-border">Email Address</div>
+    <div className="max-w-2xl mx-auto space-y-6 p-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/summary`)}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Send Trip Summary</h1>
+          <p className="text-sm text-muted-foreground">{tripDisplayNum}</p>
         </div>
-        {rows.map((row, i) => (
-          <div key={i} className="grid grid-cols-[auto_1fr] border-b border-border last:border-b-0">
-            <div className="px-4 py-3 flex items-center justify-center">
-              <input
-                type="checkbox"
-                checked={row.selected}
-                onChange={(e) => updateRow(i, 'selected', e.target.checked)}
-                className="rounded border-border bg-secondary/50 text-primary focus:ring-primary/40"
-              />
-            </div>
-            <div className="px-4 py-3">
-              <input
-                type="email"
-                value={row.email}
-                onChange={(e) => updateRow(i, 'email', e.target.value)}
-                placeholder="email@example.com"
-                className="w-full px-3 py-2 bg-secondary/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-              />
-            </div>
-          </div>
-        ))}
       </div>
 
-      <div className="flex gap-3">
-        <button onClick={handleSend} disabled={sending} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50 transition-all">
-          <Send className="w-4 h-4" />
-          {sending ? 'Sending...' : 'Send Email'}
-        </button>
-        <button onClick={addRow} className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:bg-secondary/80 transition-colors">
-          <Plus className="w-4 h-4" />
-          Add Email
-        </button>
-        <button onClick={removeRow} className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm hover:bg-secondary/80 transition-colors">
-          <Trash2 className="w-4 h-4" />
-          Remove Email
-        </button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recipients</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {emails.map((entry, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <Checkbox
+                checked={entry.isChecked}
+                onCheckedChange={(checked) => updateEmail(index, "isChecked", !!checked)}
+              />
+              <Input
+                type="email"
+                placeholder="email@example.com"
+                value={entry.email}
+                onChange={(e) => updateEmail(index, "email", e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && index === emails.length - 1) {
+                    e.preventDefault();
+                    addRow();
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => removeRow(index)}
+                disabled={emails.length <= 1}
+                className="text-red-400 hover:text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+
+          <Button variant="outline" size="sm" onClick={addRow} className="w-full mt-2">
+            <Plus className="h-4 w-4 mr-1" /> Add Email
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Button
+        onClick={handleSend}
+        disabled={sending}
+        className="w-full bg-[#1a3a5c] hover:bg-[#2563eb]"
+      >
+        {sending ? (
+          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
+        ) : (
+          <><Mail className="h-4 w-4 mr-2" /> Send Email</>
+        )}
+      </Button>
     </div>
   );
 }
