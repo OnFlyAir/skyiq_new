@@ -516,8 +516,14 @@ export default function TripLegsPage() {
     setParsing(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Convert PDF to base64 for proper binary handling
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
 
       const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
       console.log("Sending to edge function:", edgeFnUrl);
@@ -525,8 +531,9 @@ export default function TripLegsPage() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify({ pdf_base64: base64, filename: file.name }),
       });
 
       if (!response.ok) {

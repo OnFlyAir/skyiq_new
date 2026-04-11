@@ -162,7 +162,7 @@ IMPORTANT RULES:
 - If you cannot find a value, use reasonable defaults: empty string for text, 0 for numbers, empty array for lists.
 - Do not include "//" comments in the JSON output.`;
 
-async function parseWithAI(text: string, retries = 3): Promise<string | null> {
+async function parseWithAI(pdfBase64: string, retries = 3): Promise<string | null> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -177,7 +177,21 @@ async function parseWithAI(text: string, retries = 3): Promise<string | null> {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: PROMPT },
-          { role: "user", content: `Here is the trip sheet content:\n\n${text}` },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${pdfBase64}`,
+                },
+              },
+              {
+                type: "text",
+                text: "Parse this trip sheet PDF and extract all the data as specified.",
+              },
+            ],
+          },
         ],
       }),
     });
@@ -195,6 +209,7 @@ async function parseWithAI(text: string, retries = 3): Promise<string | null> {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`AI API error (${response.status}):`, errorText);
       throw new Error(`AI API error (${response.status}): ${errorText}`);
     }
 
@@ -275,9 +290,13 @@ serve(async (req) => {
 
   try {
     const contentType = req.headers.get("content-type") ?? "";
-    let pdfText = "";
+    let pdfBase64 = "";
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      pdfBase64 = body.pdf_base64 ?? "";
+    } else if (contentType.includes("multipart/form-data")) {
+      // Legacy: convert file to base64
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       if (!file) {
@@ -286,20 +305,23 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      pdfText = await file.text();
-    } else {
-      const body = await req.json();
-      pdfText = body.text ?? "";
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      pdfBase64 = btoa(binary);
     }
 
-    if (!pdfText) {
+    if (!pdfBase64) {
       return new Response(
-        JSON.stringify({ error: "No PDF text content provided" }),
+        JSON.stringify({ error: "No PDF content provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const aiResponse = await parseWithAI(pdfText);
+    const aiResponse = await parseWithAI(pdfBase64);
 
     if (!aiResponse) {
       return new Response(
