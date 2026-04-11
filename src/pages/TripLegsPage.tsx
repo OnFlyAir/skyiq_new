@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { API_URL } from "@/lib/config";
+import { pendingParseFile } from "@/lib/pending-parse-file";
 import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
@@ -379,6 +380,7 @@ export default function TripLegsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoParseTriggered = useRef(false);
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
   const [aircraft, setAircraft] = useState<Record<string, unknown> | null>(null);
@@ -453,6 +455,16 @@ export default function TripLegsPage() {
     penaltyRate: (aircraft as Record<string, number>)?.penalty_rate ?? 0,
     cruiseFuelBurn: (aircraft as Record<string, number>)?.cruise_fuel_burn ?? 0,
   };
+
+  // Auto-parse PDF if navigated from NewTripPage with a pending file
+  useEffect(() => {
+    const file = pendingParseFile.current;
+    if (file && tripForm && !autoParseTriggered.current) {
+      autoParseTriggered.current = true;
+      pendingParseFile.current = null;
+      handlePdfUpload(file);
+    }
+  }, [tripForm]);
 
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File) => {

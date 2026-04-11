@@ -2,6 +2,8 @@
 // Route: /trips/new
 // Creates a trip record in Supabase, then navigates to the legs editor.
 
+import { pendingParseFile } from "@/lib/pending-parse-file";
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +115,6 @@ export default function NewTripPage() {
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file || !user) return;
-              // Create trip first, then navigate — legs page handles the upload
               setCreating(true);
               const { data, error } = await supabase
                 .from("trips")
@@ -127,7 +128,13 @@ export default function NewTripPage() {
                 .select("id")
                 .single();
               setCreating(false);
-              if (data) navigate(`/trips/${data.id}/legs`);
+              if (error || !data) {
+                toast({ title: "Error", description: "Failed to create trip", variant: "destructive" });
+                return;
+              }
+              // Store file reference for the legs page to pick up
+              pendingParseFile.current = file;
+              navigate(`/trips/${data.id}/legs`);
             }}
           />
           <Button
