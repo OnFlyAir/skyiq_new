@@ -290,9 +290,13 @@ serve(async (req) => {
 
   try {
     const contentType = req.headers.get("content-type") ?? "";
-    let pdfText = "";
+    let pdfBase64 = "";
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      pdfBase64 = body.pdf_base64 ?? "";
+    } else if (contentType.includes("multipart/form-data")) {
+      // Legacy: convert file to base64
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       if (!file) {
@@ -301,20 +305,23 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      pdfText = await file.text();
-    } else {
-      const body = await req.json();
-      pdfText = body.text ?? "";
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      pdfBase64 = btoa(binary);
     }
 
-    if (!pdfText) {
+    if (!pdfBase64) {
       return new Response(
-        JSON.stringify({ error: "No PDF text content provided" }),
+        JSON.stringify({ error: "No PDF content provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const aiResponse = await parseWithAI(pdfText);
+    const aiResponse = await parseWithAI(pdfBase64);
 
     if (!aiResponse) {
       return new Response(
