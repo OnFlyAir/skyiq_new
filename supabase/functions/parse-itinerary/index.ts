@@ -162,7 +162,7 @@ IMPORTANT RULES:
 - If you cannot find a value, use reasonable defaults: empty string for text, 0 for numbers, empty array for lists.
 - Do not include "//" comments in the JSON output.`;
 
-async function parseWithAI(text: string, retries = 3): Promise<string | null> {
+async function parseWithAI(pdfBase64: string, retries = 3): Promise<string | null> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY") ?? "";
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -177,7 +177,21 @@ async function parseWithAI(text: string, retries = 3): Promise<string | null> {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: PROMPT },
-          { role: "user", content: `Here is the trip sheet content:\n\n${text}` },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${pdfBase64}`,
+                },
+              },
+              {
+                type: "text",
+                text: "Parse this trip sheet PDF and extract all the data as specified.",
+              },
+            ],
+          },
         ],
       }),
     });
@@ -195,6 +209,7 @@ async function parseWithAI(text: string, retries = 3): Promise<string | null> {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`AI API error (${response.status}):`, errorText);
       throw new Error(`AI API error (${response.status}): ${errorText}`);
     }
 
