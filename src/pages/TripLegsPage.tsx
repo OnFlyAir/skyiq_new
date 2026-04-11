@@ -703,5 +703,6 @@ export default function TripLegsPage() {
         </Button>
       </div>
     </div>
+    </>
   );
 }
