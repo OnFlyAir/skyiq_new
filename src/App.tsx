@@ -32,6 +32,8 @@ import SavingsPage from "@/pages/SavingsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
+import AdminDfyPage from "@/pages/AdminDfyPage";
+import DfyPortalPage from "@/pages/DfyPortalPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import NotFound from "@/pages/NotFound";
@@ -93,6 +95,10 @@ function App() {
               {/* Admin — role-gated inside the component */}
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+              <Route path="/admin/dfy" element={<AdminDfyPage />} />
+
+              {/* DFY Client Portal */}
+              <Route path="/dfy" element={<DfyPortalPage />} />
             </Route>
 
             {/* Redirects */}

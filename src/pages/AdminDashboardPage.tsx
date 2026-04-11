@@ -103,7 +103,10 @@ export default function AdminDashboardPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-2xl font-bold">Platform Overview</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin/dfy')}>
+            DFY Service
+          </Button>
           <Button variant="outline" onClick={() => navigate('/admin/subscriptions')}>
             Manage Subscriptions
           </Button>
