@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { formToTripInput, runFuelOptimization, resultToSummary } from "@/lib/fuel-service";
 import type { TripFormData, TripSummary } from "@/types/trip";
 import { Button } from "@/components/ui/button";

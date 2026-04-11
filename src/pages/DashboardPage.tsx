@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import type { TripSummary } from "@/types/trip";
 import { Card, CardContent } from "@/components/ui/card";
