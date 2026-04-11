@@ -1,17 +1,20 @@
 // TripSummaryPage — Displays optimization results after the fuel optimizer runs.
 // Route: /trips/:tripId/summary
-// Shows per-leg fuel uplift, costs, weights, and total savings.
-// Supports full summary and quick-reference toggle.
+// Shows per-leg fuel uplift, costs, weights, total savings, and optimization reasoning.
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { TripSummary, TripSummaryLeg } from "@/types/trip";
+import { generateLegReasoning, generateOverallReasoning } from "@/lib/fuel-reasoning";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Mail, Edit, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  ArrowLeft, Loader2, Mail, Edit,
+  ToggleLeft, ToggleRight, Lightbulb, ChevronDown, ChevronUp,
+} from "lucide-react";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -21,12 +24,23 @@ function formatWeight(lbs: number): string {
   return `${Math.round(lbs).toLocaleString()} lbs`;
 }
 
-function LegDetail({ leg, index, quickRef }: { leg: TripSummaryLeg; index: number; quickRef: boolean }) {
+function LegDetail({
+  leg,
+  index,
+  quickRef,
+  reasoning,
+}: {
+  leg: TripSummaryLeg;
+  index: number;
+  quickRef: boolean;
+  reasoning?: { headline: string; details: string[] };
+}) {
   const hasErrors = leg.errors && leg.errors.length > 0;
+  const [showReasoning, setShowReasoning] = useState(false);
 
   if (quickRef) {
     return (
-      <Card className={hasErrors ? "border-red-300" : ""}>
+      <Card className={hasErrors ? "border-destructive" : ""}>
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
             <span className="font-semibold">
@@ -45,7 +59,7 @@ function LegDetail({ leg, index, quickRef }: { leg: TripSummaryLeg; index: numbe
   }
 
   return (
-    <Card className={hasErrors ? "border-red-300" : ""}>
+    <Card className={hasErrors ? "border-destructive" : ""}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Leg {index + 1}: {leg.departure} → {leg.arrival}</span>
@@ -60,7 +74,7 @@ function LegDetail({ leg, index, quickRef }: { leg: TripSummaryLeg; index: numbe
         {hasErrors && (
           <div className="mb-3 space-y-1">
             {leg.errors.map((err, i) => (
-              <p key={i} className="text-sm text-red-600 font-medium">{err}</p>
+              <p key={i} className="text-sm text-destructive font-medium">{err}</p>
             ))}
           </div>
         )}
@@ -84,7 +98,7 @@ function LegDetail({ leg, index, quickRef }: { leg: TripSummaryLeg; index: numbe
           </div>
           <div>
             <span className="text-muted-foreground">Landing Fuel</span>
-            <p className={leg.landingFuel < 0 ? "text-red-600 font-bold" : ""}>
+            <p className={leg.landingFuel < 0 ? "text-destructive font-bold" : ""}>
               {formatWeight(leg.landingFuel)}
             </p>
           </div>
@@ -98,11 +112,38 @@ function LegDetail({ leg, index, quickRef }: { leg: TripSummaryLeg; index: numbe
           </div>
           <div>
             <span className="text-muted-foreground">Landing Weight</span>
-            <p className={leg.landingWeight < 0 ? "text-red-600 font-bold" : ""}>
+            <p className={leg.landingWeight < 0 ? "text-destructive font-bold" : ""}>
               {formatWeight(leg.landingWeight)}
             </p>
           </div>
         </div>
+
+        {/* Optimization Reasoning */}
+        {reasoning && reasoning.details.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-border">
+            <button
+              onClick={() => setShowReasoning(!showReasoning)}
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors w-full text-left"
+            >
+              <Lightbulb className="h-4 w-4" />
+              <span>{reasoning.headline}</span>
+              {showReasoning ? (
+                <ChevronUp className="h-3 w-3 ml-auto" />
+              ) : (
+                <ChevronDown className="h-3 w-3 ml-auto" />
+              )}
+            </button>
+            {showReasoning && (
+              <ul className="mt-2 space-y-1.5 pl-6 animate-fade-in">
+                {reasoning.details.map((detail, di) => (
+                  <li key={di} className="text-xs text-muted-foreground leading-relaxed list-disc">
+                    {detail}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -158,6 +199,8 @@ export default function TripSummaryPage() {
 
   const totalCost = summary.legs.reduce((sum, l) => sum + l.totalCost, 0);
   const hasErrors = summary.legs.some((l) => l.errors && l.errors.length > 0);
+  const legReasonings = generateLegReasoning(summary.legs, summary.savings);
+  const overallReasoning = generateOverallReasoning(summary.legs, summary.savings);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4">
@@ -177,13 +220,26 @@ export default function TripSummaryPage() {
 
       {/* Savings Banner */}
       {summary.savings > 0 && (
-        <Card className="bg-green-50 border-green-200">
+        <Card className="bg-green-950/30 border-green-700/40">
           <CardContent className="pt-4 text-center">
-            <p className="text-sm text-green-700">Estimated Savings</p>
-            <p className="text-3xl font-bold text-green-600">{formatCurrency(summary.savings)}</p>
+            <p className="text-sm text-green-400">Estimated Savings</p>
+            <p className="text-3xl font-bold text-green-400">{formatCurrency(summary.savings)}</p>
           </CardContent>
         </Card>
       )}
+
+      {/* Overall Reasoning */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="pt-4">
+          <div className="flex gap-3 items-start">
+            <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Optimizer Strategy</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{overallReasoning}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Toggle */}
       <div className="flex items-center justify-between">
@@ -202,7 +258,13 @@ export default function TripSummaryPage() {
       {/* Legs */}
       <div className="space-y-3">
         {summary.legs.map((leg, i) => (
-          <LegDetail key={i} leg={leg} index={i} quickRef={quickRef} />
+          <LegDetail
+            key={i}
+            leg={leg}
+            index={i}
+            quickRef={quickRef}
+            reasoning={legReasonings[i]}
+          />
         ))}
       </div>
 
@@ -215,7 +277,7 @@ export default function TripSummaryPage() {
           </Link>
         </Button>
         <Button
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
           disabled={hasErrors}
           onClick={() => !hasErrors && navigate(`/trips/${tripId}/email`)}
         >

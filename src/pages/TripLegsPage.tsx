@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { API_URL } from "@/lib/config";
+import ParsingLoader from "@/components/ParsingLoader";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -596,6 +597,8 @@ export default function TripLegsPage() {
   if (!tripForm) return null;
 
   return (
+    <>
+    {parsing && <ParsingLoader />}
     <div className="max-w-2xl mx-auto space-y-4 p-4">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -700,5 +703,6 @@ export default function TripLegsPage() {
         </Button>
       </div>
     </div>
+    </>
   );
 }
