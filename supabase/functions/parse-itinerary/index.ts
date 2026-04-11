@@ -152,8 +152,15 @@ async function parseWithAI(text: string): Promise<string | null> {
   return data.choices?.[0]?.message?.content?.trim() ?? null;
 }
 
+function extractJson(raw: string): string {
+  // Strip markdown code fences if present
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) return fenceMatch[1].trim();
+  return raw.trim();
+}
+
 function convertToTrip(jsonStr: string): ParsedTrip {
-  const parsed: ParsedData = JSON.parse(jsonStr);
+  const parsed: ParsedData = JSON.parse(extractJson(jsonStr));
 
   const legs: ParsedLeg[] = parsed.trip_segments.map((segment) => {
     const fees: ParsedFee[] = segment.fee_waivers
