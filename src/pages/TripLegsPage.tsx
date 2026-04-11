@@ -456,16 +456,15 @@ export default function TripLegsPage() {
     cruiseFuelBurn: (aircraft as Record<string, number>)?.cruise_fuel_burn ?? 0,
   };
 
-  // Auto-parse PDF if navigated from NewTripPage with a file
+  // Auto-parse PDF if navigated from NewTripPage with a pending file
   useEffect(() => {
-    const file = (location.state as { autoParseFile?: File } | null)?.autoParseFile;
+    const file = pendingParseFile.current;
     if (file && tripForm && !autoParseTriggered.current) {
       autoParseTriggered.current = true;
+      pendingParseFile.current = null;
       handlePdfUpload(file);
-      // Clear location state so refresh doesn't re-trigger
-      window.history.replaceState({}, document.title);
     }
-  }, [tripForm, location.state]);
+  }, [tripForm]);
 
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File) => {
