@@ -215,7 +215,7 @@ export default function TripSummaryPage() {
           </Link>
         </Button>
         <Button
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
           disabled={hasErrors}
           onClick={() => !hasErrors && navigate(`/trips/${tripId}/email`)}
         >

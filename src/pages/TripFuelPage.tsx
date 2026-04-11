@@ -199,7 +199,7 @@ export default function TripFuelPage() {
         <Button
           onClick={handleOptimize}
           disabled={optimizing || fuelBurns.some((b) => b <= 0)}
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
         >
           {optimizing ? (
             <>

@@ -169,7 +169,7 @@ export default function TripEmailPage() {
         <p className="text-sm text-muted-foreground">
           Trip summary for {tripDisplayNum} has been sent to your recipients.
         </p>
-        <Button asChild className="bg-[#1a3a5c]">
+        <Button asChild className="bg-primary">
           <Link to={`/trips/${tripId}/summary`}>Back to Summary</Link>
         </Button>
       </div>
@@ -233,7 +233,7 @@ export default function TripEmailPage() {
       <Button
         onClick={handleSend}
         disabled={sending}
-        className="w-full bg-[#1a3a5c] hover:bg-[#2563eb]"
+        className="w-full bg-primary hover:bg-primary/90"
       >
         {sending ? (
           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>

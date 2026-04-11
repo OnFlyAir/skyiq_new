@@ -109,14 +109,14 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 text-center">
-            <Building2 className="h-5 w-5 mx-auto mb-1 text-[#1a3a5c]" />
+            <Building2 className="h-5 w-5 mx-auto mb-1 text-primary" />
             <p className="text-2xl font-bold">{companies.length}</p>
             <p className="text-xs text-muted-foreground">Companies</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 text-center">
-            <Plane className="h-5 w-5 mx-auto mb-1 text-[#1a3a5c]" />
+            <Plane className="h-5 w-5 mx-auto mb-1 text-primary" />
             <p className="text-2xl font-bold">{totalTrips}</p>
             <p className="text-xs text-muted-foreground">Trips Run</p>
           </CardContent>
@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
       ) : (
         <div className="rounded-lg border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-muted">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Company</th>
                 <th className="text-left px-4 py-2 font-medium">Contact</th>
@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
             </thead>
             <tbody>
               {filtered.map((c) => (
-                <tr key={c.userId} className="border-t hover:bg-gray-50">
+                <tr key={c.userId} className="border-t hover:bg-muted">
                   <td className="px-4 py-2 font-medium">{c.company}</td>
                   <td className="px-4 py-2 text-muted-foreground">{c.name}</td>
                   <td className="px-4 py-2 text-center">{c.tripsRun}</td>

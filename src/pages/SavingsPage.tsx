@@ -96,7 +96,7 @@ export default function SavingsPage() {
         </Card>
         <Card>
           <CardContent className="pt-4 text-center">
-            <Plane className="h-6 w-6 mx-auto mb-1 text-[#1a3a5c]" />
+            <Plane className="h-6 w-6 mx-auto mb-1 text-primary" />
             <p className="text-2xl font-bold">{totalTrips}</p>
             <p className="text-xs text-muted-foreground">Fuel Plans Calculated</p>
           </CardContent>

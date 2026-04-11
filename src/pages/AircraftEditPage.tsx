@@ -212,7 +212,7 @@ export default function AircraftEditPage() {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
+          className="flex-1 bg-primary hover:bg-primary/90"
         >
           {saving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
