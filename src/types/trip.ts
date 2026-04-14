@@ -92,6 +92,7 @@ export interface TripSummary {
   legs: TripSummaryLeg[];
   aircraftNumber: string;
   savings: number;
+  maxFuelLbs?: number;
 }
 
 // --- Itinerary Parser Types ---
