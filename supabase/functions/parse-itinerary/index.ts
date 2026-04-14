@@ -35,6 +35,9 @@ interface TripSegment {
 interface ParsedData {
   crew_itinerary_id: string;
   aircraft_tail_number: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
   trip_segments: TripSegment[];
 }
 
