@@ -107,12 +107,14 @@ export function resultToSummary(
     let hasWaivableFee = false;
     let hasWaivedFee = false;
     let feeMin = 0;
+    let feeAmount = 0;
 
     if (leg.fees.length > 0) {
       const fee = leg.fees.find((f) => f.is_waivable && f.amount > 0 && f.waived_at > 0);
       if (fee) {
         hasWaivableFee = true;
         feeMin = fee.waived_at;
+        feeAmount = fee.amount;
         const didWaive = leg.total_fuel_purchased_gallons >= fee.waived_at;
         hasWaivedFee = didWaive;
         fuelCost = didWaive
@@ -136,6 +138,7 @@ export function resultToSummary(
       hasWaivedFee,
       hasWaivableFee,
       feeMin,
+      feeAmount,
       totalCost: leg.total_cost,
       errors: leg.errors,
     };
