@@ -33,7 +33,7 @@ function LegDetail({
   leg: TripSummaryLeg;
   index: number;
   quickRef: boolean;
-  reasoning?: { headline: string; details: string[] };
+  reasoning?: { strategy: { label: string; description: string }; details: string[] };
 }) {
   const hasErrors = leg.errors && leg.errors.length > 0;
   const [showReasoning, setShowReasoning] = useState(false);
@@ -43,9 +43,14 @@ function LegDetail({
       <Card className={hasErrors ? "border-destructive" : ""}>
         <CardContent className="pt-4">
           <div className="flex items-center justify-between">
-            <span className="font-semibold">
-              Leg {index + 1}: {leg.departure} → {leg.arrival}
-            </span>
+            <div>
+              <span className="font-semibold">
+                Leg {index + 1}: {leg.departure} → {leg.arrival}
+              </span>
+              {reasoning && (
+                <p className="text-xs text-muted-foreground mt-0.5">{reasoning.strategy.label}</p>
+              )}
+            </div>
             <div className="text-right">
               <div className="font-bold">
                 Uplift: {Math.round(leg.fuelUpliftGals)} gal / {formatWeight(leg.fuelUpliftLbs)}
@@ -118,29 +123,37 @@ function LegDetail({
           </div>
         </div>
 
-        {/* Optimization Reasoning */}
-        {reasoning && reasoning.details.length > 0 && (
+        {/* Strategy & Reasoning */}
+        {reasoning && (
           <div className="mt-4 pt-3 border-t border-border">
-            <button
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors w-full text-left"
-            >
-              <Lightbulb className="h-4 w-4" />
-              <span>{reasoning.headline}</span>
-              {showReasoning ? (
-                <ChevronUp className="h-3 w-3 ml-auto" />
-              ) : (
-                <ChevronDown className="h-3 w-3 ml-auto" />
-              )}
-            </button>
-            {showReasoning && (
-              <ul className="mt-2 space-y-1.5 pl-6 animate-fade-in">
-                {reasoning.details.map((detail, di) => (
-                  <li key={di} className="text-xs text-muted-foreground leading-relaxed list-disc">
-                    {detail}
-                  </li>
-                ))}
-              </ul>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="outline" className="text-xs font-semibold">{reasoning.strategy.label}</Badge>
+              <span className="text-xs text-muted-foreground">{reasoning.strategy.description}</span>
+            </div>
+            {reasoning.details.length > 0 && (
+              <>
+                <button
+                  onClick={() => setShowReasoning(!showReasoning)}
+                  className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors w-full text-left mt-2"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  <span>Why?</span>
+                  {showReasoning ? (
+                    <ChevronUp className="h-3 w-3 ml-auto" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 ml-auto" />
+                  )}
+                </button>
+                {showReasoning && (
+                  <ul className="mt-2 space-y-1.5 pl-6 animate-fade-in">
+                    {reasoning.details.map((detail, di) => (
+                      <li key={di} className="text-xs text-muted-foreground leading-relaxed list-disc">
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </div>
         )}
@@ -199,7 +212,7 @@ export default function TripSummaryPage() {
 
   const totalCost = summary.legs.reduce((sum, l) => sum + l.totalCost, 0);
   const hasErrors = summary.legs.some((l) => l.errors && l.errors.length > 0);
-  const legReasonings = generateLegReasoning(summary.legs, summary.savings);
+  const legReasonings = generateLegReasoning(summary.legs, summary.savings, summary.maxFuelLbs ?? 0);
   const overallReasoning = generateOverallReasoning(summary.legs, summary.savings);
 
   return (
@@ -218,14 +231,12 @@ export default function TripSummaryPage() {
         </div>
       </div>
 
-      {/* Savings Banner */}
+      {/* Savings */}
       {summary.savings > 0 && (
-        <Card className="bg-green-950/30 border-green-700/40">
-          <CardContent className="pt-4 text-center">
-            <p className="text-sm text-green-400">Estimated Savings</p>
-            <p className="text-3xl font-bold text-green-400">{formatCurrency(summary.savings)}</p>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between px-1">
+          <span className="text-sm text-muted-foreground">Estimated Savings</span>
+          <span className="text-lg font-semibold text-primary">{formatCurrency(summary.savings)}</span>
+        </div>
       )}
 
       {/* Overall Reasoning */}
