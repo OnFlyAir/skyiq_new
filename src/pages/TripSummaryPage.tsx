@@ -47,17 +47,15 @@ function LegDetail({
               <span className="font-semibold">
                 Leg {index + 1}: {leg.departure} → {leg.arrival}
               </span>
-              {reasoning && (
-                <p className="text-xs text-muted-foreground mt-0.5">{reasoning.strategy.label}</p>
-              )}
             </div>
             <div className="text-right">
-              <div className="font-bold">
-                Uplift: {Math.round(leg.fuelUpliftGals)} gal / {formatWeight(leg.fuelUpliftLbs)}
-              </div>
-              <div className="text-sm text-muted-foreground">{formatCurrency(leg.totalCost)}</div>
+              <div className="font-bold">{formatWeight(leg.startFuel)}</div>
+              <div className="text-sm text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
             </div>
           </div>
+          {reasoning && (
+            <p className="text-xs text-muted-foreground mt-1.5 pt-1.5 border-t border-border">{reasoning.strategy.label}: {reasoning.strategy.description}</p>
+          )}
         </CardContent>
       </Card>
     );
