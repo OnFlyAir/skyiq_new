@@ -147,5 +147,6 @@ export function resultToSummary(
     legs,
     aircraftNumber: tripInput.aircraft,
     savings,
+    maxFuelLbs: tripInput.max_fuel_reserve,
   };
 }
