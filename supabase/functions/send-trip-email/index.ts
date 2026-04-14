@@ -117,7 +117,7 @@ serve(async (req) => {
               "Authorization": `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: `SkyIQ <onboarding@resend.dev>`,
+              from: `SkyIQ <info@skyiq.net>`,
               to: [email],
               subject: `SkyIQ Fuel Plan — ${tripNum}`,
               html: htmlBody,

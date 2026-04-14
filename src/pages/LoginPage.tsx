@@ -5,6 +5,8 @@ import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
+const ADMIN_EMAIL = 'admin@skyiq.net';
+const ADMIN_PASSWORD = 'admin123';
 const ADMIN_PIN = '123456';
 
 export default function LoginPage() {
@@ -14,9 +16,8 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPinEntry, setShowPinEntry] = useState(false);
-  const [pin, setPin] = useState('');
-  const [pinError, setPinError] = useState('');
+  const [showPinMode, setShowPinMode] = useState(false);
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
 
@@ -41,6 +42,51 @@ export default function LoginPage() {
     }
   }
 
+  async function handlePinLogin() {
+    setError('');
+    setLoading(true);
+    const enteredPin = pin.join('');
+    if (enteredPin !== ADMIN_PIN) {
+      setError('Invalid PIN');
+      setLoading(false);
+      return;
+    }
+    // Try to sign in as admin, if fails, create admin user
+    try {
+      const { error: signInErr } = await signIn(ADMIN_EMAIL, ADMIN_PASSWORD);
+      if (signInErr) {
+        const { error: signUpErr } = await signUp(ADMIN_EMAIL, ADMIN_PASSWORD, 'Admin', 'User');
+        if (signUpErr) {
+          setError(signUpErr.message);
+          setLoading(false);
+          return;
+        }
+        await new Promise(r => setTimeout(r, 1000));
+        const { error: retryErr } = await signIn(ADMIN_EMAIL, ADMIN_PASSWORD);
+        if (retryErr) {
+          setError(retryErr.message);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'PIN login failed');
+      setLoading(false);
+    }
+  }
+
+  function handlePinChange(index: number, value: string) {
+    if (value.length > 1) return;
+    const newPin = [...pin];
+    newPin[index] = value;
+    setPin(newPin);
+    // Auto-focus next input
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`pin-${index + 1}`);
+      nextInput?.focus();
+    }
+  }
+
   async function handleDevLogin() {
     setError('');
     setLoading(true);
@@ -59,16 +105,6 @@ export default function LoginPage() {
     }
   }
 
-  function handlePinSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (pin === ADMIN_PIN) {
-      navigate('/admin', { replace: true });
-    } else {
-      setPinError('Incorrect PIN');
-      setPin('');
-    }
-  }
-
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -77,54 +113,63 @@ export default function LoginPage() {
     );
   }
 
-  if (showPinEntry) {
+  if (showPinMode) {
     return (
       <>
         <div className="text-center mb-8">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <Shield className="h-6 w-6 text-primary" />
-          </div>
+          <Shield className="h-10 w-10 mx-auto mb-3 text-primary" />
           <h2 className="text-2xl font-bold text-foreground">Admin Access</h2>
-          <p className="text-sm text-muted-foreground mt-1">Enter the admin PIN to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">Enter 6-digit PIN</p>
         </div>
 
-        {pinError && (
+        {error && (
           <div className="mb-5 p-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg flex items-center gap-2">
             <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-destructive" />
-            {pinError}
+            {error}
           </div>
         )}
 
-        <form onSubmit={handlePinSubmit} className="space-y-5">
-          <div>
-            <label htmlFor="pin" className="block text-sm font-medium text-foreground/80 mb-1.5">PIN</label>
+        <div className="flex justify-center gap-2 mb-6">
+          {pin.map((digit, index) => (
             <input
-              id="pin"
+              key={index}
+              id={`pin-${index}`}
               type="password"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="••••••"
-              value={pin}
-              onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setPinError(''); }}
-              autoFocus
-              className="w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground text-center tracking-[0.5em] placeholder:tracking-[0.3em] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handlePinChange(index, e.target.value)}
+              className="w-12 h-14 text-center text-xl font-bold border border-border rounded-lg bg-secondary/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && !digit && index > 0) {
+                  const prevInput = document.getElementById(`pin-${index - 1}`);
+                  prevInput?.focus();
+                }
+                if (e.key === 'Enter') handlePinLogin();
+              }}
             />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98]"
-          >
-            Enter
-          </button>
-        </form>
+          ))}
+        </div>
 
         <button
           type="button"
-          onClick={() => { setShowPinEntry(false); setPin(''); setPinError(''); }}
-          className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+          disabled={loading || pin.join('').length !== 6}
+          onClick={handlePinLogin}
+          className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-[0.98]"
         >
-          ← Back to login
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              Verifying...
+            </span>
+          ) : 'Access Admin'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPinMode(false)}
+          className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Back to regular login
         </button>
       </>
     );
@@ -212,6 +257,18 @@ export default function LoginPage() {
         </button>
       </form>
 
+      {/* Admin PIN access */}
+      <div className="mt-3 text-center">
+        <button
+          type="button"
+          onClick={() => setShowPinMode(true)}
+          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 mx-auto"
+        >
+          <Shield className="w-3 h-3" />
+          Admin Access
+        </button>
+      </div>
+
       {/* Dev auto-login */}
       <div className="mt-5 pt-5 border-t border-border">
         <button
@@ -221,18 +278,6 @@ export default function LoginPage() {
           className="w-full py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-all text-sm active:scale-[0.98]"
         >
           {loading ? 'Signing in...' : 'Dev Auto-Login'}
-        </button>
-      </div>
-
-      {/* Admin access */}
-      <div className="mt-3">
-        <button
-          type="button"
-          onClick={() => setShowPinEntry(true)}
-          className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
-        >
-          <Shield className="h-3.5 w-3.5" />
-          Admin Access
         </button>
       </div>
 
