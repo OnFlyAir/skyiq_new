@@ -86,6 +86,8 @@ export default function LoginPage() {
       nextInput?.focus();
     }
   }
+
+  async function handleDevLogin() {
     setError('');
     setLoading(true);
     try {
