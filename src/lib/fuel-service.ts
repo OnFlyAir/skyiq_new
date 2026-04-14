@@ -104,15 +104,18 @@ export function resultToSummary(
 ): TripSummary {
   const legs: TripSummaryLeg[] = result.data.map((leg) => {
     let fuelCost = leg.total_cost;
+    let hasWaivableFee = false;
     let hasWaivedFee = false;
     let feeMin = 0;
 
     if (leg.fees.length > 0) {
       const fee = leg.fees.find((f) => f.is_waivable && f.amount > 0 && f.waived_at > 0);
       if (fee) {
-        hasWaivedFee = true;
+        hasWaivableFee = true;
         feeMin = fee.waived_at;
-        fuelCost = leg.total_fuel_purchased_gallons < fee.waived_at
+        const didWaive = leg.total_fuel_purchased_gallons >= fee.waived_at;
+        hasWaivedFee = didWaive;
+        fuelCost = didWaive
           ? leg.total_cost - fee.amount
           : leg.total_cost;
       }
@@ -131,6 +134,7 @@ export function resultToSummary(
       fuelUpliftGals: leg.total_fuel_purchased_gallons,
       fuelCost,
       hasWaivedFee,
+      hasWaivableFee,
       feeMin,
       totalCost: leg.total_cost,
       errors: leg.errors,

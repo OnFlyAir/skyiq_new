@@ -108,10 +108,16 @@ export function generateLegReasoning(
     }
 
     // Fee waiver reasoning
-    if (leg.hasWaivedFee) {
-      details.push(
-        `Buying at least ${Math.round(leg.feeMin)} gallons waives the facility fee at this airport.`
-      );
+    if (leg.hasWaivableFee) {
+      if (leg.hasWaivedFee) {
+        details.push(
+          `Buying at least ${Math.round(leg.feeMin)} gallons waives the facility fee at this airport.`
+        );
+      } else {
+        details.push(
+          `A facility fee applies — would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee.`
+        );
+      }
     }
 
     // Weight constraint reasoning
