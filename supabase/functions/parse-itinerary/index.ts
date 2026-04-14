@@ -292,7 +292,6 @@ function convertToTrip(jsonStr: string): ParsedTrip {
     client_email: parsed.client_email || "",
     client_phone: parsed.client_phone || "",
   };
-  };
 }
 
 serve(async (req) => {
