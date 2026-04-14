@@ -18,7 +18,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user && profile) {
-      navigate('/dashboard', { replace: true });
+      if (profile.role_name === 'Admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [authLoading, user, profile, navigate]);
 
