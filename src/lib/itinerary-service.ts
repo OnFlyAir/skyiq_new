@@ -29,14 +29,16 @@ export function parsedLegsToFormData(
 
     const hasPax = paxWeights.length > 0 && paxWeights.some((w) => w > 0);
 
-    // Find waived fee at departure airport
+    // Find waived fee — fees are always at the DEPARTURE airport
     const waivedFee = leg.fees.find(
       (f) => f.is_waivable && f.amount > 0 && f.waived_at > 0,
     );
 
+    const departureIcao = leg.departure?.toUpperCase() ?? "";
+
     return {
       legNum: leg.leg_num,
-      departure: leg.departure?.toUpperCase() ?? "",
+      departure: departureIcao,
       destination: leg.destination?.toUpperCase() ?? "",
       departureFuelPrices: leg.departure_fuel_price.length > 0
         ? leg.departure_fuel_price
@@ -46,7 +48,7 @@ export function parsedLegsToFormData(
         amount: waivedFee?.amount ?? 0,
         isWaivable: waivedFee?.is_waivable ?? false,
         waivedAt: waivedFee?.waived_at ?? 0,
-        airport: waivedFee?.airport ?? leg.departure,
+        airport: departureIcao,
       },
       passengerWeights: paxWeights.length > 0 ? paxWeights.join(", ") : "0",
       baggage: hasPax

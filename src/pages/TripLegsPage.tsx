@@ -374,7 +374,7 @@ function LegEditor({
         <CardContent className="pt-0">
           <p className="text-sm text-muted-foreground">
             {leg.departure} → {leg.destination}
-            {leg.departureFuelPrices[0]?.price > 0 && ` | $${leg.departureFuelPrices[0].price}/gal`}
+            {leg.departureFuelPrices[0]?.price > 0 && ` | $${leg.departureFuelPrices[0].price.toFixed(2)}/gal`}
           </p>
         </CardContent>
       )}
@@ -588,15 +588,20 @@ export default function TripLegsPage() {
           setAircraft(match);
           // Re-apply defaults from matched aircraft
           const defs = getAircraftDefaults(match);
-          const refilledLegs = newLegs.map((leg) => ({
-            ...leg,
-            reserve: defs.reserve,
-            taxiFuelBurn: defs.taxiFuelBurn,
-            maxTakeoffWeight: defs.maxTakeoff,
-            maxLandingWeight: defs.maxLanding,
-            maxRampWeight: defs.maxRamp,
-            crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
-          }));
+          const refilledLegs = newLegs.map((leg) => {
+            const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+            const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
+            return {
+              ...leg,
+              baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
+              reserve: defs.reserve,
+              taxiFuelBurn: defs.taxiFuelBurn,
+              maxTakeoffWeight: defs.maxTakeoff,
+              maxLandingWeight: defs.maxLanding,
+              maxRampWeight: defs.maxRamp,
+              crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+            };
+          });
           setTripForm((prev) =>
             prev
               ? { ...prev, aircraftId: match.tail_number, itineraryNum: parsedItineraryNum, legs: refilledLegs }
