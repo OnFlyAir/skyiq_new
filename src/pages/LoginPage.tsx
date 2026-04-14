@@ -1,10 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
+const ADMIN_EMAIL = 'admin@skyiq.net';
+const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PIN = '123456';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +16,8 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPinMode, setShowPinMode] = useState(false);
+  const [pin, setPin] = useState(['', '', '', '', '', '']);
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
 
