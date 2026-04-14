@@ -108,7 +108,7 @@ export function generateLegReasoning(
       );
     }
 
-    // Fee waiver reasoning — only show when fee amount is meaningful
+    // Fee reasoning — always explain fee status
     if (leg.hasWaivableFee && leg.feeAmount > 0) {
       if (leg.hasWaivedFee) {
         details.push(
@@ -119,6 +119,14 @@ export function generateLegReasoning(
           `A $${leg.feeAmount.toFixed(2)} facility fee applies — would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
         );
       }
+    } else if (leg.hasWaivableFee && leg.feeAmount === 0) {
+      details.push(
+        `No facility fee applies at this airport.`
+      );
+    } else if (!leg.hasWaivableFee) {
+      details.push(
+        `No waivable facility fee at ${leg.departure}.`
+      );
     }
 
     // First leg context

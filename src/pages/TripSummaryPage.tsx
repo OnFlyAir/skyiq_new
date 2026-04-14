@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Loader2, Mail, Edit,
-  ToggleLeft, ToggleRight, Lightbulb, ChevronDown, ChevronUp,
+  ToggleLeft, ToggleRight, Lightbulb, ChevronDown, ChevronUp, FileText,
 } from "lucide-react";
+import ItineraryViewer from "@/components/ItineraryViewer";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
@@ -51,7 +52,7 @@ function LegDetail({
               <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
             <div>
               <span className="block">TO Weight</span>
               <span className="font-medium text-foreground">{formatWeight(leg.takeoffWeight)}</span>
@@ -83,10 +84,10 @@ function LegDetail({
         <CardTitle className="text-base flex items-center justify-between">
           <span>Leg {index + 1}: {leg.departure} → {leg.arrival}</span>
           {leg.hasWaivableFee && (
-            <Badge variant={leg.hasWaivedFee ? "secondary" : "destructive"} className="text-xs">
+            <Badge variant={leg.hasWaivedFee ? "secondary" : "outline"} className="text-xs">
               {leg.hasWaivedFee
                 ? `Fee waived (${Math.round(leg.feeMin)} gal min)`
-                : `Fee NOT waived (need ${Math.round(leg.feeMin)} gal)`}
+                : `Fee not waived (need ${Math.round(leg.feeMin)} gal)`}
             </Badge>
           )}
         </CardTitle>
@@ -100,7 +101,7 @@ function LegDetail({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
           <div>
             <span className="text-muted-foreground">Fuel to Uplift</span>
             <p className="font-bold">{Math.round(leg.fuelUpliftGals)} gal. / {formatWeight(leg.fuelUpliftLbs)}</p>
@@ -245,19 +246,20 @@ export default function TripSummaryPage() {
   const overallReasoning = generateOverallReasoning(summary.legs, summary.savings);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 p-4">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Trip Summary</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">Trip Summary</h1>
+          <p className="text-sm text-muted-foreground truncate">
             {summary.aircraftNumber}
             {summary.itineraryNum ? ` — Trip #${summary.itineraryNum}` : ""}
           </p>
         </div>
+        <ItineraryViewer tripId={tripId!} />
       </div>
 
       {/* Savings */}

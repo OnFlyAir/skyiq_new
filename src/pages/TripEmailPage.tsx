@@ -98,8 +98,14 @@ export default function TripEmailPage() {
     setSending(true);
 
     try {
-      // Call send-email Edge Function (or for now, just save the email list)
-      // In production, this would call: supabase.functions.invoke("send-trip-email", { body: { tripId, emails: toSend } })
+      // Call send-email Edge Function
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("send-trip-email", {
+        body: { tripId: parseInt(tripId), emails: toSend, senderName: "SkyIQ" },
+      });
+
+      if (fnError) {
+        console.error("Edge function error:", fnError);
+      }
 
       // Save/update email list for this user
       const updatedEmails = toSend.map((e) => ({

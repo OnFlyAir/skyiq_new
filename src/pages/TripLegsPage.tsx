@@ -43,6 +43,7 @@ import {
   Plane,
   Info,
 } from "lucide-react";
+import ItineraryViewer from "@/components/ItineraryViewer";
 import {
   Tooltip,
   TooltipContent,
@@ -199,7 +200,7 @@ function LegEditor({
       {!isConfirmed && (
         <CardContent className="space-y-4">
           {/* Route */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Departure (ICAO)</Label>
               <Input
@@ -253,7 +254,7 @@ function LegEditor({
           </div>
 
           {/* Fee Waiver */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Fee Amount ($)</Label>
               <Input
@@ -284,7 +285,7 @@ function LegEditor({
           </div>
 
           {/* Crew & Passengers */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1">
                 Crew Weights (PIC, SIC, FA)
@@ -312,7 +313,7 @@ function LegEditor({
           </div>
 
           {/* Baggage */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Baggage (lbs)</Label>
               <Input
@@ -340,7 +341,7 @@ function LegEditor({
           </div>
 
           {/* Weight Limits */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Max Takeoff (lbs)</Label>
               <Input
@@ -687,18 +688,19 @@ export default function TripLegsPage() {
   return (
     <>
     {parsing && <ParsingLoader />}
-    <div className="max-w-2xl mx-auto space-y-4 p-4">
+    <div className="max-w-2xl mx-auto space-y-4 px-3 sm:p-4">
       {/* Header with Trip ID */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Trip Legs</h1>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold">Trip Legs</h1>
           {tripForm.itineraryNum && (
-            <p className="text-sm text-muted-foreground">Trip: {tripForm.itineraryNum}</p>
+            <p className="text-sm text-muted-foreground truncate">Trip: {tripForm.itineraryNum}</p>
           )}
         </div>
+        {tripId && <ItineraryViewer tripId={tripId} />}
       </div>
 
       {/* Aircraft Selector */}

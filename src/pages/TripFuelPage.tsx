@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Plane, AlertTriangle } from "lucide-react";
+import ItineraryViewer from "@/components/ItineraryViewer";
 
 const GALS_TO_LBS = 6.7;
 
@@ -227,12 +228,13 @@ export default function TripFuelPage() {
   return (
     <>
       {optimizing && <ParsingLoader title="Optimizing fuel plan…" subtitle="Finding the cheapest fueling strategy" />}
-      <div className="max-w-2xl mx-auto space-y-6 p-4">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/legs`)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Fuel Details</h1>
+          <h1 className="text-xl sm:text-2xl font-bold flex-1">Fuel Details</h1>
+          {tripId && <ItineraryViewer tripId={tripId} />}
         </div>
 
         {/* Starting Fuel */}
