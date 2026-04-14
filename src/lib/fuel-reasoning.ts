@@ -108,26 +108,15 @@ export function generateLegReasoning(
       );
     }
 
-    // Fee waiver reasoning
-    if (leg.hasWaivableFee) {
-      const feeAmt = leg.feeAmount > 0 ? leg.feeAmount : 0;
+    // Fee waiver reasoning — only show when fee amount is meaningful
+    if (leg.hasWaivableFee && leg.feeAmount > 0) {
       if (leg.hasWaivedFee) {
         details.push(
-          `Buying at least ${Math.round(leg.feeMin)} gallons waives the $${feeAmt.toFixed(2)} facility fee at this airport.`
+          `Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`
         );
       } else {
         details.push(
-          `A $${feeAmt.toFixed(2)} facility fee applies — would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
-        );
-      }
-    }
-
-    // Weight constraint reasoning
-    if (leg.takeoffWeight > 0 && leg.landingWeight > 0) {
-      const weightMargin = leg.takeoffWeight / leg.landingWeight;
-      if (weightMargin > 1.15) {
-        details.push(
-          `The aircraft is taking off heavy here (${Math.round(leg.takeoffWeight).toLocaleString()} lbs) to carry cheaper fuel forward.`
+          `A $${leg.feeAmount.toFixed(2)} facility fee applies — would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
         );
       }
     }
