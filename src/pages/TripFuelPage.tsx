@@ -1,9 +1,7 @@
 // TripFuelPage — Step 2 of trip planning: enter fuel burns and run the optimizer.
 // Route: /trips/:tripId/fuel
-// Loads trip data from Supabase, displays per-leg fuel burn inputs,
-// calls the optimize-fuel Edge Function, stores results, and navigates to summary.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ParsingLoader from "@/components/ParsingLoader";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +12,94 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Plane } from "lucide-react";
+import { ArrowLeft, Loader2, Plane, AlertTriangle } from "lucide-react";
+
+const GALS_TO_LBS = 6.7;
+
+interface LegValidation {
+  errors: string[];
+  warnings: string[];
+}
+
+function validateLeg(
+  leg: TripFormData["legs"][0],
+  fuelBurn: number,
+  startingFuel: number,
+  isFirstLeg: boolean,
+  maxFuelCapacity: number,
+  basicEmptyWeight: number,
+): LegValidation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (fuelBurn <= 0) return { errors, warnings };
+
+  // Parse weights
+  const paxWeights = leg.passengerWeights
+    .split(",")
+    .map((w) => parseFloat(w.trim()))
+    .filter((w) => !isNaN(w));
+  const crewWeights = leg.crewWeight
+    .split(",")
+    .map((w) => parseFloat(w.trim()))
+    .filter((w) => !isNaN(w));
+
+  const paxTotal = paxWeights.reduce((s, w) => s + w, 0);
+  const crewTotal = crewWeights.reduce((s, w) => s + w, 0);
+  const fixedWeights = basicEmptyWeight + leg.baggage + crewTotal + paxTotal;
+
+  // Max fuel the tank can physically hold
+  const maxFuelLbs = maxFuelCapacity;
+
+  // Weight-limited fuel capacity for takeoff
+  const maxFuelForTakeoff = leg.maxTakeoffWeight - fixedWeights;
+  const maxFuelForLanding = leg.maxLandingWeight - fixedWeights;
+  const maxFuelForRamp = leg.maxRampWeight - fixedWeights;
+
+  // Check: fuel burn + reserve exceeds what the aircraft can carry
+  const minRequiredFuel = fuelBurn + leg.reserve + leg.taxiFuelBurn;
+  const effectiveTakeoffCap = Math.min(maxFuelForTakeoff, maxFuelLbs);
+
+  if (minRequiredFuel > effectiveTakeoffCap) {
+    errors.push(
+      `Fuel burn (${fuelBurn}) + reserve (${leg.reserve}) + taxi (${leg.taxiFuelBurn}) = ${minRequiredFuel} lbs exceeds max takeoff fuel capacity of ${Math.floor(effectiveTakeoffCap)} lbs`
+    );
+  }
+
+  // Check: landing fuel would exceed max landing weight
+  if (maxFuelForLanding < leg.reserve) {
+    errors.push(
+      `Reserve fuel (${leg.reserve} lbs) alone exceeds max landing fuel capacity of ${Math.floor(maxFuelForLanding)} lbs`
+    );
+  }
+
+  // Check: ramp weight
+  if (maxFuelForRamp < minRequiredFuel) {
+    errors.push(
+      `Required fuel (${minRequiredFuel} lbs) exceeds max ramp fuel capacity of ${Math.floor(maxFuelForRamp)} lbs`
+    );
+  }
+
+  // Check: fixed weights alone exceed limits
+  if (fixedWeights > leg.maxTakeoffWeight) {
+    errors.push(
+      `Fixed weights (${Math.floor(fixedWeights)} lbs) exceed max takeoff weight (${leg.maxTakeoffWeight} lbs) — no fuel can be added`
+    );
+  }
+
+  if (fixedWeights > leg.maxLandingWeight) {
+    errors.push(
+      `Fixed weights (${Math.floor(fixedWeights)} lbs) exceed max landing weight (${leg.maxLandingWeight} lbs)`
+    );
+  }
+
+  // Warning: fuel burn is very high relative to capacity
+  if (fuelBurn > maxFuelLbs * 0.9) {
+    warnings.push(`Fuel burn (${fuelBurn} lbs) is over 90% of max fuel capacity (${maxFuelLbs} lbs)`);
+  }
+
+  return { errors, warnings };
+}
 
 export default function TripFuelPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -27,7 +112,6 @@ export default function TripFuelPage() {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
 
-  // Load trip data from Supabase
   useEffect(() => {
     async function loadTrip() {
       if (!tripId) return;
@@ -58,6 +142,30 @@ export default function TripFuelPage() {
     loadTrip();
   }, [tripId]);
 
+  const confirmedLegsWithIndex = useMemo(() => {
+    if (!tripForm) return [];
+    return tripForm.legs
+      .map((leg, originalIndex) => ({ leg, originalIndex }))
+      .filter(({ leg }) => leg.isConfirmed && leg.legNum > 0);
+  }, [tripForm]);
+
+  // Validate all legs
+  const validations = useMemo(() => {
+    if (!tripForm) return [];
+    return tripForm.legs.map((leg, i) =>
+      validateLeg(
+        leg,
+        fuelBurns[i] ?? 0,
+        startingFuel,
+        i === 0,
+        tripForm.maxFuelReserve,
+        tripForm.basicEmptyWeight,
+      )
+    );
+  }, [tripForm, fuelBurns, startingFuel]);
+
+  const hasErrors = validations.some((v) => v.errors.length > 0);
+
   const handleFuelBurnChange = (index: number, value: number) => {
     setFuelBurns((prev) => {
       const next = [...prev];
@@ -69,7 +177,6 @@ export default function TripFuelPage() {
   const handleOptimize = async () => {
     if (!tripForm || !tripId) return;
 
-    // Apply fuel burns to the form data
     const updatedForm: TripFormData = {
       ...tripForm,
       startingFuel,
@@ -82,25 +189,15 @@ export default function TripFuelPage() {
     setOptimizing(true);
 
     try {
-      // Convert form to API input
       const tripInput = formToTripInput(updatedForm);
-
-      // Call the optimizer Edge Function
       const result = await runFuelOptimization(tripInput);
+      const summary: TripSummary = resultToSummary(result, tripInput, parseInt(tripId));
 
-      // Convert to summary for storage
-      const summary: TripSummary = resultToSummary(
-        result,
-        tripInput,
-        parseInt(tripId),
-      );
-
-      // Save results to Supabase
       const { error } = await supabase
         .from("trips")
         .update({
-          details: summary as unknown as import('@/integrations/supabase/types').Json,
-          itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
+          details: summary as unknown as import("@/integrations/supabase/types").Json,
+          itinerary_details: updatedForm as unknown as import("@/integrations/supabase/types").Json,
           savings: summary.savings,
         })
         .eq("id", parseInt(tripId));
@@ -127,94 +224,133 @@ export default function TripFuelPage() {
 
   if (!tripForm) return null;
 
-  // Build confirmed legs with their ORIGINAL indices into the full legs array
-  const confirmedLegsWithIndex = tripForm.legs
-    .map((leg, originalIndex) => ({ leg, originalIndex }))
-    .filter(({ leg }) => leg.isConfirmed && leg.legNum > 0);
-
   return (
     <>
-    {optimizing && <ParsingLoader title="Optimizing fuel plan…" subtitle="Finding the cheapest fueling strategy" />}
-    <div className="max-w-2xl mx-auto space-y-6 p-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/legs`)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Fuel Details</h1>
-      </div>
+      {optimizing && <ParsingLoader title="Optimizing fuel plan…" subtitle="Finding the cheapest fueling strategy" />}
+      <div className="max-w-2xl mx-auto space-y-6 p-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/legs`)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Fuel Details</h1>
+        </div>
 
-      {/* Starting Fuel */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Current Fuel on Board</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              value={startingFuel || ""}
-              onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
-              placeholder="Fuel in lbs"
-              className="max-w-[200px]"
-            />
-            <span className="text-sm text-muted-foreground">lbs</span>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Starting Fuel */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Current Fuel on Board</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                value={startingFuel || ""}
+                onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
+                placeholder="Fuel in lbs"
+                className="max-w-[200px]"
+              />
+              <span className="text-sm text-muted-foreground">lbs</span>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Per-Leg Fuel Burns */}
-      <div className="space-y-3">
-        {confirmedLegsWithIndex.map(({ leg, originalIndex }) => (
-          <Card key={leg.legNum}>
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Plane className="h-4 w-4 text-muted-foreground" />
-                  <Label className="font-medium">
-                    Leg {leg.legNum}: {leg.departure} → {leg.destination}
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={fuelBurns[originalIndex] || ""}
-                    onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
-                    placeholder="Fuel burn (lbs)"
-                    className="max-w-[160px]"
-                  />
-                  <span className="text-sm text-muted-foreground">lbs</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        {/* Per-Leg Fuel Burns */}
+        <div className="space-y-3">
+          {confirmedLegsWithIndex.map(({ leg, originalIndex }) => {
+            const v = validations[originalIndex];
+            const hasLegErrors = v && v.errors.length > 0;
+            const hasLegWarnings = v && v.warnings.length > 0;
 
-      {/* Action Buttons */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/trips/${tripId}/legs`)}
-          className="flex-1"
-        >
-          Back to Legs
-        </Button>
-        <Button
-          onClick={handleOptimize}
-          disabled={optimizing || fuelBurns.some((b) => b <= 0)}
-          className="flex-1 bg-[#1a3a5c] hover:bg-[#2563eb]"
-        >
-          {optimizing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Optimizing...
-            </>
-          ) : (
-            "Confirm Trip"
-          )}
-        </Button>
+            return (
+              <Card key={leg.legNum} className={hasLegErrors ? "border-destructive" : ""}>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                      <Label className="font-medium">
+                        Leg {leg.legNum}: {leg.departure} → {leg.destination}
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={fuelBurns[originalIndex] || ""}
+                        onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
+                        placeholder="Fuel burn (lbs)"
+                        className={`max-w-[160px] ${hasLegErrors ? "border-destructive" : ""}`}
+                      />
+                      <span className="text-sm text-muted-foreground">lbs</span>
+                    </div>
+                  </div>
+
+                  {/* Leg info */}
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                    <span>Reserve: {leg.reserve} lbs</span>
+                    <span>Max TO: {leg.maxTakeoffWeight.toLocaleString()} lbs</span>
+                    <span>Max LDG: {leg.maxLandingWeight.toLocaleString()} lbs</span>
+                    <span>Max Ramp: {leg.maxRampWeight.toLocaleString()} lbs</span>
+                  </div>
+
+                  {/* Errors */}
+                  {hasLegErrors && (
+                    <div className="space-y-1">
+                      {v.errors.map((err, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-destructive">
+                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>{err}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Warnings */}
+                  {hasLegWarnings && !hasLegErrors && (
+                    <div className="space-y-1">
+                      {v.warnings.map((warn, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-yellow-500">
+                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>{warn}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/trips/${tripId}/legs`)}
+            className="flex-1"
+          >
+            Back to Legs
+          </Button>
+          <Button
+            onClick={handleOptimize}
+            disabled={optimizing || fuelBurns.some((b) => b <= 0) || hasErrors}
+            className="flex-1 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+          >
+            {optimizing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Optimizing...
+              </>
+            ) : (
+              "Confirm Trip"
+            )}
+          </Button>
+        </div>
+
+        {hasErrors && (
+          <p className="text-sm text-destructive text-center">
+            Fix the weight/fuel errors above before optimizing
+          </p>
+        )}
       </div>
-    </div>
     </>
   );
 }
