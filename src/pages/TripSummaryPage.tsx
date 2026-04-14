@@ -68,9 +68,11 @@ function LegDetail({
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Leg {index + 1}: {leg.departure} → {leg.arrival}</span>
-          {leg.hasWaivedFee && (
-            <Badge variant="secondary" className="text-xs">
-              Fee waived at {Math.round(leg.feeMin)} gal
+          {leg.hasWaivableFee && (
+            <Badge variant={leg.hasWaivedFee ? "secondary" : "destructive"} className="text-xs">
+              {leg.hasWaivedFee
+                ? `Fee waived (${Math.round(leg.feeMin)} gal min)`
+                : `Fee NOT waived (need ${Math.round(leg.feeMin)} gal)`}
             </Badge>
           )}
         </CardTitle>

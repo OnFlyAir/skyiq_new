@@ -81,6 +81,7 @@ export interface TripSummaryLeg {
   fuelUpliftGals: number;
   fuelCost: number;
   hasWaivedFee: boolean;
+  hasWaivableFee: boolean;
   feeMin: number;
   totalCost: number;
   errors: string[];
