@@ -35,6 +35,9 @@ interface TripSegment {
 interface ParsedData {
   crew_itinerary_id: string;
   aircraft_tail_number: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
   trip_segments: TripSegment[];
 }
 
@@ -51,6 +54,9 @@ interface ParsedTrip {
   errors: string[];
   penalty: number;
   lbs_per_hour: number;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
 }
 
 interface ParsedLeg {
@@ -96,7 +102,13 @@ const PROMPT = `You are an aviation trip sheet parser. Extract structured data f
 - This is a 2-6 character alphanumeric code like "N7814", "N123AB".
 - Do NOT include manufacturer names (e.g., NOT "Challenger 300" — just the tail number).
 
-### 3. Trip Segments (one per leg of the trip)
+### 3. Client / Passenger Contact Info
+- Look for the PRIMARY client or passenger name, email, and phone number.
+- Check "Passenger Manifest", "PAX Info", "Client", "Requester", "Booked By", "Contact", header sections.
+- If multiple passengers, use the FIRST listed or the one labeled as primary/requester.
+- Extract: client_name (full name), client_email, client_phone.
+
+### 4. Trip Segments (one per leg of the trip)
 For EACH leg, extract:
 
 **Departure & Destination:**
@@ -132,6 +144,9 @@ For EACH leg, extract:
 {
     "crew_itinerary_id": string,
     "aircraft_tail_number": string,
+    "client_name": string,
+    "client_email": string,
+    "client_phone": string,
     "trip_segments": [
         {
         "leg": number,
@@ -273,6 +288,9 @@ function convertToTrip(jsonStr: string): ParsedTrip {
     errors: [],
     penalty: 0,
     lbs_per_hour: 0,
+    client_name: parsed.client_name || "",
+    client_email: parsed.client_email || "",
+    client_phone: parsed.client_phone || "",
   };
 }
 

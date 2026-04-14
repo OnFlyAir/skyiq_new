@@ -151,6 +151,53 @@ export type Database = {
           },
         ]
       }
+      onfly_data: {
+        Row: {
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          id: string
+          itinerary_num: string | null
+          parsed_at: string
+          raw_itinerary: Json | null
+          trip_id: number | null
+          user_id: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          itinerary_num?: string | null
+          parsed_at?: string
+          raw_itinerary?: Json | null
+          trip_id?: number | null
+          user_id: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          id?: string
+          itinerary_num?: string | null
+          parsed_at?: string
+          raw_itinerary?: Json | null
+          trip_id?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onfly_data_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company: string | null
