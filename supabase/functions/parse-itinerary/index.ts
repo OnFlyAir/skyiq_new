@@ -288,6 +288,10 @@ function convertToTrip(jsonStr: string): ParsedTrip {
     errors: [],
     penalty: 0,
     lbs_per_hour: 0,
+    client_name: parsed.client_name || "",
+    client_email: parsed.client_email || "",
+    client_phone: parsed.client_phone || "",
+  };
   };
 }
 
