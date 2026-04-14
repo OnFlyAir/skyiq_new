@@ -34,19 +34,19 @@ function determineLegStrategy(
     return { label: "Top off", description: `Fill to max capacity at ${leg.departure}` };
   }
 
-  // Check if buying minimum to waive a fee
+  // Check if buying just enough to waive a fee
   if (leg.hasWaivedFee && leg.fuelUpliftGals >= leg.feeMin && leg.fuelUpliftGals < leg.feeMin * 1.15) {
     return {
-      label: "Waive fee",
+      label: "Take enough to waive the fee",
       description: `Buy ${Math.round(leg.feeMin)} gal minimum to waive fee at ${leg.departure}`,
     };
   }
 
-  // Otherwise it's a targeted uplift to a specific fuel level
+  // Targeted uplift to a specific fuel level
   const targetFuel = Math.round((leg.startFuel + leg.fuelUpliftLbs) / 10) * 10;
   return {
-    label: `Fuel to ${targetFuel.toLocaleString()} lbs`,
-    description: `Bring fuel up to ${targetFuel.toLocaleString()} lbs at ${leg.departure}`,
+    label: `Bring it up to ${targetFuel.toLocaleString()} lbs`,
+    description: `Add fuel to reach ${targetFuel.toLocaleString()} lbs at ${leg.departure}`,
   };
 }
 
