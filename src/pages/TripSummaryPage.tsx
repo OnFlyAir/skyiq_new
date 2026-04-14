@@ -194,6 +194,19 @@ export default function TripSummaryPage() {
       }
 
       details.id = data.id;
+
+      // If maxFuelLbs isn't stored, fetch from the aircraft profile
+      if (!details.maxFuelLbs && details.aircraftNumber) {
+        const { data: aircraft } = await supabase
+          .from("aircrafts")
+          .select("max_fuel_capacity")
+          .eq("tail_number", details.aircraftNumber)
+          .single();
+        if (aircraft?.max_fuel_capacity) {
+          details.maxFuelLbs = aircraft.max_fuel_capacity;
+        }
+      }
+
       setSummary(details);
       setLoading(false);
     }
