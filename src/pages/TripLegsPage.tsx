@@ -200,7 +200,7 @@ function LegEditor({
       {!isConfirmed && (
         <CardContent className="space-y-4">
           {/* Route */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Departure (ICAO)</Label>
               <Input
@@ -254,7 +254,7 @@ function LegEditor({
           </div>
 
           {/* Fee Waiver */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Fee Amount ($)</Label>
               <Input
@@ -285,7 +285,7 @@ function LegEditor({
           </div>
 
           {/* Crew & Passengers */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1">
                 Crew Weights (PIC, SIC, FA)
@@ -313,7 +313,7 @@ function LegEditor({
           </div>
 
           {/* Baggage */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Baggage (lbs)</Label>
               <Input
@@ -341,7 +341,7 @@ function LegEditor({
           </div>
 
           {/* Weight Limits */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Max Takeoff (lbs)</Label>
               <Input
