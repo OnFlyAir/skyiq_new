@@ -1,10 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
+const ADMIN_PIN = '123456';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,9 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPinEntry, setShowPinEntry] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const navigate = useNavigate();
 
@@ -55,11 +59,74 @@ export default function LoginPage() {
     }
   }
 
+  function handlePinSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (pin === ADMIN_PIN) {
+      navigate('/admin', { replace: true });
+    } else {
+      setPinError('Incorrect PIN');
+      setPin('');
+    }
+  }
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
+    );
+  }
+
+  if (showPinEntry) {
+    return (
+      <>
+        <div className="text-center mb-8">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <Shield className="h-6 w-6 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Admin Access</h2>
+          <p className="text-sm text-muted-foreground mt-1">Enter the admin PIN to continue</p>
+        </div>
+
+        {pinError && (
+          <div className="mb-5 p-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg flex items-center gap-2">
+            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-destructive" />
+            {pinError}
+          </div>
+        )}
+
+        <form onSubmit={handlePinSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="pin" className="block text-sm font-medium text-foreground/80 mb-1.5">PIN</label>
+            <input
+              id="pin"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="••••••"
+              value={pin}
+              onChange={(e) => { setPin(e.target.value.replace(/\D/g, '')); setPinError(''); }}
+              autoFocus
+              className="w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground text-center tracking-[0.5em] placeholder:tracking-[0.3em] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98]"
+          >
+            Enter
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => { setShowPinEntry(false); setPin(''); setPinError(''); }}
+          className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Back to login
+        </button>
+      </>
     );
   }
 
@@ -154,6 +221,18 @@ export default function LoginPage() {
           className="w-full py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-all text-sm active:scale-[0.98]"
         >
           {loading ? 'Signing in...' : 'Dev Auto-Login'}
+        </button>
+      </div>
+
+      {/* Admin access */}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setShowPinEntry(true)}
+          className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Shield className="h-3.5 w-3.5" />
+          Admin Access
         </button>
       </div>
 
