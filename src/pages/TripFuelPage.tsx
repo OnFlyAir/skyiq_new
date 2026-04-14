@@ -255,6 +255,7 @@ export default function TripFuelPage() {
         </Card>
 
         {/* Per-Leg Fuel Burns */}
+        <h2 className="text-lg font-semibold text-muted-foreground">Enter fuel burns for each leg</h2>
         <div className="space-y-3">
           {confirmedLegsWithIndex.map(({ leg, originalIndex }) => {
             const v = validations[originalIndex];
