@@ -3,14 +3,57 @@
 
 import type { TripSummaryLeg } from "@/types/trip";
 
-interface LegReasoning {
-  headline: string;
+export interface LegStrategy {
+  label: string;        // Short action: "Skip fuel", "Top off", "Waive fee", etc.
+  description: string;  // One-line explanation
+}
+
+export interface LegReasoning {
+  strategy: LegStrategy;
   details: string[];
+}
+
+/**
+ * Determine the per-leg strategy label.
+ * "Top off" = filling to the aircraft's max fuel capacity.
+ * We approximate this by checking if uplift brings startFuel close to maxFuel.
+ */
+function determineLegStrategy(
+  leg: TripSummaryLeg,
+  nextLeg: TripSummaryLeg | undefined,
+  maxFuelLbs: number,
+): LegStrategy {
+  // No fuel purchased
+  if (leg.fuelUpliftGals <= 0) {
+    return { label: "Skip fuel", description: `No fuel needed at ${leg.departure}` };
+  }
+
+  // Check if they're topping off (filling to max capacity)
+  const fuelAfterUplift = leg.startFuel + leg.fuelUpliftLbs;
+  if (maxFuelLbs > 0 && fuelAfterUplift >= maxFuelLbs * 0.95) {
+    return { label: "Top off", description: `Fill to max capacity at ${leg.departure}` };
+  }
+
+  // Check if buying minimum to waive a fee
+  if (leg.hasWaivedFee && leg.fuelUpliftGals >= leg.feeMin && leg.fuelUpliftGals < leg.feeMin * 1.15) {
+    return {
+      label: "Waive fee",
+      description: `Buy ${Math.round(leg.feeMin)} gal minimum to waive fee at ${leg.departure}`,
+    };
+  }
+
+  // Otherwise it's a targeted uplift to a specific fuel level
+  const targetFuel = Math.round((leg.startFuel + leg.fuelUpliftLbs) / 10) * 10;
+  return {
+    label: `Fuel to ${targetFuel.toLocaleString()} lbs`,
+    description: `Bring fuel up to ${targetFuel.toLocaleString()} lbs at ${leg.departure}`,
+  };
 }
 
 export function generateLegReasoning(
   legs: TripSummaryLeg[],
   savings: number,
+  maxFuelLbs: number = 0,
 ): LegReasoning[] {
   return legs.map((leg, i) => {
     const details: string[] = [];
@@ -18,33 +61,19 @@ export function generateLegReasoning(
     const isFirst = i === 0;
     const isLast = i === legs.length - 1;
 
+    const strategy = determineLegStrategy(leg, nextLeg, maxFuelLbs);
+
     // No fuel purchased
     if (leg.fuelUpliftGals <= 0) {
       details.push(
-        "No fuel was purchased here — the aircraft had enough on board from the previous stop."
+        "The aircraft had enough on board from the previous stop."
       );
       if (nextLeg && nextLeg.fuelCost < leg.fuelCost) {
         details.push(
           `Fuel is cheaper at ${nextLeg.departure}, so it's better to buy there.`
         );
       }
-      return {
-        headline: `Skip fueling at ${leg.departure}`,
-        details,
-      };
-    }
-
-    // Headline based on amount
-    const isMinimalUplift = leg.fuelUpliftGals < 50;
-    const isHeavyUplift = leg.fuelUpliftGals > 200;
-
-    let headline: string;
-    if (isMinimalUplift) {
-      headline = `Light top-off at ${leg.departure}`;
-    } else if (isHeavyUplift) {
-      headline = `Tank up at ${leg.departure}`;
-    } else {
-      headline = `Moderate fueling at ${leg.departure}`;
+      return { strategy, details };
     }
 
     // Price reasoning
@@ -73,7 +102,6 @@ export function generateLegReasoning(
         }
       }
     } else {
-      // Last leg — explain it's the final stop
       details.push(
         `This is the final leg — only enough fuel to arrive safely with reserves was purchased.`
       );
@@ -82,7 +110,7 @@ export function generateLegReasoning(
     // Fee waiver reasoning
     if (leg.hasWaivedFee) {
       details.push(
-        `Buying at least ${Math.round(leg.feeMin)} gallons waives the facility fee at this airport, which the optimizer took advantage of.`
+        `Buying at least ${Math.round(leg.feeMin)} gallons waives the facility fee at this airport.`
       );
     }
 
@@ -110,7 +138,7 @@ export function generateLegReasoning(
       );
     }
 
-    return { headline, details };
+    return { strategy, details };
   });
 }
 
