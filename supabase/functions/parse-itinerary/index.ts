@@ -54,6 +54,9 @@ interface ParsedTrip {
   errors: string[];
   penalty: number;
   lbs_per_hour: number;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
 }
 
 interface ParsedLeg {
