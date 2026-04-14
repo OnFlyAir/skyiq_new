@@ -64,6 +64,23 @@ export function generateLegReasoning(
 
     const strategy = determineLegStrategy(leg, nextLeg, maxFuelLbs);
 
+    // Fee reasoning — always explain fee status regardless of fuel purchase
+    if (leg.hasWaivableFee && leg.feeAmount > 0) {
+      if (leg.hasWaivedFee) {
+        details.push(
+          `Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`
+        );
+      } else {
+        details.push(
+          `A $${leg.feeAmount.toFixed(2)} facility fee applies at ${leg.departure}. Would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
+        );
+      }
+    } else if (!leg.hasWaivableFee) {
+      details.push(
+        `No waivable facility fee at ${leg.departure}.`
+      );
+    }
+
     // No fuel purchased
     if (leg.fuelUpliftGals <= 0) {
       details.push(
@@ -108,26 +125,7 @@ export function generateLegReasoning(
       );
     }
 
-    // Fee reasoning — always explain fee status
-    if (leg.hasWaivableFee && leg.feeAmount > 0) {
-      if (leg.hasWaivedFee) {
-        details.push(
-          `Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`
-        );
-      } else {
-        details.push(
-          `A $${leg.feeAmount.toFixed(2)} facility fee applies — would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
-        );
-      }
-    } else if (leg.hasWaivableFee && leg.feeAmount === 0) {
-      details.push(
-        `No facility fee applies at this airport.`
-      );
-    } else if (!leg.hasWaivableFee) {
-      details.push(
-        `No waivable facility fee at ${leg.departure}.`
-      );
-    }
+    // Fee reasoning already handled above (before early return check)
 
     // First leg context
     if (isFirst) {
