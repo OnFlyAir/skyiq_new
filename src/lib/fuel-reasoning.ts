@@ -29,8 +29,8 @@ function determineLegStrategy(
   }
 
   // Check if they're topping off (filling to max capacity)
-  const fuelAfterUplift = leg.startFuel + leg.fuelUpliftLbs;
-  if (maxFuelLbs > 0 && fuelAfterUplift >= maxFuelLbs * 0.95) {
+  // startFuel already includes uplift, so compare directly to max capacity
+  if (maxFuelLbs > 0 && leg.startFuel >= maxFuelLbs * 0.95) {
     return { label: "Top off", description: `Fill to max capacity at ${leg.departure}` };
   }
 
@@ -43,7 +43,8 @@ function determineLegStrategy(
   }
 
   // Targeted uplift to a specific fuel level
-  const targetFuel = Math.round((leg.startFuel + leg.fuelUpliftLbs) / 10) * 10;
+  // startFuel already includes uplift
+  const targetFuel = Math.round(leg.startFuel / 10) * 10;
   return {
     label: `Bring it up to ${targetFuel.toLocaleString()} lbs`,
     description: `Add fuel to reach ${targetFuel.toLocaleString()} lbs at ${leg.departure}`,
