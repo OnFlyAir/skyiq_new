@@ -107,6 +107,7 @@ export function resultToSummary(
     let hasWaivableFee = false;
     let hasWaivedFee = false;
     let feeMin = 0;
+    let feeAmount = 0;
 
     if (leg.fees.length > 0) {
       const fee = leg.fees.find((f) => f.is_waivable && f.amount > 0 && f.waived_at > 0);

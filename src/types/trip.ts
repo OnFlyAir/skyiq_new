@@ -83,6 +83,7 @@ export interface TripSummaryLeg {
   hasWaivedFee: boolean;
   hasWaivableFee: boolean;
   feeMin: number;
+  feeAmount: number;
   totalCost: number;
   errors: string[];
 }
