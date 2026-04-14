@@ -283,13 +283,41 @@ export default function TripFuelPage() {
                     </div>
                   </div>
 
-                  {/* Leg info */}
-                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                    <span>Reserve: {leg.reserve} lbs</span>
-                    <span>Max TO: {leg.maxTakeoffWeight.toLocaleString()} lbs</span>
-                    <span>Max LDG: {leg.maxLandingWeight.toLocaleString()} lbs</span>
-                    <span>Max Ramp: {leg.maxRampWeight.toLocaleString()} lbs</span>
-                  </div>
+                  {/* Leg breakdown */}
+                  {(() => {
+                    const paxWeights = leg.passengerWeights
+                      .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+                    const crewWeights = leg.crewWeight
+                      .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+                    const paxTotal = paxWeights.reduce((s, w) => s + w, 0);
+                    const crewTotal = crewWeights.reduce((s, w) => s + w, 0);
+                    const fixedWt = tripForm.basicEmptyWeight + leg.baggage + crewTotal + paxTotal;
+
+                    const maxFuelTakeoff = Math.min(leg.maxTakeoffWeight - fixedWt, tripForm.maxFuelReserve);
+                    const maxFuelLanding = Math.min(leg.maxLandingWeight - fixedWt, tripForm.maxFuelReserve);
+                    const maxFuelRamp = Math.min(leg.maxRampWeight - fixedWt, tripForm.maxFuelReserve);
+                    const maxFuelAllowed = Math.min(maxFuelTakeoff, maxFuelRamp);
+                    const burn = fuelBurns[originalIndex] ?? 0;
+                    const minFuelRequired = burn + leg.reserve + leg.taxiFuelBurn;
+
+                    return (
+                      <div className="mt-2 space-y-2">
+                        {/* Row 1: Reserve & bounds */}
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                          <span>Reserve: <span className="text-foreground font-medium">{leg.reserve.toLocaleString()} lbs</span></span>
+                          <span>Min Fuel Required: <span className="text-foreground font-medium">{Math.max(0, Math.floor(minFuelRequired)).toLocaleString()} lbs</span></span>
+                          <span>Max Fuel Allowed: <span className={`font-medium ${maxFuelAllowed < 0 ? "text-destructive" : "text-foreground"}`}>{Math.floor(maxFuelAllowed).toLocaleString()} lbs</span></span>
+                        </div>
+                        {/* Row 2: Weight limits with available fuel capacity */}
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                          <span>Fixed Wt: {Math.floor(fixedWt).toLocaleString()} lbs</span>
+                          <span>TO Limit: {leg.maxTakeoffWeight.toLocaleString()} lbs ({Math.floor(maxFuelTakeoff).toLocaleString()} avail)</span>
+                          <span>LDG Limit: {leg.maxLandingWeight.toLocaleString()} lbs ({Math.floor(maxFuelLanding).toLocaleString()} avail)</span>
+                          <span>Ramp Limit: {leg.maxRampWeight.toLocaleString()} lbs ({Math.floor(maxFuelRamp).toLocaleString()} avail)</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Errors */}
                   {hasLegErrors && (
