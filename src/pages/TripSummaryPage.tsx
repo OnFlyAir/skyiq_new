@@ -52,7 +52,7 @@ function LegDetail({
               <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
             <div>
               <span className="block">TO Weight</span>
               <span className="font-medium text-foreground">{formatWeight(leg.takeoffWeight)}</span>
