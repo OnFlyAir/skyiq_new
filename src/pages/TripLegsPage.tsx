@@ -818,57 +818,33 @@ export default function TripLegsPage() {
         </CardContent>
       </Card>
 
-      {/* PDF Upload */}
-      <Card className="border-dashed border-2">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">Upload Itinerary (PDF)</p>
-              <p className="text-xs text-muted-foreground">AI will parse your trip sheet and fill in the legs</p>
-            </div>
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handlePdfUpload(file, appendModeRef.current);
-                  appendModeRef.current = false;
-                }}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={parsing}
-              >
-                {parsing ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Parsing...</>
-                ) : (
-                  <><FileUp className="h-4 w-4 mr-2" /> Upload PDF</>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Hidden file input for Add Leg dialog */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handlePdfUpload(file, appendModeRef.current);
+          appendModeRef.current = false;
+        }}
+      />
 
-      {/* Progress banner */}
+      {/* Sticky progress bar */}
       {totalLegs > 0 && (
-        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-          <div className="flex-1">
-            <div className="flex items-center justify-between text-sm mb-1.5">
-              <span className="font-medium">
-                {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
-              </span>
-            </div>
-            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
-                style={{ width: `${totalLegs > 0 ? (confirmedCount / totalLegs) * 100 : 0}%` }}
-              />
-            </div>
+        <div className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">
+              {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
+            </span>
+            <span className="text-xs text-muted-foreground">{Math.round((confirmedCount / totalLegs) * 100)}%</span>
+          </div>
+          <div className="h-1 rounded-full bg-secondary overflow-hidden mt-1.5">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${(confirmedCount / totalLegs) * 100}%` }}
+            />
           </div>
         </div>
       )}
