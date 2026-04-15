@@ -218,16 +218,27 @@ function buildEmailHtml(summary: TripSummary): string {
   }).join("");
 
   return `
-    <div style="font-family:'Montserrat',Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;">
-      <div style="background:#1a3a5c;padding:20px 24px;text-align:center;">
-        <img src="https://bfoxdonskxtlxfqayili.supabase.co/storage/v1/object/public/email-assets/skyiq-logo-light.png" alt="SkyIQ" style="height:40px;margin-bottom:8px;" />
-        <p style="color:#ffffff;margin:0;font-size:16px;letter-spacing:0.5px;">Fuel Plan</p>
+    <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <!-- Header -->
+      <div style="background:#7baed0;padding:28px 24px;text-align:center;">
+        <img src="https://bfoxdonskxtlxfqayili.supabase.co/storage/v1/object/public/email-assets/skyiq-business-logo.png" alt="SkyIQ — Fly Smarter" style="height:80px;" />
       </div>
+
+      <!-- Trip info bar -->
+      <div style="background:#1a3a5c;padding:14px 24px;display:flex;">
+        <table style="width:100%;" cellpadding="0" cellspacing="0"><tr>
+          <td style="color:#ffffff;font-size:16px;font-weight:700;">${tripLabel}</td>
+          <td style="color:#94a3b8;font-size:14px;text-align:right;">Aircraft: <span style="color:#ffffff;font-weight:600;">${summary.aircraftNumber || "N/A"}</span></td>
+        </tr></table>
+      </div>
+
       <div style="padding:24px;">
-        <h2 style="color:#1a3a5c;margin:0 0 4px;font-size:20px;">${tripLabel}</h2>
-        <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Aircraft: <strong>${summary.aircraftNumber || "N/A"}</strong></p>
         ${legsHtml}
-        <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Powered by SkyIQ — Fly Smarter</p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:16px 24px;text-align:center;">
+        <p style="margin:0;font-size:11px;color:#94a3b8;">Powered by SkyIQ — Fly Smarter</p>
       </div>
     </div>
   `;
