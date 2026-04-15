@@ -240,17 +240,15 @@ export default function TripFuelPage() {
 
         {/* Starting Fuel */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Current Fuel on Board</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
+          <CardContent className="pt-5">
+            <Label className="text-sm font-medium">Current Fuel on Board</Label>
+            <div className="flex items-center gap-3 mt-2">
               <Input
                 type="number"
                 value={startingFuel || ""}
                 onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
-                placeholder="Fuel in lbs"
-                className="max-w-[200px]"
+                placeholder="Enter current fuel"
+                className="max-w-[200px] h-11 text-base"
               />
               <span className="text-sm text-muted-foreground">lbs</span>
             </div>
@@ -265,63 +263,76 @@ export default function TripFuelPage() {
             const hasLegErrors = v && v.errors.length > 0;
             const hasLegWarnings = v && v.warnings.length > 0;
 
+            const paxWeights = leg.passengerWeights
+              .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+            const crewWeights = leg.crewWeight
+              .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+            const paxTotal = paxWeights.reduce((s, w) => s + w, 0);
+            const crewTotal = crewWeights.reduce((s, w) => s + w, 0);
+            const fixedWt = tripForm.basicEmptyWeight + leg.baggage + crewTotal + paxTotal;
+
+            const maxFuelTakeoff = Math.min(leg.maxTakeoffWeight - fixedWt, tripForm.maxFuelReserve);
+            const maxFuelRamp = Math.min(leg.maxRampWeight - fixedWt, tripForm.maxFuelReserve);
+            const maxFuelLanding = Math.min(leg.maxLandingWeight - fixedWt, tripForm.maxFuelReserve);
+            const burn = fuelBurns[originalIndex] ?? 0;
+            const minFuelRequired = burn + leg.reserve + leg.taxiFuelBurn;
+
             return (
               <Card key={leg.legNum} className={hasLegErrors ? "border-destructive" : ""}>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Plane className="h-4 w-4 text-muted-foreground" />
-                      <Label className="font-medium">
-                        Leg {leg.legNum}: {leg.departure} → {leg.destination}
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={fuelBurns[originalIndex] || ""}
-                        onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
-                        placeholder="Fuel burn (lbs)"
-                        className={`max-w-[160px] ${hasLegErrors ? "border-destructive" : ""}`}
-                      />
-                      <span className="text-sm text-muted-foreground">lbs</span>
+                <CardContent className="pt-5 space-y-4">
+                  {/* Route header */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Plane className="h-4 w-4" />
+                    <span>Leg {leg.legNum}</span>
+                  </div>
+
+                  {/* Hero: route + fuel burn input */}
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-lg font-semibold">
+                      {leg.departure} → {leg.destination}
+                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <Label className="text-xs text-muted-foreground">Fuel Burn</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={fuelBurns[originalIndex] || ""}
+                          onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
+                          placeholder="Enter lbs"
+                          className={`w-28 h-11 text-base text-right font-medium ${hasLegErrors ? "border-destructive" : ""}`}
+                        />
+                        <span className="text-sm text-muted-foreground">lbs</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Leg breakdown */}
-                  {(() => {
-                    const paxWeights = leg.passengerWeights
-                      .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
-                    const crewWeights = leg.crewWeight
-                      .split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
-                    const paxTotal = paxWeights.reduce((s, w) => s + w, 0);
-                    const crewTotal = crewWeights.reduce((s, w) => s + w, 0);
-                    const fixedWt = tripForm.basicEmptyWeight + leg.baggage + crewTotal + paxTotal;
+                  {/* Quick stats — always visible, concise */}
+                  <div className="flex gap-4 text-xs text-muted-foreground">
+                    <span>Reserve: <span className="text-foreground font-medium">{leg.reserve.toLocaleString()}</span></span>
+                    <span>Min Required: <span className="text-foreground font-medium">{Math.max(0, Math.floor(minFuelRequired)).toLocaleString()}</span></span>
+                    <span>Tank Capacity: <span className="text-foreground font-medium">{tripForm.maxFuelReserve.toLocaleString()}</span></span>
+                  </div>
 
-                    const maxFuelTakeoff = Math.min(leg.maxTakeoffWeight - fixedWt, tripForm.maxFuelReserve);
-                    const maxFuelLanding = Math.min(leg.maxLandingWeight - fixedWt, tripForm.maxFuelReserve);
-                    const maxFuelRamp = Math.min(leg.maxRampWeight - fixedWt, tripForm.maxFuelReserve);
-                    const maxFuelAllowed = Math.min(maxFuelTakeoff, maxFuelRamp);
-                    const burn = fuelBurns[originalIndex] ?? 0;
-                    const minFuelRequired = burn + leg.reserve + leg.taxiFuelBurn;
-
-                    return (
-                      <div className="mt-2 space-y-2">
-                        {/* Row 1: Reserve & bounds */}
-                        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                          <span>Reserve: <span className="text-foreground font-medium">{leg.reserve.toLocaleString()} lbs</span></span>
-                          <span>Min Fuel Required: <span className="text-foreground font-medium">{Math.max(0, Math.floor(minFuelRequired)).toLocaleString()} lbs</span></span>
-                          <span>Max Fuel Allowed: <span className={`font-medium ${maxFuelAllowed < 0 ? "text-destructive" : "text-foreground"}`}>{Math.floor(maxFuelAllowed).toLocaleString()} lbs</span></span>
-                        </div>
-                        {/* Row 2: Weight limits with available fuel capacity */}
-                        <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                          <span>Fixed Wt: {Math.floor(fixedWt).toLocaleString()} lbs</span>
-                          <span>TO Limit: {leg.maxTakeoffWeight.toLocaleString()} lbs ({Math.floor(maxFuelTakeoff).toLocaleString()} avail)</span>
-                          <span>LDG Limit: {leg.maxLandingWeight.toLocaleString()} lbs ({Math.floor(maxFuelLanding).toLocaleString()} avail)</span>
-                          <span>Ramp Limit: {leg.maxRampWeight.toLocaleString()} lbs ({Math.floor(maxFuelRamp).toLocaleString()} avail)</span>
-                        </div>
+                  {/* Expandable weight details */}
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                      >
+                        <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
+                        Weight limits
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
+                      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
+                        <span>Fixed Weight: {Math.floor(fixedWt).toLocaleString()} lbs</span>
+                        <span>TO: {leg.maxTakeoffWeight.toLocaleString()} ({Math.floor(maxFuelTakeoff).toLocaleString()} avail)</span>
+                        <span>LDG: {leg.maxLandingWeight.toLocaleString()} ({Math.floor(maxFuelLanding).toLocaleString()} avail)</span>
+                        <span>Ramp: {leg.maxRampWeight.toLocaleString()} ({Math.floor(maxFuelRamp).toLocaleString()} avail)</span>
                       </div>
-                    );
-                  })()}
+                    </CollapsibleContent>
+                  </Collapsible>
 
                   {/* Errors */}
                   {hasLegErrors && (
