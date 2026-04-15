@@ -31,7 +31,14 @@ export default function AddAircraftPage() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Record<string, string | number>>({});
+  const [formData, setFormData] = useState<Record<string, string | number>>({
+    default_pax_weight: 177,
+    default_baggage_with_pax: 200,
+    default_baggage_no_pax: 50,
+    default_pic_weight: 200,
+    default_sic_weight: 200,
+    default_cabin_weight: 0,
+  });
 
   function updateField(key: string, value: string | number) {
     setFormData((prev) => ({ ...prev, [key]: value }));
