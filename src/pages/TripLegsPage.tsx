@@ -835,6 +835,7 @@ export default function TripLegsPage() {
               className="w-full"
               onClick={() => {
                 setAddLegOpen(false);
+                appendModeRef.current = true;
                 fileInputRef.current?.click();
               }}
             >
