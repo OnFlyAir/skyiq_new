@@ -166,11 +166,11 @@ function buildEmailHtml(summary: TripSummary): string {
         <table style="width:100%;border-collapse:collapse;font-size:12px;" cellpadding="0" cellspacing="0">
           <tr>
             <td style="padding:4px 0;color:#64748b;width:35%;">Uplift</td>
-            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${Math.round(leg.fuelUpliftGals)} gal / ${fmtW(leg.fuelUpliftLbs)}</td>
+            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${Math.round(Math.abs(leg.fuelUpliftGals))} gal / ${fmtW(Math.abs(leg.fuelUpliftLbs))}</td>
           </tr>
           <tr>
             <td style="padding:4px 0;color:#64748b;">Fuel Cost</td>
-            <td style="padding:4px 0;font-weight:600;color:#1a3a5c;">${fmt(leg.fuelCost)}</td>
+            <td style="padding:4px 0;font-weight:600;color:#1a3a5c;">${fmt(Math.abs(leg.fuelCost))}</td>
           </tr>
           <tr>
             <td style="padding:4px 0;color:#64748b;">Starting Fuel</td>
@@ -186,14 +186,13 @@ function buildEmailHtml(summary: TripSummary): string {
           </tr>
           <tr>
             <td style="padding:4px 0;color:#64748b;">Total Cost</td>
-            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${fmt(leg.totalCost)}</td>
+            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${fmt(Math.abs(leg.totalCost))}</td>
           </tr>
           <tr>
             <td style="padding:4px 0;color:#64748b;">TO / Ldg Weight</td>
             <td style="padding:4px 0;color:#334155;">${fmtW(leg.takeoffWeight)} / ${fmtW(leg.landingWeight)}</td>
           </tr>
         </table>
-        ${whyHtml}
       </div>
     `;
   }).join("");
