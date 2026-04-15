@@ -3,8 +3,52 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Dark theme matching SkyIQ landing page */
+  :root,
+  .light {
+    --background: 210 20% 97%;
+    --foreground: 213 35% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 35% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 35% 12%;
+
+    --primary: 187 80% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 213 25% 25%;
+
+    --muted: 210 15% 93%;
+    --muted-foreground: 213 15% 45%;
+
+    --accent: 187 80% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 213 15% 88%;
+    --input: 213 15% 88%;
+    --ring: 187 80% 42%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 210 20% 98%;
+    --sidebar-foreground: 213 25% 25%;
+    --sidebar-primary: 187 80% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 93%;
+    --sidebar-accent-foreground: 213 35% 12%;
+    --sidebar-border: 213 15% 90%;
+    --sidebar-ring: 187 80% 42%;
+
+    --success: 160 70% 40%;
+    --success-foreground: 0 0% 100%;
+  }
+
+  .dark {
     --background: 213 35% 7%;
     --foreground: 210 20% 92%;
 
