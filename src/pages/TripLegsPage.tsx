@@ -629,11 +629,39 @@ export default function TripLegsPage() {
               : prev
           );
         } else {
-          console.warn("No matching aircraft found for parsed tail:", parsed.aircraft);
-          toast({
-            title: "Aircraft not found",
-            description: `Tail "${parsed.aircraft}" not in your fleet. Please select manually.`,
-          });
+          // No exact match — if user has only one aircraft, auto-select it
+          if (aircraftList.length === 1) {
+            const fallback = aircraftList[0];
+            console.log("No match for parsed tail, auto-selecting only aircraft:", fallback.tail_number);
+            setAircraft(fallback as unknown as Aircraft);
+            const defs = getAircraftDefaults(fallback as unknown as Aircraft);
+            const refilledNewLegs = renumberedNewLegs.map((leg) => {
+              const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+              const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
+              return {
+                ...leg,
+                baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
+                reserve: defs.reserve,
+                taxiFuelBurn: defs.taxiFuelBurn,
+                maxTakeoffWeight: defs.maxTakeoff,
+                maxLandingWeight: defs.maxLanding,
+                maxRampWeight: defs.maxRamp,
+                crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+              };
+            });
+            setTripForm((prev) =>
+              prev
+                ? { ...prev, aircraftId: fallback.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
+                : prev
+            );
+            toast({ title: "Aircraft auto-selected", description: `Using ${fallback.tail_number} (PDF had "${parsed.aircraft}")` });
+          } else {
+            console.warn("No matching aircraft found for parsed tail:", parsed.aircraft);
+            toast({
+              title: "Aircraft not found",
+              description: `Tail "${parsed.aircraft}" not in your fleet. Please select manually.`,
+            });
+          }
         }
       }
 
