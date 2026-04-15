@@ -351,8 +351,8 @@ export default function AdminDfyPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="per_trip">Per Trip ($200)</SelectItem>
-                        <SelectItem value="monthly">Monthly ($10,000)</SelectItem>
+                        <SelectItem value="per_trip">Per Trip ($25)</SelectItem>
+                        <SelectItem value="monthly">Monthly (Custom)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
