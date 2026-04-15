@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Plane,
@@ -20,6 +21,7 @@ import {
   Sun,
   Moon,
   FileText,
+  Play,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
@@ -30,9 +32,17 @@ type NavItem = {
   to: string;
   description?: string;
   activeMatch?: (pathname: string, search: string) => boolean;
+  demoTarget?: string;
 };
 
-export default function AppLayout() {
+type NavItem = {
+  label: string;
+  icon: LucideIcon;
+  to: string;
+  description?: string;
+  activeMatch?: (pathname: string, search: string) => boolean;
+  demoTarget?: string;
+};
   const { profile, signOut } = useAuthContext();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
