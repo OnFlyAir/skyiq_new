@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { useTheme } from '@/hooks/useTheme';
 import {
   Plane,
   Menu,
@@ -15,6 +16,8 @@ import {
   Database,
   Wrench,
   ChevronRight,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
@@ -29,6 +32,7 @@ type NavItem = {
 
 export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,6 +207,16 @@ export default function AppLayout() {
               </div>
               {isAdmin ? <Shield className="h-4 w-4 shrink-0 text-primary" /> : null}
             </Link>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
+            </div>
 
             <button
               onClick={handleSignOut}
