@@ -39,6 +39,18 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Fetch recent trips for sidebar
+  const [recentTrips, setRecentTrips] = useState<{ id: number; itinerary_num: string | null; created_on: string | null }[]>([]);
+  useEffect(() => {
+    if (!profile) return;
+    supabase
+      .from('trips')
+      .select('id, itinerary_num, created_on')
+      .order('created_on', { ascending: false })
+      .limit(5)
+      .then(({ data }) => { if (data) setRecentTrips(data); });
+  }, [profile]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
