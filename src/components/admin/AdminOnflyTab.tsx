@@ -119,16 +119,20 @@ export default function AdminOnflyTab() {
         return;
       }
 
-      // Get existing trip_ids to skip duplicates
+      // Get existing trip_ids and itinerary_nums to skip duplicates
       const { data: existingRows } = await supabase
         .from("onfly_data")
-        .select("trip_id");
+        .select("trip_id, itinerary_num");
 
       const existingTripIds = new Set((existingRows ?? []).map((r: any) => r.trip_id).filter(Boolean));
+      const existingItineraryNums = new Set(
+        (existingRows ?? []).map((r: any) => r.itinerary_num).filter((n: string) => n && n.length > 0)
+      );
 
       let inserted = 0;
       for (const trip of trips) {
         if (existingTripIds.has(trip.id)) continue;
+        if (trip.itinerary_num && existingItineraryNums.has(trip.itinerary_num)) continue;
 
         const details = trip.itinerary_details as any;
         const clientName = details?.client_name || details?.passenger_name || "";
