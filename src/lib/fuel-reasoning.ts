@@ -46,7 +46,7 @@ function determineLegStrategy(
   // startFuel already includes uplift
   const targetFuel = Math.round(leg.startFuel / 10) * 10;
   return {
-    label: `Bring it up to ${targetFuel.toLocaleString()} lbs`,
+    label: `Fuel up to ${targetFuel.toLocaleString()} lbs`,
     description: `Add fuel to reach ${targetFuel.toLocaleString()} lbs at ${leg.departure}`,
   };
 }

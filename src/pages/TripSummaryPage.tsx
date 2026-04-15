@@ -104,7 +104,7 @@ function LegDetail({
           <>
             <div className="flex items-center justify-between mb-2">
               <div className="font-bold">{formatWeight(leg.startFuel)}</div>
-              <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
+              <div className="text-xs text-muted-foreground">~{Math.round(Math.abs(leg.fuelUpliftGals))} gal uplift · {formatCurrency(Math.abs(leg.totalCost))}</div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
               <div>
@@ -129,11 +129,11 @@ function LegDetail({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
             <div>
               <span className="text-muted-foreground">Fuel to Uplift</span>
-              <p className="font-bold">{Math.round(leg.fuelUpliftGals)} gal. / {formatWeight(leg.fuelUpliftLbs)}</p>
+              <p className="font-bold">{Math.round(Math.abs(leg.fuelUpliftGals))} gal. / {formatWeight(Math.abs(leg.fuelUpliftLbs))}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Fuel Cost</span>
-              <p className="font-medium">{formatCurrency(leg.fuelCost)}</p>
+              <p className="font-medium">{formatCurrency(Math.abs(leg.fuelCost))}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Starting Fuel</span>
@@ -151,7 +151,7 @@ function LegDetail({
             </div>
             <div>
               <span className="text-muted-foreground">Total Cost</span>
-              <p className="font-bold">{formatCurrency(leg.totalCost)}</p>
+              <p className="font-bold">{formatCurrency(Math.abs(leg.totalCost))}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Takeoff Weight</span>
