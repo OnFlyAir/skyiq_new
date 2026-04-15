@@ -105,10 +105,35 @@ export default function DemoOverlay() {
     return base;
   };
 
+  // Click handler for the dark overlay — if clicking in the spotlight area, forward to the target element
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (!hasTarget || !currentStep?.target) return;
+
+    const clickX = e.clientX;
+    const clickY = e.clientY;
+    const r = targetRect!;
+    const inSpotlight =
+      clickX >= r.left - padding &&
+      clickX <= r.right + padding &&
+      clickY >= r.top - padding &&
+      clickY <= r.bottom + padding;
+
+    if (inSpotlight) {
+      // Forward click to the actual element
+      const el = document.querySelector(`[data-demo="${currentStep.target}"]`) as HTMLElement;
+      if (el) {
+        el.click();
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] pointer-events-none">
       {/* Dark overlay with cutout */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-auto cursor-pointer"
+        onClick={handleOverlayClick}
+      >
         <defs>
           <mask id="demo-spotlight">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -133,19 +158,6 @@ export default function DemoOverlay() {
           mask="url(#demo-spotlight)"
         />
       </svg>
-
-      {/* Make target element clickable through overlay */}
-      {hasTarget && (
-        <div
-          className="absolute pointer-events-auto"
-          style={{
-            top: targetRect!.top - padding,
-            left: targetRect!.left - padding,
-            width: targetRect!.width + padding * 2,
-            height: targetRect!.height + padding * 2,
-          }}
-        />
-      )}
 
       {/* Spotlight ring */}
       {hasTarget && (
