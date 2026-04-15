@@ -78,10 +78,33 @@ export default function ItineraryViewer({ tripId, children }: Props) {
   }
 
   if (!open) {
+    if (isMobile) {
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className="shrink-0 border-primary/30 bg-card/95 text-primary backdrop-blur"
+        >
+          <FileText className="h-4 w-4" />
+          Itinerary
+        </Button>
+      );
+    }
+
     return (
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(true);
+        }}
         className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
       >
         <FileText className="h-4 w-4" />
