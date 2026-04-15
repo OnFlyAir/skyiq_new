@@ -78,13 +78,32 @@ export default function DemoOverlay() {
     return () => document.removeEventListener('input', handler, true);
   }, [active, currentStep, nextStep]);
 
+  // Auto-advance on select — watch for target button text to contain the expected value
+  useEffect(() => {
+    if (!active || !currentStep?.target || currentStep.action !== 'select') return;
+    const expected = currentStep.inputValue?.toLowerCase();
+    if (!expected) return;
+
+    const checkValue = () => {
+      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
+      if (!el) return;
+      const text = el.textContent?.toLowerCase() || '';
+      if (text.includes(expected)) {
+        setTimeout(nextStep, 500);
+      }
+    };
+
+    const interval = setInterval(checkValue, 300);
+    return () => clearInterval(interval);
+  }, [active, currentStep, nextStep]);
+
   if (!active || !currentStep) return null;
 
   const hasTarget = !!targetRect;
   const padding = 8;
 
   // Is this a "do something" step (no Next button — user must interact)?
-  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.autoAdvance;
+  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.autoAdvance;
   // Explanation-only steps (no action) get a Next button
   const showNextButton = !isInteractiveStep;
   // Last step always gets a Finish button
