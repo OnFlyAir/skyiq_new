@@ -149,11 +149,14 @@ export default function DemoOverlay() {
     return base;
   };
 
+  // For select steps, make overlay visual-only so dropdown portals are clickable
+  const overlayPointerClass = currentStep.action === 'select' ? 'pointer-events-none' : 'pointer-events-auto';
+
   // Use 4 overlay panels around the spotlight so the target area is fully interactive
   const renderOverlay = () => {
     if (!hasTarget) {
       return (
-        <div className="fixed inset-0 bg-black/60 pointer-events-auto" />
+        <div className={`fixed inset-0 bg-black/60 ${overlayPointerClass}`} />
       );
     }
 
@@ -168,13 +171,13 @@ export default function DemoOverlay() {
     return (
       <>
         {/* Top */}
-        <div className="fixed pointer-events-auto bg-black/60" style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
         {/* Bottom */}
-        <div className="fixed pointer-events-auto bg-black/60" style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
         {/* Left */}
-        <div className="fixed pointer-events-auto bg-black/60" style={{ top, left: 0, width: Math.max(0, left), height }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height }} />
         {/* Right */}
-        <div className="fixed pointer-events-auto bg-black/60" style={{ top, left: right, right: 0, height }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height }} />
       </>
     );
   };
