@@ -200,24 +200,193 @@ export const DEMO_STEPS: DemoStep[] = [
     page: '/trips/new',
     target: 'upload-pdf-area',
     title: 'Upload Your Trip Sheet',
-    description: 'Upload a PDF trip itinerary and SkyIQ will automatically extract all the flight details. For this demo, click to select the sample file.',
+    description: 'Upload a PDF trip itinerary and SkyIQ will automatically extract all the flight details. For this demo, we\'ll use a sample itinerary.',
     placement: 'bottom',
     action: 'click',
   },
-  // Steps 18+: TBD — need PDF and fuel burn data from user
+  // Step 18: Check itinerary
   {
-    id: 'demo-pause',
+    id: 'check-itinerary',
     page: '/trips/new',
-    title: 'More Steps Coming Soon',
-    description: 'The remaining demo steps (itinerary review, fuel burns, summary, and email) will be activated once we have the demo PDF and fuel burn data. For now, feel free to explore on your own!',
+    target: 'check-itinerary-btn',
+    title: 'Check Itinerary',
+    description: 'Click "Check Itinerary" to parse the PDF and populate the legs. Verify the info matches your trip sheet.',
+    placement: 'bottom',
+    action: 'click',
+    autoAdvance: true,
+  },
+  // Step 19: Walk through leg 1 fields
+  {
+    id: 'explain-leg-departure',
+    page: '',  // dynamic — set by tripId
+    target: 'leg-1-departure',
+    title: 'Departure Airport',
+    description: 'The ICAO code of the airport you\'re departing from for this leg.',
     placement: 'bottom',
   },
-  // Final step placeholder
+  {
+    id: 'explain-leg-destination',
+    page: '',
+    target: 'leg-1-destination',
+    title: 'Destination Airport',
+    description: 'Where this leg ends. Fuel prices and fees at this airport are factored into optimization.',
+    placement: 'bottom',
+  },
+  {
+    id: 'explain-leg-fuel-price',
+    page: '',
+    target: 'leg-1-fuel-price',
+    title: 'Fuel Price',
+    description: 'The price per gallon at the departure airport. SkyIQ compares prices across all legs to find savings.',
+    placement: 'bottom',
+  },
+  {
+    id: 'explain-leg-fees',
+    page: '',
+    target: 'leg-1-fees',
+    title: 'Airport Fees',
+    description: 'Ramp fees, handling fees, etc. Some can be waived with a fuel purchase — SkyIQ accounts for that.',
+    placement: 'bottom',
+  },
+  // Step 23: Verify legs
+  {
+    id: 'verify-legs',
+    page: '',
+    target: 'verify-leg-btn',
+    title: 'Verify Each Leg',
+    description: 'Click the checkmark to confirm each leg\'s data is correct. Review all legs before proceeding.',
+    placement: 'bottom',
+    action: 'click',
+  },
+  // Step 24: Point out trash icon
+  {
+    id: 'explain-trash',
+    page: '',
+    target: 'delete-leg-btn',
+    title: 'Delete a Leg',
+    description: 'Use the trash icon to remove any legs already flown or not needed for this trip.',
+    placement: 'left',
+  },
+  // Step 25: Point out add leg
+  {
+    id: 'explain-add-leg',
+    page: '',
+    target: 'add-leg-btn',
+    title: 'Add More Legs',
+    description: 'Need more legs? Click here to upload additional itineraries or manually add legs.',
+    placement: 'top',
+  },
+  // Step 26: Click Next: Fuel Burns
+  {
+    id: 'click-fuel-burns',
+    page: '',
+    target: 'next-fuel-burns-btn',
+    title: 'Next: Fuel Burns',
+    description: 'Legs look good! Click "Next: Fuel Burns" to enter your fuel burn data.',
+    placement: 'top',
+    action: 'click',
+    autoAdvance: true,
+  },
+  // Step 27: Enter fuel burns
+  {
+    id: 'enter-fuel-burns',
+    page: '',
+    target: 'fuel-burn-inputs',
+    title: 'Enter Fuel Burns',
+    description: 'Enter the fuel burn for each leg: Leg 1: 700, Leg 2: 1800, Leg 3: 2600, Leg 4: 2300, Leg 5: 2700, Leg 6: 1000.',
+    placement: 'right',
+  },
+  // Step 28: Expand weight limits
+  {
+    id: 'expand-weights',
+    page: '',
+    target: 'weight-limits-toggle',
+    title: 'Weight Limits',
+    description: 'Expand this to see the weight constraints for each leg. SkyIQ ensures your fuel plan stays within limits.',
+    placement: 'bottom',
+    action: 'click',
+  },
+  // Step 29: Click Confirm Trip
+  {
+    id: 'click-confirm',
+    page: '',
+    target: 'confirm-trip-btn',
+    title: 'Confirm Trip',
+    description: 'Everything is set — click Confirm to run the fuel optimizer!',
+    placement: 'top',
+    action: 'click',
+    autoAdvance: true,
+  },
+  // Step 30: Optimizer strategy
+  {
+    id: 'explain-strategy',
+    page: '',
+    target: 'optimizer-strategy',
+    title: 'Optimization Strategy',
+    description: 'This shows the high-level approach the optimizer used — whether it\'s tankering fuel, buying at cheaper stops, or a balanced mix.',
+    placement: 'bottom',
+  },
+  // Step 31: Walk through leg 1 summary numbers
+  {
+    id: 'explain-summary-leg1',
+    page: '',
+    target: 'summary-leg-1',
+    title: 'Leg 1 Breakdown',
+    description: 'Here\'s the optimized fuel plan for Leg 1 — how much to load, expected cost, and savings vs. buying at each stop.',
+    placement: 'bottom',
+  },
+  // Step 32: Click Full Summary
+  {
+    id: 'click-full-summary',
+    page: '',
+    target: 'full-summary-btn',
+    title: 'Full Summary',
+    description: 'Click to see the Quick Reference view — a condensed summary you can use in the cockpit.',
+    placement: 'bottom',
+    action: 'click',
+  },
+  // Step 33: Click Send Email
+  {
+    id: 'click-send-email',
+    page: '',
+    target: 'send-email-btn',
+    title: 'Send Email',
+    description: 'Share your fuel plan with your team. Click "Send Email" to email the optimized plan.',
+    placement: 'bottom',
+    action: 'click',
+    autoAdvance: true,
+  },
+  // Step 34: Enter email
+  {
+    id: 'enter-email',
+    page: '',
+    target: 'email-input',
+    title: 'Enter Your Email',
+    description: 'Type your email address and click Send. You\'ll receive your fuel plan summary right in your inbox.',
+    placement: 'bottom',
+  },
+  // Step 35: Email sent
+  {
+    id: 'email-sent',
+    page: '',
+    title: 'Email Sent! ✉️',
+    description: 'Your fuel plan has been emailed. You now have access to your optimized plan anytime.',
+    placement: 'bottom',
+  },
+  // Step 36: Sidebar tip
+  {
+    id: 'sidebar-tip',
+    page: '',
+    title: 'Find Your Trips',
+    description: 'You can always find past trips in the sidebar under "Recent Trips" or use the search bar at the top to find any trip by tail number or itinerary.',
+    placement: 'bottom',
+  },
+  // Step 37: Final
   {
     id: 'demo-complete',
     page: '/dashboard',
     title: 'You\'re Ready! 🚀',
-    description: 'You now know the basics of SkyIQ. There are more features to discover as you go. You can restart this demo anytime from the DEMO button in the sidebar. For questions, email info@skyiq.net.',
+    description: 'There are more features to discover, but you\'re now ready to start planning smarter with SkyIQ. Access this demo anytime by clicking DEMO in the sidebar. For questions, email info@skyiq.net.',
     placement: 'bottom',
   },
 ];
