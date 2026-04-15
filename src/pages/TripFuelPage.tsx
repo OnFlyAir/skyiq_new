@@ -229,7 +229,7 @@ export default function TripFuelPage() {
   return (
     <>
       {optimizing && <ParsingLoader title="Optimizing fuel plan…" subtitle="Finding the cheapest fueling strategy" />}
-      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
+      <div className="max-w-2xl mx-auto space-y-3 px-3 sm:px-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/legs`)}>
             <ArrowLeft className="h-5 w-5" />
