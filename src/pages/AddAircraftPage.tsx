@@ -158,9 +158,10 @@ export default function AddAircraftPage() {
           <CardContent className="pt-5 space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Manufacturer</Label>
-              <Popover open={mfgOpen} onOpenChange={setMfgOpen}>
+              <Popover open={mfgOpen} onOpenChange={setMfgOpen} data-demo="manufacturer-select">
                 <PopoverTrigger asChild>
                   <Button
+                    data-demo="manufacturer-select"
                     variant="outline"
                     role="combobox"
                     className="w-full justify-between font-normal h-11"
@@ -245,6 +246,7 @@ export default function AddAircraftPage() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Tail Number</Label>
               <Input
+                data-demo="tail-number-input"
                 value={tailNumber}
                 onChange={(e) => setTailNumber(e.target.value)}
                 placeholder="N12345"
@@ -255,6 +257,7 @@ export default function AddAircraftPage() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Empty Weight (lbs)</Label>
               <Input
+                data-demo="bew-input"
                 type="number"
                 value={basicEmptyWeight}
                 onChange={(e) => setBasicEmptyWeight(e.target.value)}
@@ -320,7 +323,7 @@ export default function AddAircraftPage() {
           </Collapsible>
         )}
 
-        <Button type="submit" disabled={loading} size="lg" className="w-full">
+        <Button data-demo="save-aircraft-btn" type="submit" disabled={loading} size="lg" className="w-full">
           {loading ? 'Adding…' : 'Add Aircraft'}
         </Button>
       </form>

@@ -50,7 +50,7 @@ export default function FleetPage() {
             <p className="text-sm text-muted-foreground">You only do this once.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button asChild className="sm:min-w-40">
+            <Button asChild className="sm:min-w-40" data-demo="add-aircraft-btn">
               <Link to="/fleet/add">Add Aircraft</Link>
             </Button>
             <Button asChild variant="outline" className="sm:min-w-40">
@@ -80,6 +80,7 @@ export default function FleetPage() {
 
         <Link
           to="/fleet/add"
+          data-demo="add-aircraft-btn"
           className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-6 transition-all hover:border-primary hover:bg-secondary/30"
         >
           <Plus className="mb-3 h-12 w-12 text-muted-foreground" />
