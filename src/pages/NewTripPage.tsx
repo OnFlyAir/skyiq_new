@@ -136,19 +136,19 @@ export default function NewTripPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Start a Trip</h1>
-          <p className="text-sm text-muted-foreground">Upload PDF or go blank.</p>
         </div>
       </div>
 
-      <Card className="border-primary/20 bg-primary/5">
+      {/* Primary: Upload PDF */}
+      <Card className="border-2 border-primary bg-primary/5 shadow-md">
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-              <FileUp className="h-5 w-5" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shrink-0">
+              <FileUp className="h-6 w-6" />
             </div>
             <div>
-              <p className="font-semibold">Upload PDF</p>
-              <p className="text-xs text-muted-foreground">Fastest path</p>
+              <p className="text-lg font-semibold">Upload trip itinerary</p>
+              <p className="text-xs text-muted-foreground">Recommended — fastest way to get started</p>
             </div>
           </div>
 
@@ -163,57 +163,47 @@ export default function NewTripPage() {
             }}
           />
 
-          <Button className="w-full" onClick={() => fileInputRef.current?.click()} disabled={creating}>
-            {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileUp className="h-4 w-4 mr-2" />}
+          <Button size="lg" className="w-full text-base" onClick={() => fileInputRef.current?.click()} disabled={creating}>
+            {creating ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <FileUp className="h-5 w-5 mr-2" />}
             Upload PDF
           </Button>
         </CardContent>
       </Card>
 
+      {/* Secondary: Start blank */}
       {aircraftList.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
+        <div className="border border-dashed rounded-xl p-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground shrink-0">
-                <Plane className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold">Add aircraft</p>
-                <p className="text-xs text-muted-foreground">Needed for blank trips</p>
-              </div>
+              <Plane className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Or start blank —</p>
             </div>
-
-            <Button variant="outline" className="w-full" onClick={() => navigate("/fleet/add")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Aircraft
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => navigate("/fleet/add")}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add aircraft first
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ) : (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground shrink-0">
-                <Plane className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold">Start blank</p>
-                <p className="text-xs text-muted-foreground">
-                  {aircraftList.length === 1 ? "Aircraft ready" : "Pick aircraft"}
-                </p>
-              </div>
-            </div>
+        <div className="border border-dashed rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Plane className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Or start blank</p>
+          </div>
 
-            {aircraftList.length === 1 ? (
-              <div className="rounded-xl border bg-secondary/40 px-4 py-3">
-                <p className="text-sm font-medium">{aircraftList[0].tail_number}</p>
-                <p className="text-xs text-muted-foreground">
-                  {aircraftList[0].manufacturer} {aircraftList[0].type}
-                </p>
-              </div>
-            ) : (
+          {aircraftList.length === 1 ? (
+            <div className="flex items-center justify-between">
+              <p className="text-sm">
+                {aircraftList[0].tail_number} <span className="text-muted-foreground">— {aircraftList[0].manufacturer} {aircraftList[0].type}</span>
+              </p>
+              <Button variant="outline" size="sm" onClick={handleManualStart} disabled={!selectedTail || creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
               <Select value={selectedTail} onValueChange={setSelectedTail}>
-                <SelectTrigger>
+                <SelectTrigger className="flex-1 h-9 text-sm">
                   <SelectValue placeholder="Select aircraft" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,14 +214,12 @@ export default function NewTripPage() {
                   ))}
                 </SelectContent>
               </Select>
-            )}
-
-            <Button className="w-full" onClick={handleManualStart} disabled={!selectedTail || creating}>
-              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
-              Start Blank
-            </Button>
-          </CardContent>
-        </Card>
+              <Button variant="outline" size="sm" onClick={handleManualStart} disabled={!selectedTail || creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
