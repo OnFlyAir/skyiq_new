@@ -203,6 +203,7 @@ export default function AddAircraftPage() {
                 <Popover open={modelOpen} onOpenChange={setModelOpen}>
                   <PopoverTrigger asChild>
                     <Button
+                      data-demo="model-select"
                       variant="outline"
                       role="combobox"
                       className="w-full justify-between font-normal h-11"
