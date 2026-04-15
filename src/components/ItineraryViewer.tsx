@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { FileText, X, Minimize2, Maximize2 } from "lucide-react";
+import { FileText, X, Minimize2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
   tripId: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ItineraryViewer({ tripId, children }: Props) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
