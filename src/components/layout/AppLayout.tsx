@@ -35,15 +35,13 @@ type NavItem = {
   demoTarget?: string;
 };
 
-type NavItem = {
-  label: string;
-  icon: LucideIcon;
-  to: string;
-  description?: string;
-  activeMatch?: (pathname: string, search: string) => boolean;
-  demoTarget?: string;
-};
+export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
+  const { theme, toggleTheme } = useTheme();
+  const { startDemo } = useDemo();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
