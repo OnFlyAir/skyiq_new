@@ -124,13 +124,14 @@ function legWhyDetails(leg: TripSummaryLeg, nextLeg: TripSummaryLeg | undefined,
 }
 
 function buildEmailHtml(summary: TripSummary): string {
-  const totalCost = summary.legs.reduce((s, l) => s + l.totalCost, 0);
   const maxFuel = summary.maxFuelLbs ?? 0;
-  const overall = overallStrategy(summary.legs, summary.savings);
   const tripLabel = summary.itineraryNum ? `Trip #${summary.itineraryNum}` : "Trip Summary";
+  const legCount = summary.legs.length;
 
   const legsHtml = summary.legs.map((leg, i) => {
     const strat = legStrategy(leg, maxFuel);
+    const nextLeg = summary.legs[i + 1];
+    const whyDetails = legWhyDetails(leg, nextLeg, i, legCount);
     const hasErr = leg.errors && leg.errors.length > 0;
 
     const errHtml = hasErr
@@ -143,6 +144,15 @@ function buildEmailHtml(summary: TripSummary): string {
             ? `✅ Fee waived (min ${Math.round(leg.feeMin)} gal)`
             : `⚠️ $${leg.feeAmount.toFixed(2)} facility fee applies`}
          </p>`
+      : "";
+
+    const whyHtml = whyDetails.length > 0
+      ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6;">
+           <p style="font-size:12px;font-weight:600;color:#1a3a5c;margin:0 0 6px;">💡 Why?</p>
+           <ul style="margin:0;padding-left:18px;">
+             ${whyDetails.map(d => `<li style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:4px;">${d}</li>`).join("")}
+           </ul>
+         </div>`
       : "";
 
     return `
@@ -201,6 +211,7 @@ function buildEmailHtml(summary: TripSummary): string {
               </td>
             </tr>
           </table>
+          ${whyHtml}
         </div>
       </div>
     `;
@@ -208,38 +219,13 @@ function buildEmailHtml(summary: TripSummary): string {
 
   return `
     <div style="font-family:'Montserrat',Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;">
-      <!-- Header -->
       <div style="background:#1a3a5c;padding:24px;text-align:center;">
         <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.5px;">SkyIQ Fuel Plan</h1>
       </div>
-
       <div style="padding:24px;">
-        <!-- Trip info -->
         <h2 style="color:#1a3a5c;margin:0 0 4px;font-size:20px;">${tripLabel}</h2>
         <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Aircraft: <strong>${summary.aircraftNumber || "N/A"}</strong></p>
-
-        ${summary.savings > 0 ? `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <span style="font-size:13px;color:#6b7280;">Estimated Savings</span>
-          <span style="font-size:18px;font-weight:700;color:#1a7ade;">${fmt(summary.savings)}</span>
-        </div>
-        ` : ""}
-
-        <!-- Overall strategy -->
-        <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:20px;">
-          <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1a3a5c;">💡 Optimizer Strategy</p>
-          <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.5;">${overall}</p>
-        </div>
-
-        <!-- Total -->
-        <div style="text-align:right;margin-bottom:16px;">
-          <span style="font-size:17px;font-weight:700;color:#1a3a5c;">Total: ${fmt(totalCost)}</span>
-        </div>
-
-        <!-- Legs -->
         ${legsHtml}
-
-        <!-- Footer -->
         <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Powered by SkyIQ — Fly Smarter</p>
       </div>
     </div>
