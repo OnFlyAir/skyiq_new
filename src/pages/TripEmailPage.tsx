@@ -230,17 +230,26 @@ export default function TripEmailPage() {
         </CardContent>
       </Card>
 
-      <Button
-        onClick={handleSend}
-        disabled={sending}
-        className="w-full bg-[#1a3a5c] hover:bg-[#2563eb]"
-      >
-        {sending ? (
-          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
-        ) : (
-          <><Mail className="h-4 w-4 mr-2" /> Send Email</>
-        )}
-      </Button>
+      {(() => {
+        const hasSelected = emails.some((e) => e.isChecked && e.email.trim());
+        return (
+          <Button
+            onClick={handleSend}
+            disabled={sending || !hasSelected}
+            className={`w-full transition-all ${
+              hasSelected
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
+            }`}
+          >
+            {sending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
+            ) : (
+              <><Mail className="h-4 w-4 mr-2" /> Send Email</>
+            )}
+          </Button>
+        );
+      })()}
     </div>
   );
 }
