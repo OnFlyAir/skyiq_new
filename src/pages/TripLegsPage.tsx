@@ -860,7 +860,7 @@ export default function TripLegsPage() {
           <div className="flex-1">
             <div className="flex items-center justify-between text-sm mb-1.5">
               <span className="font-medium">
-                {allConfirmed ? "All legs confirmed ✓" : `Confirm each leg (${confirmedCount}/${totalLegs})`}
+                {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
               </span>
             </div>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
