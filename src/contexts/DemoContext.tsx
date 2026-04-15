@@ -30,6 +30,7 @@ const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
 const DEMO_STORAGE_KEY = 'skyiq_demo_active';
 const DEMO_STEP_KEY = 'skyiq_demo_step';
+export const DEMO_PDF_PATH = '/demo/sample-itinerary.pdf';
 
 // Step definitions — will be expanded as we wire pages
 export const DEMO_STEPS: DemoStep[] = [
