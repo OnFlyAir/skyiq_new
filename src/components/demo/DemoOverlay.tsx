@@ -229,7 +229,9 @@ export default function DemoOverlay() {
           {isInteractiveStep && !isLastStep && (
             <div className="px-4 pb-1">
               <p className="text-[10px] text-primary/70 italic">
-                {currentStep.action === 'input' ? '↑ Type the value above to continue' : '↑ Click the highlighted area to continue'}
+                {currentStep.action === 'input' ? '↑ Type the value above to continue' 
+                  : currentStep.action === 'select' ? '↑ Select the option from the dropdown to continue'
+                  : '↑ Click the highlighted area to continue'}
               </p>
             </div>
           )}
