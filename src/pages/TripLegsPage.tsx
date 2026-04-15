@@ -942,7 +942,7 @@ export default function TripLegsPage() {
       </Dialog>
 
       {/* Next Button */}
-      <div className="flex gap-3 pt-2">
+      <div id="next-button" className="flex gap-3 pt-2">
         <Button
           onClick={handleNext}
           disabled={!allConfirmed || saving || tripForm.legs.length === 0}
