@@ -3,7 +3,7 @@
 // Supports PDF upload (AI parsing), manual entry, and per-leg editing.
 // Each leg has: departure/destination, fuel prices (tiered), fees, crew, pax, weights.
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, createRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
