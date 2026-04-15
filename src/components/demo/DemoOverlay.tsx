@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useDemo } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { X, ArrowRight, ArrowLeft, Play } from 'lucide-react';
@@ -31,27 +31,26 @@ export default function DemoOverlay() {
       if (el) {
         const rect = el.getBoundingClientRect();
         setTargetRect(rect);
-        // Scroll into view if needed
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         setTargetRect(null);
       }
     };
 
-    // Poll briefly for element to appear (page may still be rendering)
     const interval = setInterval(findTarget, 200);
     findTarget();
     return () => clearInterval(interval);
   }, [active, currentStep]);
 
-  // Handle auto-advance on click
+  // Auto-advance on click for click-action steps
   useEffect(() => {
-    if (!active || !currentStep?.autoAdvance || !currentStep.target) return;
+    if (!active || !currentStep?.target) return;
+    if (currentStep.action !== 'click' && !currentStep.autoAdvance) return;
 
     const handler = (e: MouseEvent) => {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
       if (el && (el === e.target || el.contains(e.target as Node))) {
-        setTimeout(nextStep, 300);
+        setTimeout(nextStep, 400);
       }
     };
 
@@ -59,15 +58,41 @@ export default function DemoOverlay() {
     return () => document.removeEventListener('click', handler, true);
   }, [active, currentStep, nextStep]);
 
+  // Auto-advance on input for input-action steps
+  useEffect(() => {
+    if (!active || !currentStep?.target || currentStep.action !== 'input') return;
+    const expected = currentStep.inputValue;
+    if (!expected) return;
+
+    const handler = () => {
+      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
+      if (!el) return;
+      const input = el.tagName === 'INPUT' ? el as HTMLInputElement
+        : el.querySelector('input') as HTMLInputElement | null;
+      if (input && input.value.trim().toLowerCase() === expected.trim().toLowerCase()) {
+        setTimeout(nextStep, 500);
+      }
+    };
+
+    document.addEventListener('input', handler, true);
+    return () => document.removeEventListener('input', handler, true);
+  }, [active, currentStep, nextStep]);
+
   if (!active || !currentStep) return null;
 
   const hasTarget = !!targetRect;
   const padding = 8;
 
+  // Is this a "do something" step (no Next button — user must interact)?
+  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.autoAdvance;
+  // Explanation-only steps (no action) get a Next button
+  const showNextButton = !isInteractiveStep;
+  // Last step always gets a Finish button
+  const isLastStep = currentStepIndex === totalSteps - 1;
+
   // Calculate tooltip position
   const getTooltipStyle = (): React.CSSProperties => {
     if (!targetRect) {
-      // Center on screen
       return {
         position: 'fixed',
         top: '50%',
@@ -105,59 +130,39 @@ export default function DemoOverlay() {
     return base;
   };
 
-  // Click handler for the dark overlay — if clicking in the spotlight area, forward to the target element
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (!hasTarget || !currentStep?.target) return;
-
-    const clickX = e.clientX;
-    const clickY = e.clientY;
-    const r = targetRect!;
-    const inSpotlight =
-      clickX >= r.left - padding &&
-      clickX <= r.right + padding &&
-      clickY >= r.top - padding &&
-      clickY <= r.bottom + padding;
-
-    if (inSpotlight) {
-      // Forward click to the actual element
-      const el = document.querySelector(`[data-demo="${currentStep.target}"]`) as HTMLElement;
-      if (el) {
-        el.click();
-      }
+  // Use 4 overlay panels around the spotlight so the target area is fully interactive
+  const renderOverlay = () => {
+    if (!hasTarget) {
+      return (
+        <div className="fixed inset-0 bg-black/60 pointer-events-auto" />
+      );
     }
+
+    const r = targetRect!;
+    const top = r.top - padding;
+    const left = r.left - padding;
+    const width = r.width + padding * 2;
+    const height = r.height + padding * 2;
+    const bottom = top + height;
+    const right = left + width;
+
+    return (
+      <>
+        {/* Top */}
+        <div className="fixed pointer-events-auto bg-black/60" style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
+        {/* Bottom */}
+        <div className="fixed pointer-events-auto bg-black/60" style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
+        {/* Left */}
+        <div className="fixed pointer-events-auto bg-black/60" style={{ top, left: 0, width: Math.max(0, left), height }} />
+        {/* Right */}
+        <div className="fixed pointer-events-auto bg-black/60" style={{ top, left: right, right: 0, height }} />
+      </>
+    );
   };
 
   return (
     <div className="fixed inset-0 z-[200] pointer-events-none">
-      {/* Dark overlay with cutout */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-auto cursor-pointer"
-        onClick={handleOverlayClick}
-      >
-        <defs>
-          <mask id="demo-spotlight">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {hasTarget && (
-              <rect
-                x={targetRect!.left - padding}
-                y={targetRect!.top - padding}
-                width={targetRect!.width + padding * 2}
-                height={targetRect!.height + padding * 2}
-                rx="8"
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0,0,0,0.6)"
-          mask="url(#demo-spotlight)"
-        />
-      </svg>
+      {renderOverlay()}
 
       {/* Spotlight ring */}
       {hasTarget && (
@@ -201,6 +206,15 @@ export default function DemoOverlay() {
             <p className="text-xs text-muted-foreground leading-relaxed">{currentStep.description}</p>
           </div>
 
+          {/* Interaction hint for action steps */}
+          {isInteractiveStep && !isLastStep && (
+            <div className="px-4 pb-1">
+              <p className="text-[10px] text-primary/70 italic">
+                {currentStep.action === 'input' ? '↑ Type the value above to continue' : '↑ Click the highlighted area to continue'}
+              </p>
+            </div>
+          )}
+
           {/* Progress bar */}
           <div className="px-4">
             <div className="h-1 bg-border rounded-full overflow-hidden">
@@ -229,12 +243,12 @@ export default function DemoOverlay() {
                   Back
                 </button>
               )}
-              {!currentStep.autoAdvance && (
+              {(showNextButton || isLastStep) && (
                 <button
                   onClick={nextStep}
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  {currentStepIndex === totalSteps - 1 ? 'Finish' : 'Next'}
+                  {isLastStep ? 'Finish' : 'Next'}
                   <ArrowRight className="h-3 w-3" />
                 </button>
               )}
