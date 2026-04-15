@@ -96,7 +96,9 @@ export default function ItineraryViewer({ tripId, children }: Props) {
         className={`fixed z-50 transition-all duration-300 ease-in-out ${
           minimized
             ? "bottom-4 right-4 w-12 h-12"
-            : "top-16 right-4 w-[420px] h-[calc(100vh-5rem)]"
+            : isMobile
+              ? "inset-2 top-14"
+              : "top-16 right-4 w-[560px] h-[calc(100vh-5rem)]"
         } flex flex-col rounded-xl border bg-card shadow-2xl overflow-hidden`}
       >
         {minimized ? (
