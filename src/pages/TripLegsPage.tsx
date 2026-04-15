@@ -854,18 +854,60 @@ export default function TripLegsPage() {
         </CardContent>
       </Card>
 
+      {/* Progress banner */}
+      {totalLegs > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
+          <div className="flex-1">
+            <div className="flex items-center justify-between text-sm mb-1.5">
+              <span className="font-medium">
+                {allConfirmed ? "All legs confirmed ✓" : `Confirm each leg (${confirmedCount}/${totalLegs})`}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${totalLegs > 0 ? (confirmedCount / totalLegs) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Leg Editors */}
       <div className="space-y-3">
         {tripForm.legs.map((leg, index) => (
-          <LegEditor
-            key={`${leg.legNum}-${index}`}
-            leg={leg}
-            onUpdate={(updated) => updateLeg(index, updated)}
-            onConfirm={() => updateLeg(index, { ...leg, isConfirmed: true })}
-            onUnconfirm={() => updateLeg(index, { ...leg, isConfirmed: false })}
-            onRemove={() => removeLeg(index)}
-            aircraftDefaults={aircraftDefaults}
-          />
+          <div key={`${leg.legNum}-${index}`} id={`leg-${index}`}>
+            <LegEditor
+              leg={leg}
+              onUpdate={(updated) => updateLeg(index, updated)}
+              onConfirm={() => {
+                updateLeg(index, { ...leg, isConfirmed: true });
+                // Auto-scroll to next unconfirmed leg
+                const nextUnconfirmedIdx = tripForm.legs.findIndex(
+                  (l, i) => i > index && !l.isConfirmed
+                );
+                if (nextUnconfirmedIdx !== -1) {
+                  setTimeout(() => {
+                    document.getElementById(`leg-${nextUnconfirmedIdx}`)?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 150);
+                } else if (index === tripForm.legs.length - 1 || tripForm.legs.every((l, i) => i === index || l.isConfirmed)) {
+                  // All confirmed — scroll to the Next button
+                  setTimeout(() => {
+                    document.getElementById("next-button")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                  }, 150);
+                }
+              }}
+              onUnconfirm={() => updateLeg(index, { ...leg, isConfirmed: false })}
+              onRemove={() => removeLeg(index)}
+              aircraftDefaults={aircraftDefaults}
+            />
+          </div>
         ))}
       </div>
 
