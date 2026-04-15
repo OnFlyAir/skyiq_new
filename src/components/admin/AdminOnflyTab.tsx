@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Download, Database, RefreshCw } from "lucide-react";
+import { Loader2, Search, Download, Database, RefreshCw, Pencil, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface OnflyRow {
@@ -22,6 +22,9 @@ export default function AdminOnflyTab() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState({ client_name: "", client_email: "", client_phone: "" });
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function AdminOnflyTab() {
   async function loadData() {
     setLoading(true);
     const { data: rows, error } = await supabase
-      .from("onfly_data" as any)
+      .from("onfly_data")
       .select("id, trip_id, client_name, client_email, client_phone, itinerary_num, parsed_at")
       .order("parsed_at", { ascending: false });
 
@@ -41,7 +44,49 @@ export default function AdminOnflyTab() {
     setLoading(false);
   }
 
-  // Sync: scan all trips and extract client info from itinerary_details
+  function startEdit(row: OnflyRow) {
+    setEditingId(row.id);
+    setEditValues({
+      client_name: row.client_name || "",
+      client_email: row.client_email || "",
+      client_phone: row.client_phone || "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditValues({ client_name: "", client_email: "", client_phone: "" });
+  }
+
+  async function saveEdit(id: string) {
+    const name = editValues.client_name.trim().slice(0, 200);
+    const email = editValues.client_email.trim().slice(0, 255);
+    const phone = editValues.client_phone.trim().slice(0, 30);
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Invalid email format", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase
+      .from("onfly_data")
+      .update({ client_name: name, client_email: email, client_phone: phone } as any)
+      .eq("id", id);
+
+    setSaving(false);
+    if (error) {
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setData((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, client_name: name, client_email: email, client_phone: phone } : r)),
+    );
+    setEditingId(null);
+    toast({ title: "Updated" });
+  }
+
   async function syncFromTrips() {
     setSyncing(true);
     try {
@@ -57,22 +102,20 @@ export default function AdminOnflyTab() {
 
       let inserted = 0;
       for (const trip of trips) {
-        // Check if already tracked
         const { data: existing } = await supabase
-          .from("onfly_data" as any)
+          .from("onfly_data")
           .select("id")
           .eq("trip_id", trip.id)
           .limit(1);
 
         if (existing && existing.length > 0) continue;
 
-        // Try to extract client info from itinerary_details
         const details = trip.itinerary_details as any;
         const clientName = details?.client_name || details?.passenger_name || "";
         const clientEmail = details?.client_email || details?.email || "";
         const clientPhone = details?.client_phone || details?.phone || "";
 
-        await supabase.from("onfly_data" as any).insert({
+        await supabase.from("onfly_data").insert({
           trip_id: trip.id,
           user_id: trip.user_company || "00000000-0000-0000-0000-000000000000",
           client_name: clientName,
@@ -166,24 +209,78 @@ export default function AdminOnflyTab() {
                 <th className="text-left px-4 py-2 font-medium">Phone</th>
                 <th className="text-center px-4 py-2 font-medium">Trip ID</th>
                 <th className="text-right px-4 py-2 font-medium">Parsed</th>
+                <th className="text-center px-4 py-2 font-medium w-20"></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.id} className="border-t hover:bg-secondary/50">
-                  <td className="px-4 py-2 font-medium">{r.itinerary_num || "—"}</td>
-                  <td className="px-4 py-2">{r.client_name || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground text-xs">{r.client_email || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground text-xs">{r.client_phone || "—"}</td>
-                  <td className="px-4 py-2 text-center">{r.trip_id ?? "—"}</td>
-                  <td className="px-4 py-2 text-right text-xs text-muted-foreground">
-                    {new Date(r.parsed_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((r) => {
+                const isEditing = editingId === r.id;
+                return (
+                  <tr key={r.id} className="border-t hover:bg-secondary/50">
+                    <td className="px-4 py-2 font-medium">{r.itinerary_num || "—"}</td>
+                    <td className="px-4 py-2">
+                      {isEditing ? (
+                        <Input
+                          value={editValues.client_name}
+                          onChange={(e) => setEditValues({ ...editValues, client_name: e.target.value })}
+                          className="h-7 text-xs"
+                          maxLength={200}
+                        />
+                      ) : (
+                        r.client_name || "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs">
+                      {isEditing ? (
+                        <Input
+                          value={editValues.client_email}
+                          onChange={(e) => setEditValues({ ...editValues, client_email: e.target.value })}
+                          className="h-7 text-xs"
+                          type="email"
+                          maxLength={255}
+                        />
+                      ) : (
+                        r.client_email || "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground text-xs">
+                      {isEditing ? (
+                        <Input
+                          value={editValues.client_phone}
+                          onChange={(e) => setEditValues({ ...editValues, client_phone: e.target.value })}
+                          className="h-7 text-xs"
+                          maxLength={30}
+                        />
+                      ) : (
+                        r.client_phone || "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-center">{r.trip_id ?? "—"}</td>
+                    <td className="px-4 py-2 text-right text-xs text-muted-foreground">
+                      {new Date(r.parsed_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {isEditing ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => saveEdit(r.id)} disabled={saving}>
+                            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5 text-green-600" />}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit} disabled={saving}>
+                            <X className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(r)}>
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">No matching records</td>
+                  <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">No matching records</td>
                 </tr>
               )}
             </tbody>
