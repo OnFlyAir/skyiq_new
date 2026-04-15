@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  FileText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
