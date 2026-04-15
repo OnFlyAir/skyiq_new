@@ -608,7 +608,7 @@ export default function TripLegsPage() {
           setAircraft(match);
           // Re-apply defaults from matched aircraft
           const defs = getAircraftDefaults(match);
-          const refilledLegs = newLegs.map((leg) => {
+          const refilledNewLegs = renumberedNewLegs.map((leg) => {
             const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
             const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
             return {
@@ -624,7 +624,7 @@ export default function TripLegsPage() {
           });
           setTripForm((prev) =>
             prev
-              ? { ...prev, aircraftId: match.tail_number, itineraryNum: parsedItineraryNum, legs: refilledLegs }
+              ? { ...prev, aircraftId: match.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
               : prev
           );
         } else {
