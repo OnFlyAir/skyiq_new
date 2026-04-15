@@ -42,10 +42,6 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // Fetch recent trips for sidebar
   const [recentTrips, setRecentTrips] = useState<{ id: number; itinerary_num: string | null; created_on: string | null }[]>([]);
