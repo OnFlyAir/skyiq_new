@@ -420,6 +420,7 @@ export default function TripLegsPage() {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addLegOpen, setAddLegOpen] = useState(false);
+  const appendModeRef = useRef(false);
 
   // Load trip + aircraft data + fleet list
   useEffect(() => {
@@ -506,12 +507,12 @@ export default function TripLegsPage() {
     if (file && tripForm && !autoParseTriggered.current) {
       autoParseTriggered.current = true;
       pendingParseFile.current = null;
-      handlePdfUpload(file);
+      handlePdfUpload(file, false);
     }
   }, [tripForm]);
 
   // --- PDF Upload Handler ---
-  const handlePdfUpload = async (file: File) => {
+  const handlePdfUpload = async (file: File, appendMode = false) => {
     if (!tripForm) return;
     console.log("File selected:", file.name);
     setParsing(true);
@@ -576,11 +577,20 @@ export default function TripLegsPage() {
       // Use itinerary_num from parsed sheet as trip ID
       const parsedItineraryNum = parsed.itinerary_num || tripForm.itineraryNum;
 
+      // In append mode, keep existing legs and add new ones with renumbered leg numbers
+      const existingLegs = appendMode ? tripForm.legs : [];
+      const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
+      const renumberedNewLegs = newLegs.map((leg, i) => ({
+        ...leg,
+        legNum: maxLegNum + i + 1,
+      }));
+      const combinedLegs = [...existingLegs, ...renumberedNewLegs];
+
       setTripForm({
         ...tripForm,
-        itineraryNum: parsedItineraryNum,
+        itineraryNum: appendMode ? tripForm.itineraryNum : parsedItineraryNum,
         aircraftId: parsed.aircraft || tripForm.aircraftId,
-        legs: newLegs,
+        legs: combinedLegs,
       });
 
       // Match aircraft from parsed tail number
@@ -599,7 +609,7 @@ export default function TripLegsPage() {
           setAircraft(match);
           // Re-apply defaults from matched aircraft
           const defs = getAircraftDefaults(match);
-          const refilledLegs = newLegs.map((leg) => {
+          const refilledNewLegs = renumberedNewLegs.map((leg) => {
             const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
             const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
             return {
@@ -615,7 +625,7 @@ export default function TripLegsPage() {
           });
           setTripForm((prev) =>
             prev
-              ? { ...prev, aircraftId: match.tail_number, itineraryNum: parsedItineraryNum, legs: refilledLegs }
+              ? { ...prev, aircraftId: match.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
               : prev
           );
         } else {
@@ -770,7 +780,8 @@ export default function TripLegsPage() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handlePdfUpload(file);
+                  if (file) handlePdfUpload(file, appendModeRef.current);
+                  appendModeRef.current = false;
                 }}
               />
               <Button
@@ -824,6 +835,7 @@ export default function TripLegsPage() {
               className="w-full"
               onClick={() => {
                 setAddLegOpen(false);
+                appendModeRef.current = true;
                 fileInputRef.current?.click();
               }}
             >
