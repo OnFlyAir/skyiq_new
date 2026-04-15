@@ -156,58 +156,65 @@ function buildEmailHtml(summary: TripSummary): string {
       : "";
 
     return `
-      <div style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;overflow:hidden;">
-        <div style="background:#f8fafc;padding:12px 16px;border-bottom:1px solid #e5e7eb;">
-          <strong style="font-size:15px;">Leg ${i + 1}: ${leg.departure} → ${leg.arrival}</strong>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden;">
+        <div style="background:#1a3a5c;padding:10px 16px;">
+          <strong style="font-size:14px;color:#ffffff;">Leg ${i + 1}: ${leg.departure} → ${leg.arrival}</strong>
         </div>
-        <div style="padding:16px;">
+        <div style="padding:16px;background:#ffffff;">
           ${errHtml}
           <!-- Strategy -->
-          <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f3f4f6;">
-            <span style="display:inline-block;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;">${strat.label}</span>
-            <span style="font-size:12px;color:#6b7280;margin-left:8px;">${strat.desc}</span>
+          <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;">
+            <span style="display:inline-block;background:#1a3a5c;color:#ffffff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;letter-spacing:0.3px;">${strat.label}</span>
+            <span style="font-size:12px;color:#64748b;margin-left:8px;">${strat.desc}</span>
             ${feeHtml}
           </div>
           <!-- Numbers grid -->
           <table style="width:100%;border-collapse:collapse;" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="padding:6px 8px;width:50%;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Fuel to Uplift</span>
-                <span style="font-size:14px;font-weight:700;">${Math.round(leg.fuelUpliftGals)} gal / ${fmtW(leg.fuelUpliftLbs)}</span>
+              <td style="padding:8px 10px;width:50%;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel to Uplift</span>
+                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${Math.round(leg.fuelUpliftGals)} gal / ${fmtW(leg.fuelUpliftLbs)}</span>
               </td>
-              <td style="padding:6px 8px;width:50%;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Fuel Cost</span>
-                <span style="font-size:14px;font-weight:600;">${fmt(leg.fuelCost)}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Starting Fuel</span>
-                <span style="font-size:13px;">${fmtW(leg.startFuel)}</span>
-              </td>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Fuel Burn</span>
-                <span style="font-size:13px;">${fmtW(leg.fuelBurn)}</span>
+              <td style="width:8px;"></td>
+              <td style="padding:8px 10px;width:50%;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel Cost</span>
+                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${fmt(leg.fuelCost)}</span>
               </td>
             </tr>
+            <tr><td colspan="3" style="height:6px;"></td></tr>
             <tr>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Landing Fuel</span>
-                <span style="font-size:13px;${leg.landingFuel < 0 ? 'color:#ef4444;font-weight:700;' : ''}">${fmtW(leg.landingFuel)}</span>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Starting Fuel</span>
+                <span style="font-size:13px;color:#334155;">${fmtW(leg.startFuel)}</span>
               </td>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Total Cost</span>
-                <span style="font-size:14px;font-weight:700;">${fmt(leg.totalCost)}</span>
+              <td style="width:8px;"></td>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel Burn</span>
+                <span style="font-size:13px;color:#334155;">${fmtW(leg.fuelBurn)}</span>
               </td>
             </tr>
+            <tr><td colspan="3" style="height:6px;"></td></tr>
             <tr>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Takeoff Weight</span>
-                <span style="font-size:13px;">${fmtW(leg.takeoffWeight)}</span>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Landing Fuel</span>
+                <span style="font-size:13px;${leg.landingFuel < 0 ? 'color:#ef4444;font-weight:700;' : 'color:#334155;'}">${fmtW(leg.landingFuel)}</span>
               </td>
-              <td style="padding:6px 8px;">
-                <span style="font-size:11px;color:#6b7280;display:block;">Landing Weight</span>
-                <span style="font-size:13px;${leg.landingWeight < 0 ? 'color:#ef4444;font-weight:700;' : ''}">${fmtW(leg.landingWeight)}</span>
+              <td style="width:8px;"></td>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Total Cost</span>
+                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${fmt(leg.totalCost)}</span>
+              </td>
+            </tr>
+            <tr><td colspan="3" style="height:6px;"></td></tr>
+            <tr>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Takeoff Weight</span>
+                <span style="font-size:13px;color:#334155;">${fmtW(leg.takeoffWeight)}</span>
+              </td>
+              <td style="width:8px;"></td>
+              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
+                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Landing Weight</span>
+                <span style="font-size:13px;${leg.landingWeight < 0 ? 'color:#ef4444;font-weight:700;' : 'color:#334155;'}">${fmtW(leg.landingWeight)}</span>
               </td>
             </tr>
           </table>
@@ -218,16 +225,27 @@ function buildEmailHtml(summary: TripSummary): string {
   }).join("");
 
   return `
-    <div style="font-family:'Montserrat',Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;">
-      <div style="background:#1a3a5c;padding:20px 24px;text-align:center;">
-        <img src="https://bfoxdonskxtlxfqayili.supabase.co/storage/v1/object/public/email-assets/skyiq-logo-light.png" alt="SkyIQ" style="height:40px;margin-bottom:8px;" />
-        <p style="color:#ffffff;margin:0;font-size:16px;letter-spacing:0.5px;">Fuel Plan</p>
+    <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <!-- Header -->
+      <div style="background:#7baed0;padding:28px 24px;text-align:center;">
+        <img src="https://bfoxdonskxtlxfqayili.supabase.co/storage/v1/object/public/email-assets/skyiq-business-logo.png" alt="SkyIQ — Fly Smarter" style="height:80px;" />
       </div>
+
+      <!-- Trip info bar -->
+      <div style="background:#1a3a5c;padding:14px 24px;display:flex;">
+        <table style="width:100%;" cellpadding="0" cellspacing="0"><tr>
+          <td style="color:#ffffff;font-size:16px;font-weight:700;">${tripLabel}</td>
+          <td style="color:#94a3b8;font-size:14px;text-align:right;">Aircraft: <span style="color:#ffffff;font-weight:600;">${summary.aircraftNumber || "N/A"}</span></td>
+        </tr></table>
+      </div>
+
       <div style="padding:24px;">
-        <h2 style="color:#1a3a5c;margin:0 0 4px;font-size:20px;">${tripLabel}</h2>
-        <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Aircraft: <strong>${summary.aircraftNumber || "N/A"}</strong></p>
         ${legsHtml}
-        <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Powered by SkyIQ — Fly Smarter</p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;border-top:1px solid #e5e7eb;padding:16px 24px;text-align:center;">
+        <p style="margin:0;font-size:11px;color:#94a3b8;">Powered by SkyIQ — Fly Smarter</p>
       </div>
     </div>
   `;
