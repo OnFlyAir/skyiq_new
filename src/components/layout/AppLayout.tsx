@@ -197,6 +197,37 @@ export default function AppLayout() {
             ) : (
               renderNavSection('Workspace', flightToolsNavItems)
             )}
+
+            {recentTrips.length > 0 && (
+              <div className="mb-6">
+                <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  Recent Trips
+                </p>
+                <div className="space-y-1">
+                  {recentTrips.map((trip) => {
+                    const tripPath = `/trips/${trip.id}/summary`;
+                    const active = location.pathname.includes(`/trips/${trip.id}`);
+                    const label = trip.itinerary_num || `Trip #${trip.id}`;
+                    return (
+                      <Link
+                        key={trip.id}
+                        to={tripPath}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                          active
+                            ? 'border-primary/20 bg-primary/12 text-primary'
+                            : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        }`}
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        <span className="truncate text-sm font-medium">{label}</span>
+                        {active && <ChevronRight className="ml-auto h-4 w-4 shrink-0" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </nav>
 
           <div className="space-y-3 border-t border-border p-4">
