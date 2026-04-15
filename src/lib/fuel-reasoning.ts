@@ -96,12 +96,12 @@ export function generateLegReasoning(
 
     // Price reasoning
     const pricePerGal = leg.fuelUpliftGals > 0
-      ? leg.fuelCost / leg.fuelUpliftGals
+      ? Math.abs(leg.fuelCost / leg.fuelUpliftGals)
       : 0;
 
     if (nextLeg) {
       const nextPricePerGal = nextLeg.fuelUpliftGals > 0
-        ? nextLeg.fuelCost / nextLeg.fuelUpliftGals
+        ? Math.abs(nextLeg.fuelCost / nextLeg.fuelUpliftGals)
         : 0;
 
       if (pricePerGal > 0 && nextPricePerGal > 0) {
