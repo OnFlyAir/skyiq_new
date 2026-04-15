@@ -31,10 +31,30 @@ export default function AddAircraftPage() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Record<string, string | number>>({});
+  const [formData, setFormData] = useState<Record<string, string | number>>({
+    default_pax_weight: 177,
+    default_baggage_with_pax: 200,
+    default_baggage_no_pax: 50,
+    default_pic_weight: 200,
+    default_sic_weight: 200,
+    default_cabin_weight: 0,
+  });
+
+  const LARGE_CABIN_KEYWORDS = ['g450', 'g500', 'g550', 'g600', 'g650', 'g700', 'g800', 'global', 'falcon 7x', 'falcon 8x', 'falcon 900', 'challenger 604', 'challenger 605', 'challenger 650'];
 
   function updateField(key: string, value: string | number) {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [key]: value };
+      // Auto-set cabin attendant weight based on aircraft type
+      if (key === 'type' || key === 'manufacturer') {
+        const typeVal = (key === 'type' ? value : prev.type || '').toString().toLowerCase();
+        const mfgVal = (key === 'manufacturer' ? value : prev.manufacturer || '').toString().toLowerCase();
+        const combined = `${mfgVal} ${typeVal}`;
+        const isLargeCabin = LARGE_CABIN_KEYWORDS.some((kw) => combined.includes(kw));
+        next.default_cabin_weight = isLargeCabin ? 120 : 0;
+      }
+      return next;
+    });
   }
 
   async function handleSubmit(e: FormEvent) {
