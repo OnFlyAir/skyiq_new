@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Plane,
   Menu,
@@ -18,6 +19,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  FileText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
@@ -36,6 +38,18 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch recent trips for sidebar
+  const [recentTrips, setRecentTrips] = useState<{ id: number; itinerary_num: string | null; created_on: string | null }[]>([]);
+  useEffect(() => {
+    if (!profile) return;
+    supabase
+      .from('trips')
+      .select('id, itinerary_num, created_on')
+      .order('created_on', { ascending: false })
+      .limit(5)
+      .then(({ data }) => { if (data) setRecentTrips(data); });
+  }, [profile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -182,6 +196,37 @@ export default function AppLayout() {
               </>
             ) : (
               renderNavSection('Workspace', flightToolsNavItems)
+            )}
+
+            {recentTrips.length > 0 && (
+              <div className="mb-6">
+                <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                  Recent Trips
+                </p>
+                <div className="space-y-1">
+                  {recentTrips.map((trip) => {
+                    const tripPath = `/trips/${trip.id}/summary`;
+                    const active = location.pathname.includes(`/trips/${trip.id}`);
+                    const label = trip.itinerary_num || `Trip #${trip.id}`;
+                    return (
+                      <Link
+                        key={trip.id}
+                        to={tripPath}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                          active
+                            ? 'border-primary/20 bg-primary/12 text-primary'
+                            : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        }`}
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        <span className="truncate text-sm font-medium">{label}</span>
+                        {active && <ChevronRight className="ml-auto h-4 w-4 shrink-0" />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </nav>
 
