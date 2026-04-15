@@ -585,10 +585,17 @@ export default function TripLegsPage() {
 
       // Match aircraft from parsed tail number
       if (parsed.aircraft) {
-        const match = aircraftList.find(
-          (ac) => ac.tail_number.toUpperCase() === parsed.aircraft.toUpperCase()
-        );
+        const parsedTail = parsed.aircraft.replace(/[-\s]/g, "").toUpperCase();
+        console.log("Parsed tail number:", parsed.aircraft, "→ normalized:", parsedTail);
+        console.log("Available aircraft:", aircraftList.map((ac) => ac.tail_number));
+        
+        const match = aircraftList.find((ac) => {
+          const storedTail = ac.tail_number.replace(/[-\s]/g, "").toUpperCase();
+          return storedTail === parsedTail || storedTail.includes(parsedTail) || parsedTail.includes(storedTail);
+        });
+        
         if (match) {
+          console.log("Matched aircraft:", match.tail_number);
           setAircraft(match);
           // Re-apply defaults from matched aircraft
           const defs = getAircraftDefaults(match);
@@ -611,6 +618,12 @@ export default function TripLegsPage() {
               ? { ...prev, aircraftId: match.tail_number, itineraryNum: parsedItineraryNum, legs: refilledLegs }
               : prev
           );
+        } else {
+          console.warn("No matching aircraft found for parsed tail:", parsed.aircraft);
+          toast({
+            title: "Aircraft not found",
+            description: `Tail "${parsed.aircraft}" not in your fleet. Please select manually.`,
+          });
         }
       }
 
