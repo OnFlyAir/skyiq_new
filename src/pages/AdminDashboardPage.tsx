@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,15 @@ import AdminOverviewTab from "@/components/admin/AdminOverviewTab";
 import AdminOnflyTab from "@/components/admin/AdminOnflyTab";
 import {
   Shield, Users, Plane, TrendingUp, CreditCard,
-  FileText, Wrench, Database, BarChart3,
+  Wrench, Database, BarChart3,
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const { profile } = useAuthContext();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = profile?.role_name === "Admin";
+  const activeTab = searchParams.get("tab") === "onfly" ? "onfly" : "overview";
 
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -64,7 +66,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-4">
-      {/* Admin Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center">
@@ -87,7 +88,6 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Quick Stats */}
       {!loading && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
@@ -130,8 +130,10 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setSearchParams(value === "overview" ? {} : { tab: value }, { replace: true })}
+      >
         <TabsList>
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-1" /> Users & Stats
