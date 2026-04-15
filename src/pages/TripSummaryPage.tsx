@@ -238,9 +238,6 @@ export default function TripSummaryPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
-      {/* Floating Itinerary Viewer — always accessible */}
-      <ItineraryViewer tripId={tripId!} />
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
@@ -253,6 +250,7 @@ export default function TripSummaryPage() {
             {summary.itineraryNum ? ` — Trip #${summary.itineraryNum}` : ""}
           </p>
         </div>
+        <ItineraryViewer tripId={tripId!} />
       </div>
 
       {/* Savings */}
