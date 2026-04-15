@@ -148,39 +148,31 @@ export function generateLegReasoning(
 export function generateOverallReasoning(
   legs: TripSummaryLeg[],
   savings: number,
+  maxFuelLbs: number = 0,
 ): string {
-  if (savings <= 0) {
-    return "The optimizer found that fueling at each departure point (the simple approach) is already the cheapest option for this trip.";
+  if (legs.length === 0) {
+    return "No legs to optimize.";
   }
 
-  // Identify the cheapest and most expensive stops
-  const legsWithPrice = legs
-    .filter((l) => l.fuelUpliftGals > 0)
-    .map((l) => ({
-      airport: l.departure,
-      pricePerGal: Math.abs(l.fuelCost / l.fuelUpliftGals),
-      gallons: l.fuelUpliftGals,
-    }));
+  // Build a concise per-leg action list
+  const actions = legs.map((leg) => {
+    if (leg.fuelUpliftGals <= 0) {
+      return `${leg.departure}: skip fuel`;
+    }
+    // Top off
+    if (maxFuelLbs > 0 && leg.startFuel >= maxFuelLbs * 0.95) {
+      return `${leg.departure}: top off`;
+    }
+    // Waive fee minimum
+    if (leg.hasWaivedFee && leg.fuelUpliftGals >= leg.feeMin && leg.fuelUpliftGals < leg.feeMin * 1.15) {
+      return `${leg.departure}: take min (${Math.round(leg.feeMin)} gal) to waive fee`;
+    }
+    // Targeted uplift
+    const targetFuel = Math.round(leg.startFuel / 10) * 10;
+    return `${leg.departure}: fuel to ${targetFuel.toLocaleString()} lbs`;
+  });
 
-  if (legsWithPrice.length === 0) {
-    return "The aircraft had sufficient fuel for the entire trip.";
-  }
-
-  const cheapest = legsWithPrice.reduce((a, b) =>
-    a.pricePerGal < b.pricePerGal ? a : b
-  );
-  const mostExpensive = legsWithPrice.reduce((a, b) =>
-    a.pricePerGal > b.pricePerGal ? a : b
-  );
-
-  if (legsWithPrice.length === 1) {
-    return `By optimizing the fuel load, the plan saves $${savings.toFixed(0)} compared to the standard approach.`;
-  }
-
-  const priceDiff = mostExpensive.pricePerGal - cheapest.pricePerGal;
-  if (priceDiff > 0.5) {
-    return `The optimizer shifts fuel purchases toward ${cheapest.airport} (~$${cheapest.pricePerGal.toFixed(2)}/gal) and away from ${mostExpensive.airport} (~$${mostExpensive.pricePerGal.toFixed(2)}/gal), saving $${savings.toFixed(0)} by tankering cheaper fuel forward.`;
-  }
-
-  return `By carefully balancing fuel loads, weight penalties, and fee waivers across ${legsWithPrice.length} stops, the optimizer saves $${savings.toFixed(0)} compared to buying the minimum at each stop.`;
+  const plan = actions.join(" → ");
+  const savingsNote = savings > 0 ? ` | Saves $${savings.toFixed(0)}` : "";
+  return `${plan}${savingsNote}`;
 }
