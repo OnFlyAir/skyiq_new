@@ -511,7 +511,7 @@ export default function TripLegsPage() {
   }, [tripForm]);
 
   // --- PDF Upload Handler ---
-  const handlePdfUpload = async (file: File) => {
+  const handlePdfUpload = async (file: File, appendMode = false) => {
     if (!tripForm) return;
     console.log("File selected:", file.name);
     setParsing(true);
