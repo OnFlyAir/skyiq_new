@@ -240,18 +240,15 @@ export default function TripFuelPage() {
 
         {/* Starting Fuel */}
         <Card>
-          <CardContent className="pt-5">
-            <Label className="text-sm font-medium">Current Fuel on Board</Label>
-            <div className="flex items-center gap-3 mt-2">
-              <Input
-                type="number"
-                value={startingFuel || ""}
-                onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
-                placeholder="Enter current fuel"
-                className="max-w-[200px] h-11 text-base"
-              />
-              <span className="text-sm text-muted-foreground">lbs</span>
-            </div>
+          <CardContent className="pt-4 pb-3 space-y-1">
+            <Label className="text-xs font-medium text-muted-foreground">Current Fuel on Board (lbs)</Label>
+            <Input
+              type="number"
+              value={startingFuel || ""}
+              onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
+              placeholder="Enter current fuel in lbs"
+              className="max-w-[200px] h-12 text-lg font-semibold bg-muted/50 border-2 border-input focus:border-primary"
+            />
           </CardContent>
         </Card>
 
