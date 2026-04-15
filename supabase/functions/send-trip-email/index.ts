@@ -156,70 +156,44 @@ function buildEmailHtml(summary: TripSummary): string {
       : "";
 
     return `
-      <div style="border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden;">
-        <div style="background:#1a3a5c;padding:10px 16px;">
-          <strong style="font-size:14px;color:#ffffff;">Leg ${i + 1}: ${leg.departure} → ${leg.arrival}</strong>
-        </div>
-        <div style="padding:16px;background:#ffffff;">
-          ${errHtml}
-          <!-- Strategy -->
-          <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #e2e8f0;">
-            <span style="display:inline-block;background:#1a3a5c;color:#ffffff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;letter-spacing:0.3px;">${strat.label}</span>
-            <span style="font-size:12px;color:#64748b;margin-left:8px;">${strat.desc}</span>
-            ${feeHtml}
-          </div>
-          <!-- Numbers grid -->
-          <table style="width:100%;border-collapse:collapse;" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:8px 10px;width:50%;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel to Uplift</span>
-                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${Math.round(leg.fuelUpliftGals)} gal / ${fmtW(leg.fuelUpliftLbs)}</span>
-              </td>
-              <td style="width:8px;"></td>
-              <td style="padding:8px 10px;width:50%;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel Cost</span>
-                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${fmt(leg.fuelCost)}</span>
-              </td>
-            </tr>
-            <tr><td colspan="3" style="height:6px;"></td></tr>
-            <tr>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Starting Fuel</span>
-                <span style="font-size:13px;color:#334155;">${fmtW(leg.startFuel)}</span>
-              </td>
-              <td style="width:8px;"></td>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Fuel Burn</span>
-                <span style="font-size:13px;color:#334155;">${fmtW(leg.fuelBurn)}</span>
-              </td>
-            </tr>
-            <tr><td colspan="3" style="height:6px;"></td></tr>
-            <tr>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Landing Fuel</span>
-                <span style="font-size:13px;${leg.landingFuel < 0 ? 'color:#ef4444;font-weight:700;' : 'color:#334155;'}">${fmtW(leg.landingFuel)}</span>
-              </td>
-              <td style="width:8px;"></td>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Total Cost</span>
-                <span style="font-size:14px;font-weight:700;color:#1a3a5c;">${fmt(leg.totalCost)}</span>
-              </td>
-            </tr>
-            <tr><td colspan="3" style="height:6px;"></td></tr>
-            <tr>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Takeoff Weight</span>
-                <span style="font-size:13px;color:#334155;">${fmtW(leg.takeoffWeight)}</span>
-              </td>
-              <td style="width:8px;"></td>
-              <td style="padding:8px 10px;background:#f8fafc;border-radius:6px;">
-                <span style="font-size:10px;color:#64748b;display:block;text-transform:uppercase;letter-spacing:0.5px;">Landing Weight</span>
-                <span style="font-size:13px;${leg.landingWeight < 0 ? 'color:#ef4444;font-weight:700;' : 'color:#334155;'}">${fmtW(leg.landingWeight)}</span>
-              </td>
-            </tr>
-          </table>
-          ${whyHtml}
-        </div>
+      <div style="margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:16px;">
+        <table style="width:100%;margin-bottom:8px;" cellpadding="0" cellspacing="0"><tr>
+          <td><strong style="font-size:14px;color:#1a3a5c;">Leg ${i + 1}: ${leg.departure} → ${leg.arrival}</strong></td>
+          <td style="text-align:right;"><span style="background:#1a3a5c;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">${strat.label}</span></td>
+        </tr></table>
+        <p style="font-size:11px;color:#64748b;margin:0 0 10px;">${strat.desc}${feeHtml ? ' · ' + (leg.hasWaivedFee ? '✅ Fee waived' : '⚠️ Fee applies') : ''}</p>
+        ${errHtml}
+        <table style="width:100%;border-collapse:collapse;font-size:12px;" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding:4px 0;color:#64748b;width:35%;">Uplift</td>
+            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${Math.round(leg.fuelUpliftGals)} gal / ${fmtW(leg.fuelUpliftLbs)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">Fuel Cost</td>
+            <td style="padding:4px 0;font-weight:600;color:#1a3a5c;">${fmt(leg.fuelCost)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">Starting Fuel</td>
+            <td style="padding:4px 0;color:#334155;">${fmtW(leg.startFuel)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">Fuel Burn</td>
+            <td style="padding:4px 0;color:#334155;">${fmtW(leg.fuelBurn)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">Landing Fuel</td>
+            <td style="padding:4px 0;${leg.landingFuel < 0 ? 'color:#ef4444;font-weight:700;' : 'color:#334155;'}">${fmtW(leg.landingFuel)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">Total Cost</td>
+            <td style="padding:4px 0;font-weight:700;color:#1a3a5c;">${fmt(leg.totalCost)}</td>
+          </tr>
+          <tr>
+            <td style="padding:4px 0;color:#64748b;">TO / Ldg Weight</td>
+            <td style="padding:4px 0;color:#334155;">${fmtW(leg.takeoffWeight)} / ${fmtW(leg.landingWeight)}</td>
+          </tr>
+        </table>
+        ${whyHtml}
       </div>
     `;
   }).join("");
