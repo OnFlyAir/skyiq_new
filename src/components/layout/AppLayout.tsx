@@ -118,6 +118,7 @@ export default function AppLayout() {
               key={item.to}
               to={item.to}
               onClick={() => setSidebarOpen(false)}
+              data-demo={item.demoTarget}
               className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors ${
                 active
                   ? 'border-primary/20 bg-primary/12 text-primary'
@@ -258,6 +259,12 @@ export default function AppLayout() {
             </Link>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => { startDemo(); navigate('/dashboard'); }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                <Play className="h-4 w-4" /> Demo
+              </button>
               <button
                 onClick={toggleTheme}
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
