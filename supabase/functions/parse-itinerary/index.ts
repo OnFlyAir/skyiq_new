@@ -1,7 +1,9 @@
 // Supabase Edge Function: parse-itinerary
-// Accepts a PDF text upload, sends to AI for structured parsing.
+// Accepts a PDF upload, sends to AI for structured parsing.
+// Saves parsed client data to onfly_data and PDF to storage.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -241,7 +243,7 @@ function extractJson(raw: string): string {
   return raw.trim();
 }
 
-function convertToTrip(jsonStr: string): ParsedTrip {
+function convertToTrip(jsonStr: string): { trip: ParsedTrip; parsed: ParsedData } {
   const parsed: ParsedData = JSON.parse(extractJson(jsonStr));
 
   const legs: ParsedLeg[] = parsed.trip_segments.map((segment) => {
@@ -275,7 +277,7 @@ function convertToTrip(jsonStr: string): ParsedTrip {
     };
   });
 
-  return {
+  const trip: ParsedTrip = {
     itinerary_num: parsed.crew_itinerary_id,
     starting_fuel: 0,
     aircraft: parsed.aircraft_tail_number,
@@ -292,6 +294,44 @@ function convertToTrip(jsonStr: string): ParsedTrip {
     client_email: parsed.client_email || "",
     client_phone: parsed.client_phone || "",
   };
+
+  return { trip, parsed };
+}
+
+function getSupabaseAdmin() {
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!url || !serviceKey) throw new Error("Missing Supabase config");
+  return createClient(url, serviceKey);
+}
+
+async function saveToOnflyAndStorage(
+  pdfBase64: string,
+  parsed: ParsedData,
+  trip: ParsedTrip,
+  userId: string,
+  tripId?: number,
+) {
+  const supabaseAdmin = getSupabaseAdmin();
+
+  // Save PDF to storage
+  const pdfBytes = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
+  const storagePath = `${userId}/${Date.now()}_${parsed.crew_itinerary_id || "itinerary"}.pdf`;
+
+  await supabaseAdmin.storage
+    .from("itinerary-pdfs")
+    .upload(storagePath, pdfBytes, { contentType: "application/pdf" });
+
+  // Save to onfly_data
+  await supabaseAdmin.from("onfly_data").insert({
+    user_id: userId,
+    trip_id: tripId ?? null,
+    client_name: parsed.client_name || "",
+    client_email: parsed.client_email || "",
+    client_phone: parsed.client_phone || "",
+    itinerary_num: parsed.crew_itinerary_id || "",
+    raw_itinerary: trip as unknown as Record<string, unknown>,
+  });
 }
 
 serve(async (req) => {
@@ -307,14 +347,25 @@ serve(async (req) => {
   }
 
   try {
+    // Extract user from JWT
+    const authHeader = req.headers.get("authorization") ?? "";
+    let userId = "";
+    let tripId: number | undefined;
+
+    if (authHeader.startsWith("Bearer ")) {
+      const supabaseAdmin = getSupabaseAdmin();
+      const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+      userId = user?.id ?? "";
+    }
+
     const contentType = req.headers.get("content-type") ?? "";
     let pdfBase64 = "";
 
     if (contentType.includes("application/json")) {
       const body = await req.json();
       pdfBase64 = body.pdf_base64 ?? "";
+      tripId = body.trip_id ?? undefined;
     } else if (contentType.includes("multipart/form-data")) {
-      // Legacy: convert file to base64
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
       if (!file) {
@@ -348,7 +399,17 @@ serve(async (req) => {
       );
     }
 
-    const trip = convertToTrip(aiResponse);
+    const { trip, parsed } = convertToTrip(aiResponse);
+
+    // Save to onfly_data and storage (server-side only)
+    if (userId) {
+      try {
+        await saveToOnflyAndStorage(pdfBase64, parsed, trip, userId, tripId);
+      } catch (err) {
+        console.error("Failed to save onfly data/PDF:", err);
+        // Don't fail the parse — just log
+      }
+    }
 
     return new Response(
       JSON.stringify(trip),

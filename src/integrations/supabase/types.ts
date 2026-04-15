@@ -125,6 +125,95 @@ export type Database = {
         }
         Relationships: []
       }
+      dfy_clients: {
+        Row: {
+          company_name: string
+          contact_email: string
+          contact_name: string
+          created_at: string
+          id: string
+          monthly_rate_cents: number
+          per_trip_rate_cents: number
+          pricing_tier: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          monthly_rate_cents?: number
+          per_trip_rate_cents?: number
+          pricing_tier?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          contact_email?: string
+          contact_name?: string
+          created_at?: string
+          id?: string
+          monthly_rate_cents?: number
+          per_trip_rate_cents?: number
+          pricing_tier?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dfy_requests: {
+        Row: {
+          admin_notes: string
+          client_id: string
+          created_at: string
+          id: string
+          pdf_storage_path: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string
+          client_id: string
+          created_at?: string
+          id?: string
+          pdf_storage_path?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          pdf_storage_path?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dfy_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "dfy_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_lists: {
         Row: {
           emails: Json | null
