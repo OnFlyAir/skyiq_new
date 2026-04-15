@@ -864,10 +864,11 @@ export default function TripLegsPage() {
                 );
                 if (nextUnconfirmedIdx !== -1) {
                   setTimeout(() => {
-                    document.getElementById(`leg-${nextUnconfirmedIdx}`)?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
+                    const el = document.getElementById(`leg-${nextUnconfirmedIdx}`);
+                    if (el) {
+                      const y = el.getBoundingClientRect().top + window.scrollY - 120;
+                      window.scrollTo({ top: y, behavior: "smooth" });
+                    }
                   }, 150);
                 } else if (index === tripForm.legs.length - 1 || tripForm.legs.every((l, i) => i === index || l.isConfirmed)) {
                   // All confirmed — scroll to the Next button
