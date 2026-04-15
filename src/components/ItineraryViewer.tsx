@@ -77,26 +77,18 @@ export default function ItineraryViewer({ tripId, children }: Props) {
 
   if (!open) {
     return (
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
-        {children || (
-          <>
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">View Itinerary</span>
-            <span className="sm:hidden">PDF</span>
-          </>
-        )}
-      </Button>
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+      >
+        <FileText className="h-4 w-4" />
+        View Itinerary
+      </button>
     );
   }
 
   return (
     <>
-      {/* Trigger button still shown so layout doesn't shift */}
-      <Button variant="outline" size="sm" className="gap-2 border-primary text-primary" onClick={() => setMinimized(!minimized)}>
-        <FileText className="h-4 w-4" />
-        <span className="hidden sm:inline">{minimized ? "Show PDF" : "Hide PDF"}</span>
-      </Button>
-
       {/* Floating PDF panel — fixed position, follows scroll */}
       <div
         className={`fixed z-50 transition-all duration-300 ease-in-out ${

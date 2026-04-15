@@ -39,44 +39,7 @@ function LegDetail({
   const hasErrors = leg.errors && leg.errors.length > 0;
   const [showReasoning, setShowReasoning] = useState(false);
 
-  if (quickRef) {
-    return (
-      <Card className={hasErrors ? "border-destructive" : ""}>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold">
-              Leg {index + 1}: {leg.departure} → {leg.arrival}
-            </span>
-            <div className="text-right">
-              <div className="font-bold">{formatWeight(leg.startFuel)}</div>
-              <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
-            <div>
-              <span className="block">TO Weight</span>
-              <span className="font-medium text-foreground">{formatWeight(leg.takeoffWeight)}</span>
-            </div>
-            <div>
-              <span className="block">Fuel Burn</span>
-              <span className="font-medium text-foreground">{formatWeight(leg.fuelBurn)}</span>
-            </div>
-            <div>
-              <span className="block">Landing Fuel</span>
-              <span className={`font-medium ${leg.landingFuel < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingFuel)}</span>
-            </div>
-            <div>
-              <span className="block">Ldg Weight</span>
-              <span className={`font-medium ${leg.landingWeight < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingWeight)}</span>
-            </div>
-          </div>
-          {reasoning && (
-            <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">{reasoning.strategy.label}: {reasoning.strategy.description}</p>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+
 
   return (
     <Card className={hasErrors ? "border-destructive" : ""}>
@@ -101,48 +64,9 @@ function LegDetail({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
-          <div>
-            <span className="text-muted-foreground">Fuel to Uplift</span>
-            <p className="font-bold">{Math.round(leg.fuelUpliftGals)} gal. / {formatWeight(leg.fuelUpliftLbs)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Fuel Cost</span>
-            <p className="font-medium">{formatCurrency(leg.fuelCost)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Starting Fuel</span>
-            <p>{formatWeight(leg.startFuel)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Fuel Burn</span>
-            <p>{formatWeight(leg.fuelBurn)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Landing Fuel</span>
-            <p className={leg.landingFuel < 0 ? "text-destructive font-bold" : ""}>
-              {formatWeight(leg.landingFuel)}
-            </p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Total Cost</span>
-            <p className="font-bold">{formatCurrency(leg.totalCost)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Takeoff Weight</span>
-            <p>{formatWeight(leg.takeoffWeight)}</p>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Landing Weight</span>
-            <p className={leg.landingWeight < 0 ? "text-destructive font-bold" : ""}>
-              {formatWeight(leg.landingWeight)}
-            </p>
-          </div>
-        </div>
-
-        {/* Strategy & Reasoning */}
+        {/* Strategy & Reasoning — shown first */}
         {reasoning && (
-          <div className="mt-4 pt-3 border-t border-border">
+          <div className="mb-4 pb-3 border-b border-border">
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="outline" className="text-xs font-semibold">{reasoning.strategy.label}</Badge>
               <span className="text-xs text-muted-foreground">{reasoning.strategy.description}</span>
@@ -172,6 +96,73 @@ function LegDetail({
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {/* Numbers */}
+        {quickRef ? (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-bold">{formatWeight(leg.startFuel)}</div>
+              <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+              <div>
+                <span className="block">TO Weight</span>
+                <span className="font-medium text-foreground">{formatWeight(leg.takeoffWeight)}</span>
+              </div>
+              <div>
+                <span className="block">Fuel Burn</span>
+                <span className="font-medium text-foreground">{formatWeight(leg.fuelBurn)}</span>
+              </div>
+              <div>
+                <span className="block">Landing Fuel</span>
+                <span className={`font-medium ${leg.landingFuel < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingFuel)}</span>
+              </div>
+              <div>
+                <span className="block">Ldg Weight</span>
+                <span className={`font-medium ${leg.landingWeight < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingWeight)}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
+            <div>
+              <span className="text-muted-foreground">Fuel to Uplift</span>
+              <p className="font-bold">{Math.round(leg.fuelUpliftGals)} gal. / {formatWeight(leg.fuelUpliftLbs)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Fuel Cost</span>
+              <p className="font-medium">{formatCurrency(leg.fuelCost)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Starting Fuel</span>
+              <p>{formatWeight(leg.startFuel)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Fuel Burn</span>
+              <p>{formatWeight(leg.fuelBurn)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Landing Fuel</span>
+              <p className={leg.landingFuel < 0 ? "text-destructive font-bold" : ""}>
+                {formatWeight(leg.landingFuel)}
+              </p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Total Cost</span>
+              <p className="font-bold">{formatCurrency(leg.totalCost)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Takeoff Weight</span>
+              <p>{formatWeight(leg.takeoffWeight)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Landing Weight</span>
+              <p className={leg.landingWeight < 0 ? "text-destructive font-bold" : ""}>
+                {formatWeight(leg.landingWeight)}
+              </p>
+            </div>
           </div>
         )}
       </CardContent>
@@ -247,6 +238,9 @@ export default function TripSummaryPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
+      {/* Floating Itinerary Viewer — always accessible */}
+      <ItineraryViewer tripId={tripId!} />
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
@@ -259,7 +253,6 @@ export default function TripSummaryPage() {
             {summary.itineraryNum ? ` — Trip #${summary.itineraryNum}` : ""}
           </p>
         </div>
-        <ItineraryViewer tripId={tripId!} />
       </div>
 
       {/* Savings */}
