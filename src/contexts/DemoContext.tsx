@@ -7,7 +7,7 @@ export interface DemoStep {
   target?: string;                 // data-demo="<target>" selector
   title: string;
   description: string;
-  action?: 'click' | 'input' | 'wait' | 'navigate';
+  action?: 'click' | 'input' | 'select' | 'wait' | 'navigate';
   placement?: 'top' | 'bottom' | 'left' | 'right';
   autoAdvance?: boolean;           // advance when target is clicked
   inputValue?: string;             // for pre-fill steps
@@ -102,9 +102,10 @@ export const DEMO_STEPS: DemoStep[] = [
     page: '/fleet/add',
     target: 'manufacturer-select',
     title: 'Select Manufacturer',
-    description: 'Choose Cessna/Textron from the dropdown.',
+    description: 'Click the dropdown and choose Cessna/Textron.',
     placement: 'bottom',
-    action: 'click',
+    action: 'select',
+    inputValue: 'Cessna / Textron',
   },
   // Step 7: Select model
   {
@@ -114,7 +115,8 @@ export const DEMO_STEPS: DemoStep[] = [
     title: 'Select Aircraft Type',
     description: 'Choose CE525b CJ3 — this auto-fills all performance specs.',
     placement: 'bottom',
-    action: 'click',
+    action: 'select',
+    inputValue: 'CE525b CJ3',
   },
   // Steps 8–13: Quick field explanations
   {
