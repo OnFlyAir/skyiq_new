@@ -68,7 +68,7 @@ function legStrategy(leg: TripSummaryLeg, maxFuelLbs: number): { label: string; 
     return { label: "Waive fee", desc: `Buy ${Math.round(leg.feeMin)} gal min to waive fee` };
   }
   const target = Math.round(leg.startFuel / 10) * 10;
-  return { label: `Bring to ${target.toLocaleString()} lbs`, desc: `Add fuel to reach ${target.toLocaleString()} lbs` };
+  return { label: `Fuel up to ${target.toLocaleString()} lbs`, desc: `Add fuel to reach ${target.toLocaleString()} lbs` };
 }
 
 // Generate "Why?" details for a leg (mirrors client-side fuel-reasoning.ts)
