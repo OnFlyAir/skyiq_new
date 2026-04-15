@@ -4,6 +4,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Plane } from 'lucide-react';
 import type { Aircraft } from '@/types/database';
+import { Button } from '@/components/ui/button';
 
 export default function FleetPage() {
   const { user } = useAuthContext();
@@ -11,7 +12,11 @@ export default function FleetPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) { loadAircraft(); } else { setLoading(false); }
+    if (user) {
+      loadAircraft();
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
   async function loadAircraft() {
@@ -33,20 +38,51 @@ export default function FleetPage() {
     );
   }
 
+  if (aircraft.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-5">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Plane className="h-7 w-7" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-foreground">Add your first aircraft</h1>
+            <p className="text-sm text-muted-foreground">You only do this once.</p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button asChild className="sm:min-w-40">
+              <Link to="/fleet/add">Add Aircraft</Link>
+            </Button>
+            <Button asChild variant="outline" className="sm:min-w-40">
+              <Link to="/trips/new">Upload PDF</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-foreground mb-6">Select an Aircraft</h1>
+      <h1 className="mb-6 text-2xl font-bold text-foreground">Fleet</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
         {aircraft.map((ac) => (
-          <Link key={ac.id} to={`/fleet/${ac.id}`} className="flex flex-col items-center p-6 bg-card border border-border rounded-xl hover:border-primary transition-all">
-            <Plane className="w-16 h-16 text-muted-foreground mb-3" />
+          <Link
+            key={ac.id}
+            to={`/fleet/${ac.id}`}
+            className="flex flex-col items-center rounded-xl border border-border bg-card p-6 transition-all hover:border-primary hover:bg-secondary/30"
+          >
+            <Plane className="mb-3 h-16 w-16 text-muted-foreground" />
             <span className="font-medium text-foreground">{ac.tail_number}</span>
           </Link>
         ))}
 
-        <Link to="/fleet/add" className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-xl hover:border-primary hover:bg-secondary/50 transition-all">
-          <Plus className="w-12 h-12 text-muted-foreground mb-3" />
+        <Link
+          to="/fleet/add"
+          className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-6 transition-all hover:border-primary hover:bg-secondary/30"
+        >
+          <Plus className="mb-3 h-12 w-12 text-muted-foreground" />
           <span className="font-medium text-muted-foreground">Add Aircraft</span>
         </Link>
       </div>
