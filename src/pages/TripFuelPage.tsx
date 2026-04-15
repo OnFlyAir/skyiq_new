@@ -254,7 +254,7 @@ export default function TripFuelPage() {
 
         {/* Per-Leg Fuel Burns */}
         <h2 className="text-lg font-semibold text-muted-foreground">Enter fuel burns for each leg</h2>
-        <div className="space-y-2.5">
+        <div data-demo="fuel-burn-inputs" className="space-y-2.5">
           {confirmedLegsWithIndex.map(({ leg, originalIndex }) => {
             const v = validations[originalIndex];
             const hasLegErrors = v && v.errors.length > 0;
@@ -313,6 +313,7 @@ export default function TripFuelPage() {
                   <Collapsible>
                     <CollapsibleTrigger asChild>
                       <button
+                        data-demo="weight-limits-toggle"
                         type="button"
                         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
                       >
@@ -369,6 +370,7 @@ export default function TripFuelPage() {
             Back to Legs
           </Button>
           <Button
+            data-demo="confirm-trip-btn"
             onClick={handleOptimize}
             disabled={optimizing || fuelBurns.some((b) => b <= 0) || hasErrors}
             className="flex-1 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"

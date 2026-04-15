@@ -200,6 +200,7 @@ export default function TripEmailPage() {
                 onCheckedChange={(checked) => updateEmail(index, "isChecked", !!checked)}
               />
               <Input
+                data-demo="email-input"
                 type="email"
                 placeholder="email@example.com"
                 value={entry.email}
