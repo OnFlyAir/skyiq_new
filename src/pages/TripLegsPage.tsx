@@ -751,7 +751,9 @@ export default function TripLegsPage() {
     navigate(`/trips/${tripId}/fuel`);
   };
 
-  const allConfirmed = tripForm?.legs.every((l) => l.isConfirmed) ?? false;
+  const confirmedCount = tripForm?.legs.filter((l) => l.isConfirmed).length ?? 0;
+  const totalLegs = tripForm?.legs.length ?? 0;
+  const allConfirmed = confirmedCount === totalLegs && totalLegs > 0;
 
   if (loading) {
     return (
