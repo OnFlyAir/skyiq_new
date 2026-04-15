@@ -183,7 +183,7 @@ function LegEditor({
                 disabled={!leg.departure || !leg.destination}
                 className="bg-green-600 hover:bg-green-700 text-xs"
               >
-                <Check className="h-3 w-3 mr-1" /> Confirm
+                <Check className="h-3 w-3 mr-1" /> Leg Info Correct
               </Button>
             ) : (
               <Button size="sm" variant="outline" onClick={onUnconfirm} className="text-xs">
