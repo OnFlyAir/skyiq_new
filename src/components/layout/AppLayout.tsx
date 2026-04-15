@@ -94,9 +94,9 @@ export default function AppLayout() {
   ];
 
   const flightToolsNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: Home, to: '/dashboard' },
-    { label: 'Plan a Trip', icon: Plane, to: '/trips/new' },
-    { label: 'Manage Fleet', icon: Settings, to: '/fleet' },
+    { label: 'Dashboard', icon: Home, to: '/dashboard', demoTarget: 'nav-dashboard' },
+    { label: 'Plan a Trip', icon: Plane, to: '/trips/new', demoTarget: 'nav-plan-trip' },
+    { label: 'Manage Fleet', icon: Settings, to: '/fleet', demoTarget: 'nav-fleet' },
     { label: 'Savings Accrued', icon: DollarSign, to: '/savings' },
     { label: 'Subscription', icon: CreditCard, to: '/subscription' },
   ];
