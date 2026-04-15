@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Plane,
@@ -20,6 +21,7 @@ import {
   Sun,
   Moon,
   FileText,
+  Play,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
@@ -30,11 +32,13 @@ type NavItem = {
   to: string;
   description?: string;
   activeMatch?: (pathname: string, search: string) => boolean;
+  demoTarget?: string;
 };
 
 export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
   const { theme, toggleTheme } = useTheme();
+  const { startDemo } = useDemo();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,9 +94,9 @@ export default function AppLayout() {
   ];
 
   const flightToolsNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: Home, to: '/dashboard' },
-    { label: 'Plan a Trip', icon: Plane, to: '/trips/new' },
-    { label: 'Manage Fleet', icon: Settings, to: '/fleet' },
+    { label: 'Dashboard', icon: Home, to: '/dashboard', demoTarget: 'nav-dashboard' },
+    { label: 'Plan a Trip', icon: Plane, to: '/trips/new', demoTarget: 'nav-plan-trip' },
+    { label: 'Manage Fleet', icon: Settings, to: '/fleet', demoTarget: 'nav-fleet' },
     { label: 'Savings Accrued', icon: DollarSign, to: '/savings' },
     { label: 'Subscription', icon: CreditCard, to: '/subscription' },
   ];
@@ -114,6 +118,7 @@ export default function AppLayout() {
               key={item.to}
               to={item.to}
               onClick={() => setSidebarOpen(false)}
+              data-demo={item.demoTarget}
               className={`flex items-start gap-3 rounded-xl border px-3 py-3 transition-colors ${
                 active
                   ? 'border-primary/20 bg-primary/12 text-primary'
@@ -254,6 +259,12 @@ export default function AppLayout() {
             </Link>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => { startDemo(); navigate('/dashboard'); }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                <Play className="h-4 w-4" /> Demo
+              </button>
               <button
                 onClick={toggleTheme}
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
