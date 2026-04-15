@@ -1,7 +1,6 @@
 import { useState, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Eye, EyeOff, User, Plane } from 'lucide-react';
 
 export default function SignUpPage() {
@@ -14,9 +13,9 @@ export default function SignUpPage() {
   const [wantsDfy, setWantsDfy] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuthContext();
+  const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -29,10 +28,8 @@ export default function SignUpPage() {
     const { data, error: signUpError } = await signUp(email, password, firstName, lastName);
     if (signUpError) { setError(signUpError.message); setLoading(false); return; }
 
-    // If DFY selected, store preference in user metadata for post-confirmation setup
+    // If DFY selected, store preference for onboarding to pick up
     if (wantsDfy && data?.user) {
-      // We'll create the DFY client record after email confirmation via a trigger or on first login
-      // For now store the intent in localStorage so onboarding can pick it up
       localStorage.setItem('skyiq_dfy_signup', JSON.stringify({
         company_name: companyName.trim(),
         contact_name: `${firstName} ${lastName}`.trim(),
@@ -40,27 +37,8 @@ export default function SignUpPage() {
       }));
     }
 
-    // Sign out immediately so the unconfirmed session doesn't auto-login
-    await supabase.auth.signOut();
-
-    setSuccess(true);
-    setLoading(false);
-  }
-
-  if (success) {
-    return (
-      <div className="text-center py-4">
-        <div className="w-14 h-14 bg-skyiq-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Mail className="h-7 w-7 text-skyiq-success" />
-        </div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Check your email</h2>
-        <p className="text-muted-foreground mb-6 text-sm leading-relaxed">
-          We've sent a confirmation link to <strong className="text-foreground">{email}</strong>.
-          <br />Click the link to activate your account.
-        </p>
-        <Link to="/login" className="text-primary font-medium hover:underline text-sm">Back to sign in</Link>
-      </div>
-    );
+    // Auto-confirm is enabled, so user is immediately signed in — redirect to onboarding
+    navigate('/onboarding');
   }
 
   const inputCls = "w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all";
