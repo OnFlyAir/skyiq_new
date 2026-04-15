@@ -8,11 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { formToTripInput, runFuelOptimization, resultToSummary } from "@/lib/fuel-service";
 import type { TripFormData, TripSummary } from "@/types/trip";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Plane, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Plane, AlertTriangle, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ItineraryViewer from "@/components/ItineraryViewer";
 
 const GALS_TO_LBS = 6.7;
