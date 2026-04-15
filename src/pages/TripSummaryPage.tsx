@@ -39,44 +39,7 @@ function LegDetail({
   const hasErrors = leg.errors && leg.errors.length > 0;
   const [showReasoning, setShowReasoning] = useState(false);
 
-  if (quickRef) {
-    return (
-      <Card className={hasErrors ? "border-destructive" : ""}>
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold">
-              Leg {index + 1}: {leg.departure} → {leg.arrival}
-            </span>
-            <div className="text-right">
-              <div className="font-bold">{formatWeight(leg.startFuel)}</div>
-              <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
-            <div>
-              <span className="block">TO Weight</span>
-              <span className="font-medium text-foreground">{formatWeight(leg.takeoffWeight)}</span>
-            </div>
-            <div>
-              <span className="block">Fuel Burn</span>
-              <span className="font-medium text-foreground">{formatWeight(leg.fuelBurn)}</span>
-            </div>
-            <div>
-              <span className="block">Landing Fuel</span>
-              <span className={`font-medium ${leg.landingFuel < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingFuel)}</span>
-            </div>
-            <div>
-              <span className="block">Ldg Weight</span>
-              <span className={`font-medium ${leg.landingWeight < 0 ? "text-destructive" : "text-foreground"}`}>{formatWeight(leg.landingWeight)}</span>
-            </div>
-          </div>
-          {reasoning && (
-            <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">{reasoning.strategy.label}: {reasoning.strategy.description}</p>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+
 
   return (
     <Card className={hasErrors ? "border-destructive" : ""}>
