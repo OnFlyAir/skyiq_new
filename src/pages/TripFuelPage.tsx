@@ -349,7 +349,7 @@ export default function TripFuelPage() {
                   {hasLegWarnings && !hasLegErrors && (
                     <div className="space-y-1">
                       {v.warnings.map((warn, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-yellow-500">
+                        <div key={i} className="flex items-start gap-2 text-sm text-amber-500">
                           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                           <span>{warn}</span>
                         </div>
