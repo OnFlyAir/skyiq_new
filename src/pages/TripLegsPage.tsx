@@ -528,13 +528,16 @@ export default function TripLegsPage() {
 
       const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
       console.log("Sending to edge function:", edgeFnUrl);
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const response = await fetch(edgeFnUrl, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${authToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ pdf_base64: base64, filename: file.name }),
+        body: JSON.stringify({ pdf_base64: base64, filename: file.name, trip_id: tripId ? parseInt(tripId) : undefined }),
       });
 
       if (!response.ok) {

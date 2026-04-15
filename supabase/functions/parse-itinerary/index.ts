@@ -353,9 +353,16 @@ serve(async (req) => {
     let tripId: number | undefined;
 
     if (authHeader.startsWith("Bearer ")) {
-      const supabaseAdmin = getSupabaseAdmin();
-      const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-      userId = user?.id ?? "";
+      try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+        console.log("Auth result:", user?.id ?? "no user", authError?.message ?? "no error");
+        userId = user?.id ?? "";
+      } catch (e) {
+        console.error("Auth extraction failed:", e);
+      }
+    } else {
+      console.log("No Bearer token found in authorization header");
     }
 
     const contentType = req.headers.get("content-type") ?? "";
@@ -402,13 +409,16 @@ serve(async (req) => {
     const { trip, parsed } = convertToTrip(aiResponse);
 
     // Save to onfly_data and storage (server-side only)
+    console.log("userId for save:", userId, "tripId:", tripId);
     if (userId) {
       try {
         await saveToOnflyAndStorage(pdfBase64, parsed, trip, userId, tripId);
+        console.log("Successfully saved onfly data and PDF");
       } catch (err) {
         console.error("Failed to save onfly data/PDF:", err);
-        // Don't fail the parse — just log
       }
+    } else {
+      console.log("Skipping onfly save — no userId");
     }
 
     return new Response(
