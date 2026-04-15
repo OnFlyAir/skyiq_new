@@ -71,19 +71,56 @@ function legStrategy(leg: TripSummaryLeg, maxFuelLbs: number): { label: string; 
   return { label: `Bring to ${target.toLocaleString()} lbs`, desc: `Add fuel to reach ${target.toLocaleString()} lbs` };
 }
 
-function overallStrategy(legs: TripSummaryLeg[], savings: number): string {
-  if (savings <= 0) return "Fueling at each departure point is already the cheapest option for this trip.";
-  const priced = legs.filter(l => l.fuelUpliftGals > 0).map(l => ({
-    airport: l.departure, ppg: l.fuelCost / l.fuelUpliftGals,
-  }));
-  if (priced.length === 0) return "The aircraft had sufficient fuel for the entire trip.";
-  if (priced.length === 1) return `By optimizing the fuel load, the plan saves $${savings.toFixed(0)} compared to the standard approach.`;
-  const cheapest = priced.reduce((a, b) => a.ppg < b.ppg ? a : b);
-  const expensive = priced.reduce((a, b) => a.ppg > b.ppg ? a : b);
-  if (expensive.ppg - cheapest.ppg > 0.5) {
-    return `The optimizer shifts purchases toward ${cheapest.airport} (~$${cheapest.ppg.toFixed(2)}/gal) and away from ${expensive.airport} (~$${expensive.ppg.toFixed(2)}/gal), saving $${savings.toFixed(0)} by tankering cheaper fuel forward.`;
+// Generate "Why?" details for a leg (mirrors client-side fuel-reasoning.ts)
+function legWhyDetails(leg: TripSummaryLeg, nextLeg: TripSummaryLeg | undefined, i: number, total: number): string[] {
+  const details: string[] = [];
+  const isLast = i === total - 1;
+
+  // Fee reasoning
+  if (leg.hasWaivableFee && leg.feeAmount > 0) {
+    if (leg.hasWaivedFee) {
+      details.push(`Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`);
+    } else {
+      details.push(`A $${leg.feeAmount.toFixed(2)} facility fee applies at ${leg.departure}. Would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee.`);
+    }
+  } else if (!leg.hasWaivableFee) {
+    details.push(`No waivable facility fee at ${leg.departure}.`);
   }
-  return `By balancing fuel loads, weight penalties, and fee waivers across ${priced.length} stops, the optimizer saves $${savings.toFixed(0)}.`;
+
+  if (leg.fuelUpliftGals <= 0) {
+    details.push("The aircraft had enough on board from the previous stop.");
+    if (nextLeg && nextLeg.fuelCost < leg.fuelCost) {
+      details.push(`Fuel is cheaper at ${nextLeg.departure}, so it's better to buy there.`);
+    }
+    return details;
+  }
+
+  // Price reasoning
+  const ppg = leg.fuelUpliftGals > 0 ? leg.fuelCost / leg.fuelUpliftGals : 0;
+  if (nextLeg) {
+    const nextPpg = nextLeg.fuelUpliftGals > 0 ? nextLeg.fuelCost / nextLeg.fuelUpliftGals : 0;
+    if (ppg > 0 && nextPpg > 0) {
+      if (ppg < nextPpg * 0.95) {
+        details.push(`Fuel here is ~$${ppg.toFixed(2)}/gal — cheaper than ${nextLeg.departure} (~$${nextPpg.toFixed(2)}/gal), so loading up saves money.`);
+      } else if (ppg > nextPpg * 1.05) {
+        details.push(`Fuel is more expensive here (~$${ppg.toFixed(2)}/gal vs ~$${nextPpg.toFixed(2)}/gal at ${nextLeg.departure}), so only enough to reach the next stop safely was purchased.`);
+      } else {
+        details.push(`Prices are similar here and at ${nextLeg.departure}, so the optimizer balanced fueling to minimize total weight penalty.`);
+      }
+    }
+  } else {
+    details.push("This is the final leg — only enough fuel to arrive safely with reserves was purchased.");
+  }
+
+  if (i === 0) {
+    details.push(`Starting with ${Math.round(leg.startFuel).toLocaleString()} lbs of fuel already on board.`);
+  }
+
+  if (!isLast && leg.landingFuel > leg.fuelBurn * 0.8) {
+    details.push(`Landing with ${Math.round(leg.landingFuel).toLocaleString()} lbs — extra fuel carried forward for savings at the next stop.`);
+  }
+
+  return details;
 }
 
 function buildEmailHtml(summary: TripSummary): string {
