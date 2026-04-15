@@ -4,7 +4,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { FileText, X, Minimize2, Maximize2 } from "lucide-react";
+import { FileText, X, Minimize2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
   tripId: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function ItineraryViewer({ tripId, children }: Props) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -94,7 +96,9 @@ export default function ItineraryViewer({ tripId, children }: Props) {
         className={`fixed z-50 transition-all duration-300 ease-in-out ${
           minimized
             ? "bottom-4 right-4 w-12 h-12"
-            : "top-16 right-4 w-[420px] h-[calc(100vh-5rem)]"
+            : isMobile
+              ? "inset-2 top-14"
+              : "top-16 right-4 w-[560px] h-[calc(100vh-5rem)]"
         } flex flex-col rounded-xl border bg-card shadow-2xl overflow-hidden`}
       >
         {minimized ? (
@@ -134,7 +138,7 @@ export default function ItineraryViewer({ tripId, children }: Props) {
             </div>
 
             {/* PDF content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-auto -webkit-overflow-scrolling-touch">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-muted-foreground">
