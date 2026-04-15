@@ -301,7 +301,7 @@ export default function TripFuelPage() {
                       value={fuelBurns[originalIndex] || ""}
                       onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
                       placeholder="Enter fuel burn in lbs"
-                      className={`h-12 text-lg font-semibold bg-muted/50 border-2 ${hasLegErrors ? "border-destructive" : "border-input focus:border-primary"}`}
+                      className={`max-w-[200px] h-12 text-lg font-semibold bg-muted/50 border-2 ${hasLegErrors ? "border-destructive" : "border-input focus:border-primary"}`}
                     />
                   </div>
 
