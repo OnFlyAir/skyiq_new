@@ -96,12 +96,12 @@ export function generateLegReasoning(
 
     // Price reasoning
     const pricePerGal = leg.fuelUpliftGals > 0
-      ? leg.fuelCost / leg.fuelUpliftGals
+      ? Math.abs(leg.fuelCost / leg.fuelUpliftGals)
       : 0;
 
     if (nextLeg) {
       const nextPricePerGal = nextLeg.fuelUpliftGals > 0
-        ? nextLeg.fuelCost / nextLeg.fuelUpliftGals
+        ? Math.abs(nextLeg.fuelCost / nextLeg.fuelUpliftGals)
         : 0;
 
       if (pricePerGal > 0 && nextPricePerGal > 0) {
@@ -158,7 +158,7 @@ export function generateOverallReasoning(
     .filter((l) => l.fuelUpliftGals > 0)
     .map((l) => ({
       airport: l.departure,
-      pricePerGal: l.fuelCost / l.fuelUpliftGals,
+      pricePerGal: Math.abs(l.fuelCost / l.fuelUpliftGals),
       gallons: l.fuelUpliftGals,
     }));
 
