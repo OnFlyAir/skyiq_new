@@ -274,7 +274,7 @@ export default function AppLayout() {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card p-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card p-4 lg:hidden">
           <button onClick={() => setSidebarOpen(true)} className="rounded p-1.5 text-muted-foreground hover:bg-secondary">
             <Menu className="h-5 w-5" />
           </button>
