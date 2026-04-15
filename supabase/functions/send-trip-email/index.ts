@@ -219,8 +219,9 @@ function buildEmailHtml(summary: TripSummary): string {
 
   return `
     <div style="font-family:'Montserrat',Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;">
-      <div style="background:#1a3a5c;padding:24px;text-align:center;">
-        <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.5px;">SkyIQ Fuel Plan</h1>
+      <div style="background:#1a3a5c;padding:20px 24px;text-align:center;">
+        <img src="https://bfoxdonskxtlxfqayili.supabase.co/storage/v1/object/public/email-assets/skyiq-logo-light.png" alt="SkyIQ" style="height:40px;margin-bottom:8px;" />
+        <p style="color:#ffffff;margin:0;font-size:16px;letter-spacing:0.5px;">Fuel Plan</p>
       </div>
       <div style="padding:24px;">
         <h2 style="color:#1a3a5c;margin:0 0 4px;font-size:20px;">${tripLabel}</h2>
