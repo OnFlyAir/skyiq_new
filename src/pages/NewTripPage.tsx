@@ -1,7 +1,3 @@
-// NewTripPage — Start a new trip with two clear paths:
-// 1. Upload an itinerary PDF (AI parses it, auto-matches aircraft)
-// 2. Manual entry (pick aircraft, enter legs yourself)
-
 import { pendingParseFile } from "@/lib/pending-parse-file";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight } from "lucide-react";
+import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight, Plus } from "lucide-react";
 
 interface Aircraft {
   id: number;
@@ -39,7 +35,11 @@ export default function NewTripPage() {
 
   useEffect(() => {
     async function loadAircraft() {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const { data } = await supabase
         .from("aircrafts")
         .select("id, tail_number, manufacturer, type")
@@ -47,16 +47,21 @@ export default function NewTripPage() {
         .eq("is_enabled", true)
         .order("tail_number");
 
-      setAircraftList(data ?? []);
+      const nextAircraft = data ?? [];
+      setAircraftList(nextAircraft);
+      if (nextAircraft.length === 1) {
+        setSelectedTail(nextAircraft[0].tail_number);
+      }
       setLoading(false);
     }
+
     loadAircraft();
   }, [user]);
 
-  // Path 1: Upload PDF → create trip → navigate to legs with pending file
   const handlePdfUpload = async (file: File) => {
     if (!user) return;
     setCreating(true);
+
     const { data, error } = await supabase
       .from("trips")
       .insert({
@@ -68,19 +73,22 @@ export default function NewTripPage() {
       })
       .select("id")
       .single();
+
     setCreating(false);
+
     if (error || !data) {
       toast({ title: "Error", description: "Failed to create trip", variant: "destructive" });
       return;
     }
+
     pendingParseFile.current = file;
     navigate(`/trips/${data.id}/legs`);
   };
 
-  // Path 2: Manual → create trip with selected aircraft → navigate to legs
   const handleManualStart = async () => {
     if (!user || !selectedTail) return;
     setCreating(true);
+
     const { data, error } = await supabase
       .from("trips")
       .insert({
@@ -101,11 +109,14 @@ export default function NewTripPage() {
       })
       .select("id")
       .single();
+
     setCreating(false);
+
     if (error || !data) {
       toast({ title: "Error", description: "Failed to create trip", variant: "destructive" });
       return;
     }
+
     navigate(`/trips/${data.id}/legs`);
   };
 
@@ -123,23 +134,24 @@ export default function NewTripPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">New Trip</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Start a Trip</h1>
+          <p className="text-sm text-muted-foreground">Upload PDF or go blank.</p>
+        </div>
       </div>
 
-      {/* Option 1: Upload Itinerary */}
-      <Card>
-        <CardContent className="pt-6 space-y-3">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-6 space-y-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <FileUp className="h-5 w-5 text-primary" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+              <FileUp className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold">Upload Itinerary</p>
-              <p className="text-xs text-muted-foreground">
-                Upload a PDF trip sheet — we'll auto-fill everything
-              </p>
+              <p className="font-semibold">Upload PDF</p>
+              <p className="text-xs text-muted-foreground">Fastest path</p>
             </div>
           </div>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -150,79 +162,77 @@ export default function NewTripPage() {
               if (file) handlePdfUpload(file);
             }}
           />
-          <Button
-            className="w-full"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={creating}
-          >
-            {creating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <FileUp className="h-4 w-4 mr-2" />
-            )}
-            Choose PDF
+
+          <Button className="w-full" onClick={() => fileInputRef.current?.click()} disabled={creating}>
+            {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileUp className="h-4 w-4 mr-2" />}
+            Upload PDF
           </Button>
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-3">
-        <div className="flex-1 border-t border-border" />
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>
-        <div className="flex-1 border-t border-border" />
-      </div>
+      {aircraftList.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground shrink-0">
+                <Plane className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Add aircraft</p>
+                <p className="text-xs text-muted-foreground">Needed for blank trips</p>
+              </div>
+            </div>
 
-      {/* Option 2: Manual Entry */}
-      <Card>
-        <CardContent className="pt-6 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Plane className="h-5 w-5 text-primary" />
+            <Button variant="outline" className="w-full" onClick={() => navigate("/fleet/add")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Aircraft
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground shrink-0">
+                <Plane className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Start blank</p>
+                <p className="text-xs text-muted-foreground">
+                  {aircraftList.length === 1 ? "Aircraft ready" : "Pick aircraft"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold">Enter Manually</p>
-              <p className="text-xs text-muted-foreground">
-                Pick your aircraft and enter leg details yourself
-              </p>
-            </div>
-          </div>
 
-          {aircraftList.length === 0 ? (
-            <div className="text-center py-3">
-              <p className="text-sm text-muted-foreground mb-2">No aircraft in your fleet yet.</p>
-              <Button variant="outline" size="sm" onClick={() => navigate("/fleet/add")}>
-                Add Aircraft
-              </Button>
-            </div>
-          ) : (
-            <>
+            {aircraftList.length === 1 ? (
+              <div className="rounded-xl border bg-secondary/40 px-4 py-3">
+                <p className="text-sm font-medium">{aircraftList[0].tail_number}</p>
+                <p className="text-xs text-muted-foreground">
+                  {aircraftList[0].manufacturer} {aircraftList[0].type}
+                </p>
+              </div>
+            ) : (
               <Select value={selectedTail} onValueChange={setSelectedTail}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select aircraft" />
                 </SelectTrigger>
                 <SelectContent>
-                  {aircraftList.map((ac) => (
-                    <SelectItem key={ac.id} value={ac.tail_number}>
-                      {ac.tail_number} — {ac.manufacturer} {ac.type}
+                  {aircraftList.map((aircraft) => (
+                    <SelectItem key={aircraft.id} value={aircraft.tail_number}>
+                      {aircraft.tail_number} — {aircraft.manufacturer} {aircraft.type}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                className="w-full"
-                onClick={handleManualStart}
-                disabled={!selectedTail || creating}
-              >
-                {creating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                )}
-                Start Trip
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            )}
+
+            <Button className="w-full" onClick={handleManualStart} disabled={!selectedTail || creating}>
+              {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
+              Start Blank
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
