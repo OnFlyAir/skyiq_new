@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Plane,
   Menu,
