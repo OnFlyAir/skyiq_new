@@ -285,14 +285,14 @@ function LegEditor({
           </div>
 
           {/* Crew & Passengers */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 items-end">
             <div>
-              <Label className="text-xs flex items-center gap-1">
-                Crew Weights (PIC, SIC, FA)
+              <Label className="text-xs flex items-center gap-1 mb-1">
+                Crew Weights
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent><p className="text-xs">Comma-separated: PIC, SIC, Flight Attendant</p></TooltipContent>
+                    <TooltipContent><p className="text-xs">PIC, SIC, Flight Attendant</p></TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Label>
@@ -303,7 +303,7 @@ function LegEditor({
               />
             </div>
             <div>
-              <Label className="text-xs">Passenger Weights</Label>
+              <Label className="text-xs mb-1 block">Passenger Weights</Label>
               <Input
                 value={leg.passengerWeights}
                 onChange={(e) => updateField("passengerWeights", e.target.value)}
