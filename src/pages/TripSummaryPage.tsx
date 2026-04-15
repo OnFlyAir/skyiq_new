@@ -42,7 +42,7 @@ function LegDetail({
 
 
   return (
-    <Card className={hasErrors ? "border-destructive" : ""}>
+    <Card data-demo={`summary-leg-${index + 1}`} className={hasErrors ? "border-destructive" : ""}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center justify-between">
           <span>Leg {index + 1}: {leg.departure} → {leg.arrival}</span>
@@ -262,7 +262,7 @@ export default function TripSummaryPage() {
       )}
 
       {/* Overall Reasoning */}
-      <Card className="bg-primary/5 border-primary/20">
+      <Card data-demo="optimizer-strategy" className="bg-primary/5 border-primary/20">
         <CardContent className="pt-4">
           <div className="flex gap-3 items-start">
             <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -277,6 +277,7 @@ export default function TripSummaryPage() {
       {/* Toggle */}
       <div className="flex items-center justify-between">
         <Button
+          data-demo="full-summary-btn"
           variant="outline"
           size="sm"
           onClick={() => setQuickRef(!quickRef)}
@@ -310,6 +311,7 @@ export default function TripSummaryPage() {
           </Link>
         </Button>
         <Button
+          data-demo="send-email-btn"
           className="flex-1 bg-primary hover:bg-primary/90"
           disabled={hasErrors}
           onClick={() => !hasErrors && navigate(`/trips/${tripId}/email`)}

@@ -178,6 +178,7 @@ function LegEditor({
           <div className="flex items-center gap-1">
             {!isConfirmed ? (
               <Button
+                data-demo="verify-leg-btn"
                 size="sm"
                 onClick={onConfirm}
                 disabled={!leg.departure || !leg.destination}
@@ -190,7 +191,7 @@ function LegEditor({
                 Edit
               </Button>
             )}
-            <Button size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-700">
+            <Button data-demo="delete-leg-btn" size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-700">
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
@@ -201,7 +202,7 @@ function LegEditor({
         <CardContent className="space-y-4">
           {/* Route */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            <div>
+            <div data-demo={`leg-${leg.legNum}-departure`}>
               <Label className="text-xs">Departure (ICAO)</Label>
               <Input
                 value={leg.departure}
@@ -210,7 +211,7 @@ function LegEditor({
                 maxLength={4}
               />
             </div>
-            <div>
+            <div data-demo={`leg-${leg.legNum}-destination`}>
               <Label className="text-xs">Destination (ICAO)</Label>
               <Input
                 value={leg.destination}
@@ -222,7 +223,7 @@ function LegEditor({
           </div>
 
           {/* Fuel Prices */}
-          <div>
+          <div data-demo={`leg-${leg.legNum}-fuel-price`}>
             <Label className="text-xs flex items-center gap-1">
               Departure Fuel Prices
               <TooltipProvider>
@@ -253,8 +254,7 @@ function LegEditor({
             </div>
           </div>
 
-          {/* Fee Waiver */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div data-demo={`leg-${leg.legNum}-fees`} className="grid grid-cols-3 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs">Fee Amount ($)</Label>
               <Input
@@ -901,7 +901,7 @@ export default function TripLegsPage() {
       {/* Add Leg */}
       <Dialog open={addLegOpen} onOpenChange={setAddLegOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="w-full">
+          <Button data-demo="add-leg-btn" variant="outline" className="w-full">
             <Plus className="h-4 w-4 mr-2" /> Add Leg
           </Button>
         </DialogTrigger>
@@ -931,6 +931,7 @@ export default function TripLegsPage() {
       {/* Next Button */}
       <div id="next-button" className="flex gap-3 pt-2">
         <Button
+          data-demo="next-fuel-burns-btn"
           onClick={handleNext}
           disabled={!allConfirmed || saving || tripForm.legs.length === 0}
           className="flex-1 bg-primary hover:bg-primary/90"
