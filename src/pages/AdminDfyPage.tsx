@@ -351,8 +351,8 @@ export default function AdminDfyPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="per_trip">Per Trip ($200)</SelectItem>
-                        <SelectItem value="monthly">Monthly ($10,000)</SelectItem>
+                        <SelectItem value="per_trip">Per Trip ($25)</SelectItem>
+                        <SelectItem value="monthly">Monthly (Custom)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -392,7 +392,7 @@ export default function AdminDfyPage() {
                         <td className="px-4 py-2 text-muted-foreground">{c.contact_email}</td>
                         <td className="px-4 py-2 text-center">
                           <Badge variant="outline">
-                            {c.pricing_tier === "per_trip" ? "$200/trip" : "$10K/mo"}
+                            {c.pricing_tier === "per_trip" ? `$${(c.per_trip_rate_cents / 100).toFixed(0)}/trip` : `$${(c.monthly_rate_cents / 100).toLocaleString()}/mo`}
                           </Badge>
                         </td>
                         <td className="px-4 py-2 text-center">

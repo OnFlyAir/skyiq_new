@@ -172,7 +172,9 @@ export type Database = {
           admin_notes: string
           client_id: string
           created_at: string
+          fuel_burns: Json | null
           id: string
+          parsed_result: Json | null
           pdf_storage_path: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -184,7 +186,9 @@ export type Database = {
           admin_notes?: string
           client_id: string
           created_at?: string
+          fuel_burns?: Json | null
           id?: string
+          parsed_result?: Json | null
           pdf_storage_path?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -196,7 +200,9 @@ export type Database = {
           admin_notes?: string
           client_id?: string
           created_at?: string
+          fuel_burns?: Json | null
           id?: string
+          parsed_result?: Json | null
           pdf_storage_path?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
