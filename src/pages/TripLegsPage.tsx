@@ -506,7 +506,7 @@ export default function TripLegsPage() {
     if (file && tripForm && !autoParseTriggered.current) {
       autoParseTriggered.current = true;
       pendingParseFile.current = null;
-      handlePdfUpload(file);
+      handlePdfUpload(file, false);
     }
   }, [tripForm]);
 
