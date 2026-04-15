@@ -663,6 +663,30 @@ export default function TripLegsPage() {
             });
           }
         }
+      } else if (!parsed.aircraft && aircraftList.length === 1 && !aircraft) {
+        // No tail in PDF but user has one aircraft — auto-select it
+        const fallback = aircraftList[0];
+        setAircraft(fallback as unknown as Aircraft);
+        const defs = getAircraftDefaults(fallback as unknown as Aircraft);
+        const refilledNewLegs = renumberedNewLegs.map((leg) => {
+          const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+          const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
+          return {
+            ...leg,
+            baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
+            reserve: defs.reserve,
+            taxiFuelBurn: defs.taxiFuelBurn,
+            maxTakeoffWeight: defs.maxTakeoff,
+            maxLandingWeight: defs.maxLanding,
+            maxRampWeight: defs.maxRamp,
+            crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+          };
+        });
+        setTripForm((prev) =>
+          prev
+            ? { ...prev, aircraftId: fallback.tail_number, legs: [...existingLegs, ...refilledNewLegs] }
+            : prev
+        );
       }
 
       toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
