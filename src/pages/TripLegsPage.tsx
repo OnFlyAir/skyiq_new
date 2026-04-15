@@ -412,6 +412,7 @@ export default function TripLegsPage() {
   const { user } = useAuthContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoParseTriggered = useRef(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
   const [aircraft, setAircraft] = useState<Aircraft | null>(null);
@@ -471,6 +472,19 @@ export default function TripLegsPage() {
   }, [tripId, user]);
 
   const aircraftDefaults = getAircraftDefaults(aircraft);
+
+  const scrollToLeg = useCallback((legIndex: number) => {
+    const el = document.getElementById(`leg-${legIndex}`);
+    if (!el) return;
+
+    const progressBottom = progressBarRef.current?.getBoundingClientRect().bottom ?? 0;
+    const top = el.getBoundingClientRect().top + window.scrollY - progressBottom - 12;
+
+    window.scrollTo({
+      top: Math.max(top, 0),
+      behavior: "smooth",
+    });
+  }, []);
 
   // --- Switch aircraft handler ---
   const handleAircraftChange = async (tailNumber: string) => {
@@ -833,7 +847,7 @@ export default function TripLegsPage() {
 
       {/* Sticky progress bar */}
       {totalLegs > 0 && (
-        <div className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
+        <div ref={progressBarRef} className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">
               {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
@@ -864,11 +878,7 @@ export default function TripLegsPage() {
                 );
                 if (nextUnconfirmedIdx !== -1) {
                   setTimeout(() => {
-                    const el = document.getElementById(`leg-${nextUnconfirmedIdx}`);
-                    if (el) {
-                      const y = el.getBoundingClientRect().top + window.scrollY - 120;
-                      window.scrollTo({ top: y, behavior: "smooth" });
-                    }
+                    scrollToLeg(nextUnconfirmedIdx);
                   }, 150);
                 } else if (index === tripForm.legs.length - 1 || tripForm.legs.every((l, i) => i === index || l.isConfirmed)) {
                   // All confirmed — scroll to the Next button
