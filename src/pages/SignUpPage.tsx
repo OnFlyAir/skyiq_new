@@ -114,6 +114,21 @@ export default function SignUpPage() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {password.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {[
+                { label: 'At least 8 characters', met: password.length >= 8 },
+                { label: 'Contains a number', met: /\d/.test(password) },
+                { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+                { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(password) },
+              ].map((req) => (
+                <div key={req.label} className="flex items-center gap-2 text-xs">
+                  <div className={`w-1.5 h-1.5 rounded-full transition-colors ${req.met ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
+                  <span className={`transition-colors ${req.met ? 'text-emerald-500' : 'text-muted-foreground'}`}>{req.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
