@@ -1,12 +1,10 @@
-// ItineraryViewer — Slide-over panel to view the uploaded itinerary data
-// so users can cross-check info with what's entered per leg.
+// ItineraryViewer — Floating PDF viewer panel that stays visible while scrolling.
+// Shows the uploaded itinerary PDF so users can cross-reference while editing legs.
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { TripFormData } from "@/types/trip";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { FileText, Plane } from "lucide-react";
+import { FileText, X, Minimize2, Maximize2 } from "lucide-react";
 
 interface Props {
   tripId: string;
@@ -15,118 +13,164 @@ interface Props {
 
 export default function ItineraryViewer({ tripId, children }: Props) {
   const [open, setOpen] = useState(false);
-  const [itinerary, setItinerary] = useState<TripFormData | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [minimized, setMinimized] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    async function load() {
-      const { data } = await supabase
-        .from("trips")
-        .select("itinerary_details, itinerary_num")
-        .eq("id", parseInt(tripId))
-        .single();
-      if (data?.itinerary_details) {
-        setItinerary(data.itinerary_details as unknown as TripFormData);
-      }
-    }
-    load();
+    loadPdf();
+
+    return () => {
+      // Clean up blob URL on close
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
   }, [open, tripId]);
 
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+  async function loadPdf() {
+    setLoading(true);
+
+    // First check onfly_data for a stored PDF path
+    const { data: onflyRow } = await supabase
+      .from("onfly_data")
+      .select("pdf_storage_path")
+      .eq("trip_id", parseInt(tripId))
+      .limit(1);
+
+    if (onflyRow && onflyRow.length > 0 && (onflyRow[0] as any).pdf_storage_path) {
+      const path = (onflyRow[0] as any).pdf_storage_path as string;
+      const { data: blob, error } = await supabase.storage
+        .from("itinerary-pdfs")
+        .download(path);
+
+      if (!error && blob) {
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: check if there's a PDF in itinerary-pdfs for this user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: files } = await supabase.storage
+        .from("itinerary-pdfs")
+        .list(user.id, { limit: 20, sortBy: { column: "created_at", order: "desc" } });
+
+      if (files && files.length > 0) {
+        // Find the most recent file
+        const latest = files[0];
+        const { data: blob, error } = await supabase.storage
+          .from("itinerary-pdfs")
+          .download(`${user.id}/${latest.name}`);
+
+        if (!error && blob) {
+          const url = URL.createObjectURL(blob);
+          setPdfUrl(url);
+        }
+      }
+    }
+
+    setLoading(false);
+  }
+
+  if (!open) {
+    return (
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
         {children || (
-          <Button variant="outline" size="sm" className="gap-2">
+          <>
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">View Itinerary</span>
-            <span className="sm:hidden">Itinerary</span>
-          </Button>
+            <span className="sm:hidden">PDF</span>
+          </>
         )}
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      {/* Trigger button still shown so layout doesn't shift */}
+      <Button variant="outline" size="sm" className="gap-2 border-primary text-primary" onClick={() => setMinimized(!minimized)}>
+        <FileText className="h-4 w-4" />
+        <span className="hidden sm:inline">{minimized ? "Show PDF" : "Hide PDF"}</span>
+      </Button>
+
+      {/* Floating PDF panel — fixed position, follows scroll */}
+      <div
+        className={`fixed z-50 transition-all duration-300 ease-in-out ${
+          minimized
+            ? "bottom-4 right-4 w-12 h-12"
+            : "top-16 right-4 w-[420px] h-[calc(100vh-5rem)]"
+        } flex flex-col rounded-xl border bg-card shadow-2xl overflow-hidden`}
+      >
+        {minimized ? (
+          <button
+            onClick={() => setMinimized(false)}
+            className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors"
+          >
             <FileText className="h-5 w-5" />
-            Itinerary Details
-          </SheetTitle>
-        </SheetHeader>
-        {!itinerary ? (
-          <p className="text-sm text-muted-foreground mt-4">No itinerary data found.</p>
+          </button>
         ) : (
-          <div className="mt-4 space-y-4">
-            <div className="text-sm space-y-1">
-              {itinerary.itineraryNum && (
-                <p><span className="text-muted-foreground">Trip #:</span> <span className="font-medium">{itinerary.itineraryNum}</span></p>
-              )}
-              {itinerary.aircraftId && (
-                <p><span className="text-muted-foreground">Aircraft:</span> <span className="font-medium">{itinerary.aircraftId}</span></p>
-              )}
-              {itinerary.startingFuel > 0 && (
-                <p><span className="text-muted-foreground">Starting Fuel:</span> <span className="font-medium">{itinerary.startingFuel.toLocaleString()} lbs</span></p>
-              )}
+          <>
+            {/* Header bar */}
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-secondary/50 shrink-0">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-primary" />
+                Itinerary PDF
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMinimized(true)}>
+                  <Minimize2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => {
+                    setOpen(false);
+                    if (pdfUrl) {
+                      URL.revokeObjectURL(pdfUrl);
+                      setPdfUrl(null);
+                    }
+                  }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
 
-            {itinerary.legs.map((leg, i) => (
-              <div key={i} className="border rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2 font-medium text-sm">
-                  <Plane className="h-3.5 w-3.5 text-muted-foreground" />
-                  Leg {leg.legNum}: {leg.departure || "—"} → {leg.destination || "—"}
+            {/* PDF content */}
+            <div className="flex-1 overflow-hidden">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-muted-foreground">
+                    <div className="h-6 w-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-xs">Loading PDF...</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              ) : pdfUrl ? (
+                <iframe
+                  src={pdfUrl}
+                  className="w-full h-full border-0"
+                  title="Itinerary PDF"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full p-6 text-center">
                   <div>
-                    <span className="text-muted-foreground">Fuel Price:</span>{" "}
-                    <span className="font-medium">
-                      {leg.departureFuelPrices.map((t, ti) => (
-                        <span key={ti}>
-                          {ti > 0 && " / "}
-                          ${t.price.toFixed(2)}/gal
-                          {t.min_fuel > 0 && ` (≥${t.min_fuel}g)`}
-                        </span>
-                      ))}
-                    </span>
+                    <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                    <p className="text-sm font-medium text-muted-foreground">No PDF available</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload an itinerary PDF above to view it here
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Fuel Burn:</span>{" "}
-                    <span className="font-medium">{leg.fuelBurn > 0 ? `${leg.fuelBurn.toLocaleString()} lbs` : "—"}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Reserve:</span>{" "}
-                    <span className="font-medium">{leg.reserve.toLocaleString()} lbs</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Taxi Burn:</span>{" "}
-                    <span className="font-medium">{leg.taxiFuelBurn.toLocaleString()} lbs</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Crew:</span>{" "}
-                    <span className="font-medium">{leg.crewWeight}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Pax:</span>{" "}
-                    <span className="font-medium">{leg.passengerWeights || "0"}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Baggage:</span>{" "}
-                    <span className="font-medium">{leg.baggage} lbs</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Max TO:</span>{" "}
-                    <span className="font-medium">{leg.maxTakeoffWeight.toLocaleString()} lbs</span>
-                  </div>
-                  {leg.waivedFee.amount > 0 && (
-                    <div className="col-span-2">
-                      <span className="text-muted-foreground">Fee:</span>{" "}
-                      <span className="font-medium">
-                        ${leg.waivedFee.amount.toFixed(2)} — waived at {leg.waivedFee.waivedAt} gal
-                      </span>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          </>
         )}
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 }
