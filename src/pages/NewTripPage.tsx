@@ -27,12 +27,28 @@ export default function NewTripPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthContext();
+  const { active: demoActive, currentStep } = useDemo();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [aircraftList, setAircraftList] = useState<Aircraft[]>([]);
   const [selectedTail, setSelectedTail] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+
+  // Auto-upload demo PDF when demo is active on the upload step
+  const demoTriggered = useRef(false);
+  useEffect(() => {
+    if (!demoActive || !user || demoTriggered.current) return;
+    if (currentStep?.id !== 'upload-pdf') return;
+    demoTriggered.current = true;
+
+    (async () => {
+      const res = await fetch(DEMO_PDF_PATH);
+      const blob = await res.blob();
+      const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+      handlePdfUpload(file);
+    })();
+  }, [demoActive, currentStep, user]);
 
   useEffect(() => {
     async function loadAircraft() {
