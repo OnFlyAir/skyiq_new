@@ -409,13 +409,16 @@ serve(async (req) => {
     const { trip, parsed } = convertToTrip(aiResponse);
 
     // Save to onfly_data and storage (server-side only)
+    console.log("userId for save:", userId, "tripId:", tripId);
     if (userId) {
       try {
         await saveToOnflyAndStorage(pdfBase64, parsed, trip, userId, tripId);
+        console.log("Successfully saved onfly data and PDF");
       } catch (err) {
         console.error("Failed to save onfly data/PDF:", err);
-        // Don't fail the parse — just log
       }
+    } else {
+      console.log("Skipping onfly save — no userId");
     }
 
     return new Response(
