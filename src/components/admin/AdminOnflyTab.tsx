@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Download, Database, RefreshCw, Pencil, Check, X } from "lucide-react";
+import { Loader2, Search, Download, Database, RefreshCw, Pencil, Check, X, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface OnflyRow {
@@ -15,6 +15,7 @@ interface OnflyRow {
   client_phone: string;
   itinerary_num: string;
   parsed_at: string;
+  pdf_storage_path: string | null;
 }
 
 export default function AdminOnflyTab() {
@@ -35,7 +36,7 @@ export default function AdminOnflyTab() {
     setLoading(true);
     const { data: rows, error } = await supabase
       .from("onfly_data")
-      .select("id, trip_id, client_name, client_email, client_phone, itinerary_num, parsed_at")
+      .select("id, trip_id, client_name, client_email, client_phone, itinerary_num, parsed_at, pdf_storage_path")
       .order("parsed_at", { ascending: false });
 
     if (!error) {
@@ -87,6 +88,24 @@ export default function AdminOnflyTab() {
     toast({ title: "Updated" });
   }
 
+  async function downloadPdf(storagePath: string) {
+    const { data: blob, error } = await supabase.storage
+      .from("itinerary-pdfs")
+      .download(storagePath);
+
+    if (error || !blob) {
+      toast({ title: "Download failed", description: error?.message, variant: "destructive" });
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = storagePath.split("/").pop() || "itinerary.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function syncFromTrips() {
     setSyncing(true);
     try {
@@ -100,15 +119,16 @@ export default function AdminOnflyTab() {
         return;
       }
 
+      // Get existing trip_ids to skip duplicates
+      const { data: existingRows } = await supabase
+        .from("onfly_data")
+        .select("trip_id");
+
+      const existingTripIds = new Set((existingRows ?? []).map((r: any) => r.trip_id).filter(Boolean));
+
       let inserted = 0;
       for (const trip of trips) {
-        const { data: existing } = await supabase
-          .from("onfly_data")
-          .select("id")
-          .eq("trip_id", trip.id)
-          .limit(1);
-
-        if (existing && existing.length > 0) continue;
+        if (existingTripIds.has(trip.id)) continue;
 
         const details = trip.itinerary_details as any;
         const clientName = details?.client_name || details?.passenger_name || "";
@@ -136,7 +156,7 @@ export default function AdminOnflyTab() {
   }
 
   function exportCsv() {
-    const headers = ["Itinerary #", "Client Name", "Client Email", "Client Phone", "Trip ID", "Parsed Date"];
+    const headers = ["Itinerary #", "Client Name", "Client Email", "Client Phone", "Trip ID", "Parsed Date", "Has PDF"];
     const rows = filtered.map((r) => [
       r.itinerary_num,
       r.client_name,
@@ -144,6 +164,7 @@ export default function AdminOnflyTab() {
       r.client_phone,
       r.trip_id?.toString() ?? "",
       new Date(r.parsed_at).toLocaleDateString(),
+      r.pdf_storage_path ? "Yes" : "No",
     ]);
 
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -199,7 +220,7 @@ export default function AdminOnflyTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-secondary">
               <tr>
@@ -208,6 +229,7 @@ export default function AdminOnflyTab() {
                 <th className="text-left px-4 py-2 font-medium">Email</th>
                 <th className="text-left px-4 py-2 font-medium">Phone</th>
                 <th className="text-center px-4 py-2 font-medium">Trip ID</th>
+                <th className="text-center px-4 py-2 font-medium">PDF</th>
                 <th className="text-right px-4 py-2 font-medium">Parsed</th>
                 <th className="text-center px-4 py-2 font-medium w-20"></th>
               </tr>
@@ -256,6 +278,21 @@ export default function AdminOnflyTab() {
                       )}
                     </td>
                     <td className="px-4 py-2 text-center">{r.trip_id ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">
+                      {r.pdf_storage_path ? (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => downloadPdf(r.pdf_storage_path!)}
+                          title="Download PDF"
+                        >
+                          <FileDown className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-right text-xs text-muted-foreground">
                       {new Date(r.parsed_at).toLocaleDateString()}
                     </td>
@@ -280,7 +317,7 @@ export default function AdminOnflyTab() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">No matching records</td>
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">No matching records</td>
                 </tr>
               )}
             </tbody>

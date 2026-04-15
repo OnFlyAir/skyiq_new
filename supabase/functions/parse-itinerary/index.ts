@@ -318,20 +318,42 @@ async function saveToOnflyAndStorage(
   const pdfBytes = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
   const storagePath = `${userId}/${Date.now()}_${parsed.crew_itinerary_id || "itinerary"}.pdf`;
 
-  await supabaseAdmin.storage
+  const { error: uploadError } = await supabaseAdmin.storage
     .from("itinerary-pdfs")
     .upload(storagePath, pdfBytes, { contentType: "application/pdf" });
 
-  // Save to onfly_data
-  await supabaseAdmin.from("onfly_data").insert({
+  if (uploadError) {
+    console.error("PDF upload error:", uploadError);
+  } else {
+    console.log("PDF uploaded to:", storagePath);
+  }
+
+  const rowData = {
     user_id: userId,
-    trip_id: tripId ?? null,
     client_name: parsed.client_name || "",
     client_email: parsed.client_email || "",
     client_phone: parsed.client_phone || "",
     itinerary_num: parsed.crew_itinerary_id || "",
     raw_itinerary: trip as unknown as Record<string, unknown>,
-  });
+    pdf_storage_path: uploadError ? null : storagePath,
+  };
+
+  // Upsert: update if trip_id already exists, insert otherwise
+  if (tripId) {
+    const { data: existing } = await supabaseAdmin
+      .from("onfly_data")
+      .select("id")
+      .eq("trip_id", tripId)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      await supabaseAdmin.from("onfly_data").update(rowData).eq("id", existing[0].id);
+    } else {
+      await supabaseAdmin.from("onfly_data").insert({ ...rowData, trip_id: tripId });
+    }
+  } else {
+    await supabaseAdmin.from("onfly_data").insert({ ...rowData, trip_id: null });
+  }
 }
 
 serve(async (req) => {

@@ -249,6 +249,7 @@ export type Database = {
           id: string
           itinerary_num: string | null
           parsed_at: string
+          pdf_storage_path: string | null
           raw_itinerary: Json | null
           trip_id: number | null
           user_id: string
@@ -261,6 +262,7 @@ export type Database = {
           id?: string
           itinerary_num?: string | null
           parsed_at?: string
+          pdf_storage_path?: string | null
           raw_itinerary?: Json | null
           trip_id?: number | null
           user_id: string
@@ -273,6 +275,7 @@ export type Database = {
           id?: string
           itinerary_num?: string | null
           parsed_at?: string
+          pdf_storage_path?: string | null
           raw_itinerary?: Json | null
           trip_id?: number | null
           user_id?: string
