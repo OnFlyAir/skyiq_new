@@ -420,6 +420,7 @@ export default function TripLegsPage() {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addLegOpen, setAddLegOpen] = useState(false);
+  const appendModeRef = useRef(false);
 
   // Load trip + aircraft data + fleet list
   useEffect(() => {
