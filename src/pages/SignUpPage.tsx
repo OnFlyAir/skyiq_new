@@ -40,6 +40,9 @@ export default function SignUpPage() {
       }));
     }
 
+    // Sign out immediately so the unconfirmed session doesn't auto-login
+    await supabase.auth.signOut();
+
     setSuccess(true);
     setLoading(false);
   }
