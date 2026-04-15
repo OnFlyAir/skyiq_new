@@ -104,7 +104,7 @@ function LegDetail({
           <>
             <div className="flex items-center justify-between mb-2">
               <div className="font-bold">{formatWeight(leg.startFuel)}</div>
-              <div className="text-xs text-muted-foreground">~{Math.round(leg.fuelUpliftGals)} gal uplift · {formatCurrency(leg.totalCost)}</div>
+              <div className="text-xs text-muted-foreground">~{Math.round(Math.abs(leg.fuelUpliftGals))} gal uplift · {formatCurrency(Math.abs(leg.totalCost))}</div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
               <div>
