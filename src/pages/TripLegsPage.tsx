@@ -576,11 +576,20 @@ export default function TripLegsPage() {
       // Use itinerary_num from parsed sheet as trip ID
       const parsedItineraryNum = parsed.itinerary_num || tripForm.itineraryNum;
 
+      // In append mode, keep existing legs and add new ones with renumbered leg numbers
+      const existingLegs = appendMode ? tripForm.legs : [];
+      const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
+      const renumberedNewLegs = newLegs.map((leg, i) => ({
+        ...leg,
+        legNum: maxLegNum + i + 1,
+      }));
+      const combinedLegs = [...existingLegs, ...renumberedNewLegs];
+
       setTripForm({
         ...tripForm,
-        itineraryNum: parsedItineraryNum,
+        itineraryNum: appendMode ? tripForm.itineraryNum : parsedItineraryNum,
         aircraftId: parsed.aircraft || tripForm.aircraftId,
-        legs: newLegs,
+        legs: combinedLegs,
       });
 
       // Match aircraft from parsed tail number
