@@ -234,7 +234,7 @@ export default function TripSummaryPage() {
   const totalCost = summary.legs.reduce((sum, l) => sum + l.totalCost, 0);
   const hasErrors = summary.legs.some((l) => l.errors && l.errors.length > 0);
   const legReasonings = generateLegReasoning(summary.legs, summary.savings, summary.maxFuelLbs ?? 0);
-  const overallReasoning = generateOverallReasoning(summary.legs, summary.savings);
+  const overallReasoning = generateOverallReasoning(summary.legs, summary.savings, summary.maxFuelLbs ?? 0);
 
   return (
     <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
