@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Search, Check } from 'lucide-react';
+import { ArrowLeft, Search, Check, ChevronDown } from 'lucide-react';
 import {
   getManufacturers,
   getModelsForManufacturer,
@@ -24,26 +24,32 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
 
 const WEIGHT_FIELDS = [
-  { key: 'max_takeoff_weight', label: 'Max Takeoff Weight (lbs)' },
-  { key: 'max_landing_weight', label: 'Max Landing Weight (lbs)' },
-  { key: 'max_ramp_weight', label: 'Max Ramp Weight (lbs)' },
-  { key: 'max_fuel_capacity', label: 'Max Fuel Capacity (lbs)' },
-  { key: 'preferred_reserve', label: 'Preferred Reserve (lbs)' },
-  { key: 'taxi_fuel_burn', label: 'Taxi Fuel Burn (lbs)' },
-  { key: 'cruise_fuel_burn', label: 'Cruise Fuel Burn (lbs/hr)' },
-  { key: 'penalty_rate', label: 'Penalty Rate' },
+  { key: 'max_takeoff_weight', label: 'MTOW' },
+  { key: 'max_landing_weight', label: 'MLW' },
+  { key: 'max_ramp_weight', label: 'MRW' },
+  { key: 'max_fuel_capacity', label: 'Max Fuel' },
+  { key: 'preferred_reserve', label: 'Reserve' },
+  { key: 'taxi_fuel_burn', label: 'Taxi Burn' },
+  { key: 'cruise_fuel_burn', label: 'Cruise Burn' },
+  { key: 'penalty_rate', label: 'Penalty' },
 ] as const;
 
 const CREW_FIELDS = [
-  { key: 'default_pax_weight', label: 'Default PAX Weight' },
-  { key: 'default_baggage_with_pax', label: 'Baggage w/ PAX' },
-  { key: 'default_baggage_no_pax', label: 'Baggage w/o PAX' },
-  { key: 'default_pic_weight', label: 'PIC Weight' },
-  { key: 'default_sic_weight', label: 'SIC Weight' },
-  { key: 'default_cabin_weight', label: 'Cabin Attendant' },
+  { key: 'default_pax_weight', label: 'PAX Wt' },
+  { key: 'default_baggage_with_pax', label: 'Bags w/ PAX' },
+  { key: 'default_baggage_no_pax', label: 'Bags w/o PAX' },
+  { key: 'default_pic_weight', label: 'PIC Wt' },
+  { key: 'default_sic_weight', label: 'SIC Wt' },
+  { key: 'default_cabin_weight', label: 'Cabin Att.' },
 ] as const;
 
 export default function AddAircraftPage() {
@@ -52,13 +58,12 @@ export default function AddAircraftPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Manufacturer / Model selection
   const [mfgOpen, setMfgOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [selectedMfg, setSelectedMfg] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<AircraftPreset | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  // Form fields
   const [tailNumber, setTailNumber] = useState('');
   const [basicEmptyWeight, setBasicEmptyWeight] = useState('');
   const [formData, setFormData] = useState<Record<string, number>>({
@@ -128,12 +133,13 @@ export default function AddAircraftPage() {
     }
   }
 
-  const inputCls =
-    'flex-1 px-3 py-2.5 bg-secondary/50 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary focus:bg-card transition-all';
+  const updateField = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
+  };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="max-w-lg mx-auto p-4 space-y-5">
+      <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate('/fleet')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -141,182 +147,182 @@ export default function AddAircraftPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-lg">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Step 1: Manufacturer */}
-        <div className="space-y-2">
-          <Label>Manufacturer</Label>
-          <Popover open={mfgOpen} onOpenChange={setMfgOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={mfgOpen}
-                className="w-full justify-between font-normal"
-              >
-                {selectedMfg || 'Select manufacturer…'}
-                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search manufacturer…" />
-                <CommandList>
-                  <CommandEmpty>No manufacturer found.</CommandEmpty>
-                  <CommandGroup>
-                    {manufacturers.map((mfg) => (
-                      <CommandItem
-                        key={mfg}
-                        value={mfg}
-                        onSelect={() => {
-                          setSelectedMfg(mfg);
-                          setSelectedPreset(null);
-                          setMfgOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn('mr-2 h-4 w-4', selectedMfg === mfg ? 'opacity-100' : 'opacity-0')}
-                        />
-                        {mfg}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Aircraft Selection */}
+        <Card>
+          <CardContent className="pt-5 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Manufacturer</Label>
+              <Popover open={mfgOpen} onOpenChange={setMfgOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal h-11"
+                  >
+                    {selectedMfg || 'Select manufacturer…'}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-40" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search…" />
+                    <CommandList>
+                      <CommandEmpty>No match.</CommandEmpty>
+                      <CommandGroup>
+                        {manufacturers.map((mfg) => (
+                          <CommandItem
+                            key={mfg}
+                            value={mfg}
+                            onSelect={() => {
+                              setSelectedMfg(mfg);
+                              setSelectedPreset(null);
+                              setMfgOpen(false);
+                            }}
+                          >
+                            <Check className={cn('mr-2 h-4 w-4', selectedMfg === mfg ? 'opacity-100' : 'opacity-0')} />
+                            {mfg}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
 
-        {/* Step 2: Model (filtered by manufacturer) */}
-        {selectedMfg && (
-          <div className="space-y-2">
-            <Label>Type / Model</Label>
-            <Popover open={modelOpen} onOpenChange={setModelOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={modelOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  {selectedPreset?.model || 'Select model…'}
-                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search model…" />
-                  <CommandList>
-                    <CommandEmpty>No model found.</CommandEmpty>
-                    <CommandGroup>
-                      {models.map((preset) => (
-                        <CommandItem
-                          key={preset.id}
-                          value={preset.model}
-                          onSelect={() => {
-                            applyPreset(preset);
-                            setModelOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4',
-                              selectedPreset?.id === preset.id ? 'opacity-100' : 'opacity-0',
-                            )}
-                          />
-                          {preset.model}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+            {selectedMfg && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Model</Label>
+                <Popover open={modelOpen} onOpenChange={setModelOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal h-11"
+                    >
+                      {selectedPreset?.model || 'Select model…'}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-40" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search…" />
+                      <CommandList>
+                        <CommandEmpty>No match.</CommandEmpty>
+                        <CommandGroup>
+                          {models.map((preset) => (
+                            <CommandItem
+                              key={preset.id}
+                              value={preset.model}
+                              onSelect={() => {
+                                applyPreset(preset);
+                                setModelOpen(false);
+                              }}
+                            >
+                              <Check className={cn('mr-2 h-4 w-4', selectedPreset?.id === preset.id ? 'opacity-100' : 'opacity-0')} />
+                              {preset.model}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Step 3: User enters tail + BEW */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Tail Number *</Label>
-            <input
-              type="text"
-              value={tailNumber}
-              onChange={(e) => setTailNumber(e.target.value)}
-              placeholder="N12345"
-              required
-              className={inputCls}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Basic Empty Weight (lbs) *</Label>
-            <input
-              type="number"
-              value={basicEmptyWeight}
-              onChange={(e) => setBasicEmptyWeight(e.target.value)}
-              placeholder="From W&B report"
-              className={inputCls}
-            />
-          </div>
-        </div>
+        {/* Tail + BEW */}
+        <Card>
+          <CardContent className="pt-5 grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Tail Number</Label>
+              <Input
+                value={tailNumber}
+                onChange={(e) => setTailNumber(e.target.value)}
+                placeholder="N12345"
+                required
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Empty Weight (lbs)</Label>
+              <Input
+                type="number"
+                value={basicEmptyWeight}
+                onChange={(e) => setBasicEmptyWeight(e.target.value)}
+                placeholder="From W&B"
+                className="h-11"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Auto-filled fields — editable */}
+        {/* Auto-filled details — collapsible */}
         {selectedPreset && (
-          <>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Performance (auto-filled)
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {WEIGHT_FIELDS.map((field) => (
-                  <div key={field.key} className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">{field.label}</Label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={formData[field.key] ?? ''}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))
-                      }
-                      className={inputCls}
-                    />
+          <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center justify-between w-full px-4 py-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+              >
+                <span className="text-sm text-muted-foreground">
+                  Performance & defaults
+                  <span className="ml-1.5 text-xs opacity-60">(auto-filled)</span>
+                </span>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", detailsOpen && "rotate-180")} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {WEIGHT_FIELDS.map((field) => (
+                      <div key={field.key} className="flex items-center justify-between gap-2">
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap">{field.label}</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={formData[field.key] ?? ''}
+                          onChange={(e) => updateField(field.key, e.target.value)}
+                          className="h-9 w-24 text-right text-sm"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                Defaults (editable)
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {CREW_FIELDS.map((field) => (
-                  <div key={field.key} className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">{field.label}</Label>
-                    <input
-                      type="number"
-                      value={formData[field.key] ?? ''}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))
-                      }
-                      className={inputCls}
-                    />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {CREW_FIELDS.map((field) => (
+                      <div key={field.key} className="flex items-center justify-between gap-2">
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap">{field.label}</Label>
+                        <Input
+                          type="number"
+                          value={formData[field.key] ?? ''}
+                          onChange={(e) => updateField(field.key, e.target.value)}
+                          className="h-9 w-24 text-right text-sm"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
         )}
 
-        <div className="pt-2">
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Adding…' : 'Add Aircraft'}
-          </Button>
-        </div>
+        <Button type="submit" disabled={loading} size="lg" className="w-full">
+          {loading ? 'Adding…' : 'Add Aircraft'}
+        </Button>
       </form>
     </div>
   );
