@@ -780,7 +780,8 @@ export default function TripLegsPage() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handlePdfUpload(file);
+                  if (file) handlePdfUpload(file, appendModeRef.current);
+                  appendModeRef.current = false;
                 }}
               />
               <Button
