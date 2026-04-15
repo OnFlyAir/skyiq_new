@@ -353,9 +353,16 @@ serve(async (req) => {
     let tripId: number | undefined;
 
     if (authHeader.startsWith("Bearer ")) {
-      const supabaseAdmin = getSupabaseAdmin();
-      const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-      userId = user?.id ?? "";
+      try {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+        console.log("Auth result:", user?.id ?? "no user", authError?.message ?? "no error");
+        userId = user?.id ?? "";
+      } catch (e) {
+        console.error("Auth extraction failed:", e);
+      }
+    } else {
+      console.log("No Bearer token found in authorization header");
     }
 
     const contentType = req.headers.get("content-type") ?? "";
