@@ -71,29 +71,67 @@ function legStrategy(leg: TripSummaryLeg, maxFuelLbs: number): { label: string; 
   return { label: `Bring to ${target.toLocaleString()} lbs`, desc: `Add fuel to reach ${target.toLocaleString()} lbs` };
 }
 
-function overallStrategy(legs: TripSummaryLeg[], savings: number): string {
-  if (savings <= 0) return "Fueling at each departure point is already the cheapest option for this trip.";
-  const priced = legs.filter(l => l.fuelUpliftGals > 0).map(l => ({
-    airport: l.departure, ppg: l.fuelCost / l.fuelUpliftGals,
-  }));
-  if (priced.length === 0) return "The aircraft had sufficient fuel for the entire trip.";
-  if (priced.length === 1) return `By optimizing the fuel load, the plan saves $${savings.toFixed(0)} compared to the standard approach.`;
-  const cheapest = priced.reduce((a, b) => a.ppg < b.ppg ? a : b);
-  const expensive = priced.reduce((a, b) => a.ppg > b.ppg ? a : b);
-  if (expensive.ppg - cheapest.ppg > 0.5) {
-    return `The optimizer shifts purchases toward ${cheapest.airport} (~$${cheapest.ppg.toFixed(2)}/gal) and away from ${expensive.airport} (~$${expensive.ppg.toFixed(2)}/gal), saving $${savings.toFixed(0)} by tankering cheaper fuel forward.`;
+// Generate "Why?" details for a leg (mirrors client-side fuel-reasoning.ts)
+function legWhyDetails(leg: TripSummaryLeg, nextLeg: TripSummaryLeg | undefined, i: number, total: number): string[] {
+  const details: string[] = [];
+  const isLast = i === total - 1;
+
+  // Fee reasoning
+  if (leg.hasWaivableFee && leg.feeAmount > 0) {
+    if (leg.hasWaivedFee) {
+      details.push(`Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`);
+    } else {
+      details.push(`A $${leg.feeAmount.toFixed(2)} facility fee applies at ${leg.departure}. Would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee.`);
+    }
+  } else if (!leg.hasWaivableFee) {
+    details.push(`No waivable facility fee at ${leg.departure}.`);
   }
-  return `By balancing fuel loads, weight penalties, and fee waivers across ${priced.length} stops, the optimizer saves $${savings.toFixed(0)}.`;
+
+  if (leg.fuelUpliftGals <= 0) {
+    details.push("The aircraft had enough on board from the previous stop.");
+    if (nextLeg && nextLeg.fuelCost < leg.fuelCost) {
+      details.push(`Fuel is cheaper at ${nextLeg.departure}, so it's better to buy there.`);
+    }
+    return details;
+  }
+
+  // Price reasoning
+  const ppg = leg.fuelUpliftGals > 0 ? leg.fuelCost / leg.fuelUpliftGals : 0;
+  if (nextLeg) {
+    const nextPpg = nextLeg.fuelUpliftGals > 0 ? nextLeg.fuelCost / nextLeg.fuelUpliftGals : 0;
+    if (ppg > 0 && nextPpg > 0) {
+      if (ppg < nextPpg * 0.95) {
+        details.push(`Fuel here is ~$${ppg.toFixed(2)}/gal — cheaper than ${nextLeg.departure} (~$${nextPpg.toFixed(2)}/gal), so loading up saves money.`);
+      } else if (ppg > nextPpg * 1.05) {
+        details.push(`Fuel is more expensive here (~$${ppg.toFixed(2)}/gal vs ~$${nextPpg.toFixed(2)}/gal at ${nextLeg.departure}), so only enough to reach the next stop safely was purchased.`);
+      } else {
+        details.push(`Prices are similar here and at ${nextLeg.departure}, so the optimizer balanced fueling to minimize total weight penalty.`);
+      }
+    }
+  } else {
+    details.push("This is the final leg — only enough fuel to arrive safely with reserves was purchased.");
+  }
+
+  if (i === 0) {
+    details.push(`Starting with ${Math.round(leg.startFuel).toLocaleString()} lbs of fuel already on board.`);
+  }
+
+  if (!isLast && leg.landingFuel > leg.fuelBurn * 0.8) {
+    details.push(`Landing with ${Math.round(leg.landingFuel).toLocaleString()} lbs — extra fuel carried forward for savings at the next stop.`);
+  }
+
+  return details;
 }
 
 function buildEmailHtml(summary: TripSummary): string {
-  const totalCost = summary.legs.reduce((s, l) => s + l.totalCost, 0);
   const maxFuel = summary.maxFuelLbs ?? 0;
-  const overall = overallStrategy(summary.legs, summary.savings);
   const tripLabel = summary.itineraryNum ? `Trip #${summary.itineraryNum}` : "Trip Summary";
+  const legCount = summary.legs.length;
 
   const legsHtml = summary.legs.map((leg, i) => {
     const strat = legStrategy(leg, maxFuel);
+    const nextLeg = summary.legs[i + 1];
+    const whyDetails = legWhyDetails(leg, nextLeg, i, legCount);
     const hasErr = leg.errors && leg.errors.length > 0;
 
     const errHtml = hasErr
@@ -106,6 +144,15 @@ function buildEmailHtml(summary: TripSummary): string {
             ? `✅ Fee waived (min ${Math.round(leg.feeMin)} gal)`
             : `⚠️ $${leg.feeAmount.toFixed(2)} facility fee applies`}
          </p>`
+      : "";
+
+    const whyHtml = whyDetails.length > 0
+      ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6;">
+           <p style="font-size:12px;font-weight:600;color:#1a3a5c;margin:0 0 6px;">💡 Why?</p>
+           <ul style="margin:0;padding-left:18px;">
+             ${whyDetails.map(d => `<li style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:4px;">${d}</li>`).join("")}
+           </ul>
+         </div>`
       : "";
 
     return `
@@ -164,6 +211,7 @@ function buildEmailHtml(summary: TripSummary): string {
               </td>
             </tr>
           </table>
+          ${whyHtml}
         </div>
       </div>
     `;
@@ -171,38 +219,13 @@ function buildEmailHtml(summary: TripSummary): string {
 
   return `
     <div style="font-family:'Montserrat',Arial,sans-serif;max-width:640px;margin:0 auto;background:#ffffff;">
-      <!-- Header -->
       <div style="background:#1a3a5c;padding:24px;text-align:center;">
         <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.5px;">SkyIQ Fuel Plan</h1>
       </div>
-
       <div style="padding:24px;">
-        <!-- Trip info -->
         <h2 style="color:#1a3a5c;margin:0 0 4px;font-size:20px;">${tripLabel}</h2>
         <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Aircraft: <strong>${summary.aircraftNumber || "N/A"}</strong></p>
-
-        ${summary.savings > 0 ? `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <span style="font-size:13px;color:#6b7280;">Estimated Savings</span>
-          <span style="font-size:18px;font-weight:700;color:#1a7ade;">${fmt(summary.savings)}</span>
-        </div>
-        ` : ""}
-
-        <!-- Overall strategy -->
-        <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-bottom:20px;">
-          <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1a3a5c;">💡 Optimizer Strategy</p>
-          <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.5;">${overall}</p>
-        </div>
-
-        <!-- Total -->
-        <div style="text-align:right;margin-bottom:16px;">
-          <span style="font-size:17px;font-weight:700;color:#1a3a5c;">Total: ${fmt(totalCost)}</span>
-        </div>
-
-        <!-- Legs -->
         ${legsHtml}
-
-        <!-- Footer -->
         <p style="text-align:center;font-size:11px;color:#9ca3af;margin-top:24px;">Powered by SkyIQ — Fly Smarter</p>
       </div>
     </div>
