@@ -279,38 +279,37 @@ export default function TripFuelPage() {
 
             return (
               <Card key={leg.legNum} className={hasLegErrors ? "border-destructive" : ""}>
-                <CardContent className="pt-5 space-y-4">
-                  {/* Route header */}
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Plane className="h-4 w-4" />
-                    <span>Leg {leg.legNum}</span>
-                  </div>
-
-                  {/* Hero: route + fuel burn input */}
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-lg font-semibold">
-                      {leg.departure} → {leg.destination}
-                    </span>
-                    <div className="flex flex-col items-end gap-1">
-                      <Label className="text-xs text-muted-foreground">Fuel Burn</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={fuelBurns[originalIndex] || ""}
-                          onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
-                          placeholder="Enter lbs"
-                          className={`w-28 h-11 text-base text-right font-medium ${hasLegErrors ? "border-destructive" : ""}`}
-                        />
-                        <span className="text-sm text-muted-foreground">lbs</span>
-                      </div>
+                <CardContent className="pt-4 pb-3 space-y-2.5">
+                  {/* Route header with leg number */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Leg {leg.legNum}</span>
                     </div>
                   </div>
 
-                  {/* Quick stats — always visible, concise */}
-                  <div className="flex gap-4 text-xs text-muted-foreground">
+                  {/* Route */}
+                  <div className="text-base sm:text-lg font-semibold">
+                    {leg.departure} → {leg.destination}
+                  </div>
+
+                  {/* Fuel burn input — full width, prominent */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">Fuel Burn (lbs)</Label>
+                    <Input
+                      type="number"
+                      value={fuelBurns[originalIndex] || ""}
+                      onChange={(e) => handleFuelBurnChange(originalIndex, parseFloat(e.target.value) || 0)}
+                      placeholder="Enter fuel burn in lbs"
+                      className={`h-12 text-lg font-semibold bg-muted/50 border-2 ${hasLegErrors ? "border-destructive" : "border-input focus:border-primary"}`}
+                    />
+                  </div>
+
+                  {/* Quick stats */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
                     <span>Reserve: <span className="text-foreground font-medium">{leg.reserve.toLocaleString()}</span></span>
                     <span>Min Required: <span className="text-foreground font-medium">{Math.max(0, Math.floor(minFuelRequired)).toLocaleString()}</span></span>
-                    <span>Tank Capacity: <span className="text-foreground font-medium">{tripForm.maxFuelReserve.toLocaleString()}</span></span>
+                    <span>Tank: <span className="text-foreground font-medium">{tripForm.maxFuelReserve.toLocaleString()}</span></span>
                   </div>
 
                   {/* Expandable weight details */}
