@@ -138,7 +138,7 @@ export default function ItineraryViewer({ tripId, children }: Props) {
             </div>
 
             {/* PDF content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-auto -webkit-overflow-scrolling-touch">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-muted-foreground">
