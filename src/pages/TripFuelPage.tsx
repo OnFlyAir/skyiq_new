@@ -244,6 +244,7 @@ export default function TripFuelPage() {
           <CardContent className="pt-4 pb-3 space-y-1">
             <Label className="text-xs font-medium text-muted-foreground">Current Fuel on Board (lbs)</Label>
             <Input
+              data-demo="starting-fuel-input"
               type="number"
               value={startingFuel || ""}
               onChange={(e) => setStartingFuel(parseFloat(e.target.value) || 0)}
