@@ -411,6 +411,7 @@ export default function TripLegsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthContext();
+  const { active: demoActive } = useDemo();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoParseTriggered = useRef(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
