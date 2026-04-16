@@ -6,6 +6,7 @@ import type { TripSummary } from "@/types/trip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plane, Settings, TrendingUp, ChevronRight, FileUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface RecentTrip {
   id: number;
