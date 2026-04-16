@@ -237,14 +237,71 @@ async function parseWithAI(pdfBase64: string, retries = 3): Promise<string | nul
   throw new Error("Rate limited after multiple retries — please try again later");
 }
 
-function extractJson(raw: string): string {
-  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceMatch) return fenceMatch[1].trim();
-  return raw.trim();
+function extractAndRepairJson(raw: string): unknown {
+  // Strip markdown fences
+  let cleaned = raw
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  // Find JSON boundaries
+  const jsonStart = cleaned.search(/[\{\[]/);
+  if (jsonStart === -1) throw new Error("No JSON object found in AI response");
+  const openChar = cleaned[jsonStart];
+  const closeChar = openChar === "[" ? "]" : "}";
+  const jsonEnd = cleaned.lastIndexOf(closeChar);
+  cleaned = jsonEnd > jsonStart ? cleaned.substring(jsonStart, jsonEnd + 1) : cleaned.substring(jsonStart);
+
+  // First attempt
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e1) {
+    // Repair common issues
+    let repaired = cleaned
+      .replace(/\/\/[^\n\r]*/g, "")              // line comments
+      .replace(/\/\*[\s\S]*?\*\//g, "")          // block comments
+      .replace(/,\s*}/g, "}")                    // trailing comma in object
+      .replace(/,\s*]/g, "]")                    // trailing comma in array
+      .replace(/}\s*{/g, "},{")                  // missing comma between objects
+      .replace(/]\s*\[/g, "],[")                 // missing comma between arrays
+      .replace(/("\s*:\s*"[^"\n]*")\s*\n\s*"/g, '$1,\n"') // missing comma between string fields
+      .replace(/(\d|true|false|null|"|\}|\])\s*\n\s*"/g, '$1,\n"') // missing comma before next key
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ""); // control chars
+
+    try {
+      return JSON.parse(repaired);
+    } catch (_e2) {
+      // Balance braces/brackets (truncation repair)
+      let braces = 0, brackets = 0, inStr = false, esc = false;
+      for (const c of repaired) {
+        if (esc) { esc = false; continue; }
+        if (c === "\\") { esc = true; continue; }
+        if (c === '"') inStr = !inStr;
+        if (inStr) continue;
+        if (c === "{") braces++;
+        else if (c === "}") braces--;
+        else if (c === "[") brackets++;
+        else if (c === "]") brackets--;
+      }
+      if (inStr) repaired += '"';
+      while (brackets-- > 0) repaired += "]";
+      while (braces-- > 0) repaired += "}";
+      return JSON.parse(repaired);
+    }
+  }
 }
 
 function convertToTrip(jsonStr: string): { trip: ParsedTrip; parsed: ParsedData } {
-  const parsed: ParsedData = JSON.parse(extractJson(jsonStr));
+  let parsed: ParsedData;
+  try {
+    parsed = extractAndRepairJson(jsonStr) as ParsedData;
+  } catch (e) {
+    console.error("JSON parse failed. Raw AI response (first 2000 chars):", jsonStr.slice(0, 2000));
+    throw new Error(`AI returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!parsed || !Array.isArray(parsed.trip_segments)) {
+    throw new Error("AI response missing trip_segments array");
+  }
 
   const legs: ParsedLeg[] = parsed.trip_segments.map((segment) => {
     const fees: ParsedFee[] = (segment.fee_waivers || [])
