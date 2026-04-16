@@ -187,7 +187,7 @@ export default function SubscriptionPage() {
             {PRICING_TIERS.map((tier) => (
               <div key={tier.range} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <span className="text-sm text-foreground">{tier.range}</span>
-                <span className="text-sm font-semibold">${tier.perPlane}/plane per cycle</span>
+                <span className="text-sm font-semibold">{formatCurrency(tier.perPlane)}/plane per cycle</span>
               </div>
             ))}
           </div>
