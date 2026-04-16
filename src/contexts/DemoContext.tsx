@@ -12,6 +12,7 @@ export interface DemoStep {
   autoAdvance?: boolean;           // advance when target is clicked
   inputValue?: string;             // for pre-fill steps
   highlightOnly?: boolean;         // no "Next" — just spotlight
+  requireAction?: boolean;         // hide the Next button — user must perform the action
 }
 
 interface DemoContextType {
