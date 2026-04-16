@@ -436,18 +436,18 @@ export default function AdminDfyPage() {
                         <tr key={b.client.id} className="border-t">
                           <td className="px-4 py-2 font-medium">{b.client.company_name}</td>
                           <td className="px-4 py-2 text-center">
-                            {b.client.pricing_tier === "per_trip" ? "$200/trip" : "$10K/mo"}
+                            {b.client.pricing_tier === "per_trip" ? `${formatCurrencyCents(b.client.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(b.client.monthly_rate_cents)}/mo`}
                           </td>
                           <td className="px-4 py-2 text-center">{b.tripsThisMonth}</td>
                           <td className="px-4 py-2 text-right text-green-500 font-medium">
-                            ${b.revenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                            {formatCurrency(b.revenue)}
                           </td>
                         </tr>
                       ))}
                       <tr className="border-t bg-secondary/50 font-bold">
                         <td className="px-4 py-2" colSpan={3}>Total</td>
                         <td className="px-4 py-2 text-right text-green-500">
-                          ${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                          {formatCurrency(totalRevenue)}
                         </td>
                       </tr>
                     </tbody>
