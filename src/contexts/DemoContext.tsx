@@ -137,7 +137,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'These values were auto-populated from the model database — MTOW, fuel capacity, cruise burn, reserves, penalty rate, and crew/pax defaults. Adjust any that differ for your specific aircraft.',
     placement: 'top',
   },
-  // Step 14: Click save
+  // Step 10: Click save
   {
     id: 'click-save',
     page: '/fleet/add',
@@ -148,7 +148,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 15: Success message
+  // Step 11: Success message
   {
     id: 'aircraft-saved',
     page: '/fleet',
@@ -156,7 +156,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Your aircraft is now in your fleet. You\'re ready to plan your first trip!',
     placement: 'bottom',
   },
-  // Step 16: Click Plan a Trip
+  // Step 12: Click Plan a Trip
   {
     id: 'click-plan-trip',
     page: '/fleet',
@@ -167,7 +167,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 17: Upload PDF
+  // Step 13: Upload PDF
   {
     id: 'upload-pdf',
     page: '/trips/new',
@@ -177,7 +177,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Step 18: Check itinerary
+  // Step 14: Check itinerary
   {
     id: 'check-itinerary',
     page: '/trips/new',
@@ -188,7 +188,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 19: Walk through leg 1 fields
+  // Steps 15–18: Walk through leg 1 fields
   {
     id: 'explain-leg-departure',
     page: '',  // dynamic — set by tripId
@@ -221,7 +221,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Ramp fees, handling fees, etc. Some can be waived with a fuel purchase — SkyIQ accounts for that.',
     placement: 'bottom',
   },
-  // Step 23: Verify legs
+  // Step 19: Verify legs
   {
     id: 'verify-legs',
     page: '',
@@ -231,7 +231,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Step 24: Point out trash icon
+  // Step 20: Point out trash icon
   {
     id: 'explain-trash',
     page: '',
@@ -240,7 +240,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Use the trash icon to remove any legs already flown or not needed for this trip.',
     placement: 'left',
   },
-  // Step 25: Point out add leg
+  // Step 21: Point out add leg
   {
     id: 'explain-add-leg',
     page: '',
@@ -249,7 +249,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Need more legs? Click here to upload additional itineraries or manually add legs.',
     placement: 'top',
   },
-  // Step 26: Click Next: Fuel Burns
+  // Step 22: Click Next: Fuel Burns
   {
     id: 'click-fuel-burns',
     page: '',
@@ -260,7 +260,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 27: Enter fuel burns
+  // Step 23: Enter fuel burns
   {
     id: 'enter-fuel-burns',
     page: '',
@@ -269,7 +269,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Enter the fuel burn for each leg: Leg 1: 700, Leg 2: 1800, Leg 3: 2600, Leg 4: 2300, Leg 5: 2700, Leg 6: 1000.',
     placement: 'right',
   },
-  // Step 28: Expand weight limits
+  // Step 24: Expand weight limits
   {
     id: 'expand-weights',
     page: '',
@@ -279,7 +279,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Step 29: Click Confirm Trip
+  // Step 25: Click Confirm Trip
   {
     id: 'click-confirm',
     page: '',
@@ -290,7 +290,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 30: Optimizer strategy
+  // Step 26: Optimizer strategy
   {
     id: 'explain-strategy',
     page: '',
@@ -299,7 +299,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'This shows the high-level approach the optimizer used — whether it\'s tankering fuel, buying at cheaper stops, or a balanced mix.',
     placement: 'bottom',
   },
-  // Step 31: Walk through leg 1 summary numbers
+  // Step 27: Walk through leg 1 summary
   {
     id: 'explain-summary-leg1',
     page: '',
@@ -308,7 +308,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Here\'s the optimized fuel plan for Leg 1 — how much to load, expected cost, and savings vs. buying at each stop.',
     placement: 'bottom',
   },
-  // Step 32: Click Full Summary
+  // Step 28: Click Full Summary
   {
     id: 'click-full-summary',
     page: '',
@@ -318,7 +318,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Step 33: Click Send Email
+  // Step 29: Click Send Email
   {
     id: 'click-send-email',
     page: '',
@@ -329,7 +329,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 34: Enter email
+  // Step 30: Enter email
   {
     id: 'enter-email',
     page: '',
@@ -338,7 +338,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Type your email address and click Send. You\'ll receive your fuel plan summary right in your inbox.',
     placement: 'bottom',
   },
-  // Step 35: Email sent
+  // Step 31: Email sent
   {
     id: 'email-sent',
     page: '',
@@ -346,7 +346,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Your fuel plan has been emailed. You now have access to your optimized plan anytime.',
     placement: 'bottom',
   },
-  // Step 36: Sidebar tip
+  // Step 32: Sidebar tip
   {
     id: 'sidebar-tip',
     page: '',
@@ -354,7 +354,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'You can always find past trips in the sidebar under "Recent Trips" or use the search bar at the top to find any trip by tail number or itinerary.',
     placement: 'bottom',
   },
-  // Step 37: Final
+  // Step 33: Final
   {
     id: 'demo-complete',
     page: '/dashboard',
@@ -443,5 +443,4 @@ const defaultContext: DemoContextType = {
 export function useDemo() {
   const context = useContext(DemoContext);
   return context ?? defaultContext;
-  return context;
 }
