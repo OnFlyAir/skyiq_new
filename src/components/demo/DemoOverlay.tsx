@@ -102,10 +102,10 @@ export default function DemoOverlay() {
   const hasTarget = !!targetRect;
   const padding = 8;
 
-  // Is this a "do something" step (no Next button — user must interact)?
+  // Is this a "do something" step? (still shown as a hint — but Next is always available as an escape hatch)
   const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.action === 'wait' || currentStep.autoAdvance;
-  // Explanation-only steps (no action) get a Next button
-  const showNextButton = !isInteractiveStep;
+  // Always show a Next button so users can manually advance even on action steps
+  const showNextButton = true;
   // Last step always gets a Finish button
   const isLastStep = currentStepIndex === totalSteps - 1;
 
