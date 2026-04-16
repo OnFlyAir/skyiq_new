@@ -256,7 +256,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'add-leg-btn',
     title: 'Add More Legs',
     description: 'Need more legs? Click here to upload additional itineraries or manually add legs.',
-    placement: 'top',
+    placement: 'center',
   },
   // Step 22: Click Next: Fuel Burns
   {
@@ -265,7 +265,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'next-fuel-burns-btn',
     title: 'Next: Fuel Burns',
     description: 'Legs look good! Click "Next: Fuel Burns" to enter your fuel burn data.',
-    placement: 'top',
+    placement: 'center',
     action: 'click',
     autoAdvance: true,
   },
@@ -276,7 +276,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'fuel-burn-inputs',
     title: 'Enter Fuel Burns',
     description: 'Enter the fuel burn for each leg: Leg 1: 700, Leg 2: 1800, Leg 3: 2600, Leg 4: 2300, Leg 5: 2700, Leg 6: 1000.',
-    placement: 'right',
+    placement: 'center',
   },
   // Step 24: Expand weight limits
   {
@@ -285,7 +285,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'weight-limits-toggle',
     title: 'Weight Limits',
     description: 'Expand this to see the weight constraints for each leg. SkyIQ ensures your fuel plan stays within limits.',
-    placement: 'bottom',
+    placement: 'center',
     action: 'click',
   },
   // Step 25: Click Confirm Trip
