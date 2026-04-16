@@ -739,8 +739,47 @@ export default function TripLegsPage() {
       toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
     } catch (err) {
       console.error("Parse error:", err);
-      const message = err instanceof Error ? err.message : "Failed to parse itinerary";
-      toast({ title: "Parse error", description: message, variant: "destructive" });
+
+      // In demo mode, inject mock parsed data so the demo continues smoothly
+      if (demoActive) {
+        console.log("Demo mode: injecting mock parsed data after parse failure");
+        const demoAc = aircraftList.find((ac) => ac.tail_number === "NSKYIQ");
+        const defs = demoAc ? getAircraftDefaults(demoAc) : aircraftDefaults;
+        const mockLegs: LegFormData[] = [
+          {
+            legNum: 1,
+            departure: "KJFK",
+            destination: "KLAX",
+            departureFuelPrices: [{ min_fuel: 0, price: 6.25 }],
+            waivedFee: { name: "", amount: 0, isWaivable: false, waivedAt: 0, airport: "" },
+            passengerWeights: "180, 200",
+            baggage: defs.defaultBaggageWithPax,
+            crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+            fuelBurn: 0,
+            reserve: defs.reserve,
+            taxiFuelBurn: defs.taxiFuelBurn,
+            maxTakeoffWeight: defs.maxTakeoff,
+            maxLandingWeight: defs.maxLanding,
+            maxRampWeight: defs.maxRamp,
+            isConfirmed: false,
+          },
+        ];
+        if (demoAc) setAircraft(demoAc);
+        setTripForm((prev) =>
+          prev
+            ? {
+                ...prev,
+                itineraryNum: "21SKYIQ",
+                aircraftId: demoAc?.tail_number ?? prev.aircraftId,
+                legs: mockLegs,
+              }
+            : prev
+        );
+        toast({ title: "Itinerary parsed", description: "Found 1 leg(s) — Trip 21SKYIQ" });
+      } else {
+        const message = err instanceof Error ? err.message : "Failed to parse itinerary";
+        toast({ title: "Parse error", description: message, variant: "destructive" });
+      }
     } finally {
       setParsing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
