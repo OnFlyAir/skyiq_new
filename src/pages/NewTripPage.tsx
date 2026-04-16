@@ -36,6 +36,21 @@ export default function NewTripPage() {
   const [creating, setCreating] = useState(false);
   const [showDemoFilePicker, setShowDemoFilePicker] = useState(false);
   const [demoFileSelected, setDemoFileSelected] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (creating) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Invalid file", description: "Please drop a PDF file", variant: "destructive" });
+      return;
+    }
+    handlePdfUpload(file);
+  };
 
   // Auto-upload demo PDF when demo is active on the upload step
   const demoTriggered = useRef(false);
@@ -181,8 +196,24 @@ export default function NewTripPage() {
       </div>
 
       {/* Primary: Upload PDF */}
-      <Card className="border-2 border-primary bg-primary/5 shadow-md">
-        <CardContent className="pt-6 space-y-4">
+      <Card
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setIsDragging(false);
+        }}
+        onDrop={handleDrop}
+        className={`border-2 shadow-md transition-all ${isDragging ? "border-primary border-dashed bg-primary/10 scale-[1.01]" : "border-primary bg-primary/5"}`}
+      >
+        <CardContent className="pt-6 space-y-4 relative">
+          {isDragging && (
+            <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none z-10 backdrop-blur-sm">
+              <p className="text-base font-semibold text-primary">Drop PDF to upload</p>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shrink-0">
               <FileUp className="h-6 w-6" />
