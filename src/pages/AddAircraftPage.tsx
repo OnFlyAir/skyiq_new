@@ -187,6 +187,10 @@ export default function AddAircraftPage() {
                               setSelectedPreset(null);
                               setMfgOpen(false);
                             }}
+                            className={cn(
+                              demoActive && currentStep?.id === 'select-manufacturer' && mfg === 'Cessna / Textron'
+                                && 'bg-primary text-primary-foreground animate-pulse'
+                            )}
                           >
                             <Check className={cn('mr-2 h-4 w-4', selectedMfg === mfg ? 'opacity-100' : 'opacity-0')} />
                             {mfg}
@@ -228,6 +232,10 @@ export default function AddAircraftPage() {
                                 applyPreset(preset);
                                 setModelOpen(false);
                               }}
+                              className={cn(
+                                demoActive && currentStep?.id === 'select-model' && preset.model.includes('Citation CJ3')
+                                  && 'bg-primary text-primary-foreground animate-pulse'
+                              )}
                             >
                               <Check className={cn('mr-2 h-4 w-4', selectedPreset?.id === preset.id ? 'opacity-100' : 'opacity-0')} />
                               {preset.model}
