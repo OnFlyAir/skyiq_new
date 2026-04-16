@@ -423,7 +423,22 @@ export default function TripLegsPage() {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addLegOpen, setAddLegOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const appendModeRef = useRef(false);
+
+  const handleLegDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Invalid file", description: "Please drop a PDF file", variant: "destructive" });
+      return;
+    }
+    setAddLegOpen(false);
+    handlePdfUpload(file, true);
+  };
 
   // Load trip + aircraft data + fleet list
   useEffect(() => {
@@ -1019,10 +1034,25 @@ export default function TripLegsPage() {
             <Plus className="h-4 w-4 mr-2" /> Add Leg
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+            setIsDragging(false);
+          }}
+          onDrop={handleLegDrop}
+        >
           <DialogHeader>
             <DialogTitle>Add a Leg</DialogTitle>
           </DialogHeader>
+          {isDragging && (
+            <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg pointer-events-none z-10 backdrop-blur-sm border-2 border-dashed border-primary">
+              <p className="text-base font-semibold text-primary">Drop PDF to add legs</p>
+            </div>
+          )}
           <div className="space-y-3">
             <Button onClick={addLeg} className="w-full">
               <Plus className="h-4 w-4 mr-2" /> Add Blank Leg
@@ -1038,6 +1068,7 @@ export default function TripLegsPage() {
             >
               <FileUp className="h-4 w-4 mr-2" /> Upload Additional Itinerary
             </Button>
+            <p className="text-xs text-center text-muted-foreground">or drag a PDF anywhere in this window</p>
           </div>
         </DialogContent>
       </Dialog>
