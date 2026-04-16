@@ -1,4 +1,5 @@
 import { useState, useMemo, FormEvent } from 'react';
+import { useDemo } from '@/contexts/DemoContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
