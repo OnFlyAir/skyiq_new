@@ -651,19 +651,23 @@ export default function TripLegsPage() {
       const parsedItineraryNum = parsed.itinerary_num || tripForm.itineraryNum;
 
       // In append mode, keep existing legs and add new ones with renumbered leg numbers
-      const existingLegs = appendMode ? tripForm.legs : [];
-      const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
-      const renumberedNewLegs = newLegs.map((leg, i) => ({
-        ...leg,
-        legNum: maxLegNum + i + 1,
-      }));
-      const combinedLegs = [...existingLegs, ...renumberedNewLegs];
-
-      setTripForm({
-        ...tripForm,
-        itineraryNum: appendMode ? tripForm.itineraryNum : parsedItineraryNum,
-        aircraftId: parsed.aircraft || tripForm.aircraftId,
-        legs: combinedLegs,
+      // Use functional setter to read latest legs (avoids stale closure)
+      let existingLegs: LegFormData[] = [];
+      let renumberedNewLegs: LegFormData[] = [];
+      setTripForm((prev) => {
+        if (!prev) return prev;
+        existingLegs = appendMode ? prev.legs : [];
+        const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
+        renumberedNewLegs = newLegs.map((leg, i) => ({
+          ...leg,
+          legNum: maxLegNum + i + 1,
+        }));
+        return {
+          ...prev,
+          itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum,
+          aircraftId: parsed.aircraft || prev.aircraftId,
+          legs: [...existingLegs, ...renumberedNewLegs],
+        };
       });
 
       // In demo mode, always force-select NSKYIQ regardless of parsed tail
