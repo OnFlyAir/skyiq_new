@@ -44,6 +44,7 @@ import {
   Info,
 } from "lucide-react";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import { useDemo } from "@/contexts/DemoContext";
 import {
   Tooltip,
   TooltipContent,
