@@ -100,11 +100,14 @@ function FuelPriceRow({
       </div>
       <div className="flex-1">
         <Input
-          type="number"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           placeholder="$/gal"
           value={tier.price ? tier.price.toFixed(2) : ""}
-          onChange={(e) => onChange(index, "price", parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const v = e.target.value.replace(/[^0-9.]/g, "");
+            onChange(index, "price", parseFloat(v) || 0);
+          }}
           className="text-sm"
         />
       </div>
