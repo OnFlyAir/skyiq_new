@@ -109,7 +109,7 @@ export default function DemoOverlay() {
   // Last step always gets a Finish button
   const isLastStep = currentStepIndex === totalSteps - 1;
 
-  // Calculate tooltip position
+  // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
     if (!targetRect) {
       return {
@@ -120,29 +120,53 @@ export default function DemoOverlay() {
       };
     }
 
-    const placement = currentStep.placement || 'bottom';
+    const tooltipHeight = 200; // estimated max tooltip height
+    const tooltipWidth = 320; // w-80 = 320px
+    const gap = padding + 12;
+
+    const spaceBottom = window.innerHeight - targetRect.bottom - gap;
+    const spaceTop = targetRect.top - gap;
+    const spaceRight = window.innerWidth - targetRect.right - gap;
+    const spaceLeft = targetRect.left - gap;
+
+    // Determine best placement: prefer the step's placement, but fall back if it would overlap
+    const preferred = currentStep.placement || 'bottom';
+    const fits: Record<string, boolean> = {
+      bottom: spaceBottom >= tooltipHeight,
+      top: spaceTop >= tooltipHeight,
+      right: spaceRight >= tooltipWidth,
+      left: spaceLeft >= tooltipWidth,
+    };
+
+    const placement = fits[preferred] ? preferred
+      : fits.bottom ? 'bottom'
+      : fits.right ? 'right'
+      : fits.top ? 'top'
+      : fits.left ? 'left'
+      : 'bottom';
+
     const base: React.CSSProperties = { position: 'fixed' };
+
+    // Clamp horizontal center so tooltip doesn't go off-screen
+    const clampX = (cx: number) => Math.max(8, Math.min(cx, window.innerWidth - tooltipWidth - 8));
+    const clampY = (cy: number) => Math.max(8, Math.min(cy, window.innerHeight - tooltipHeight - 8));
 
     switch (placement) {
       case 'bottom':
-        base.top = targetRect.bottom + padding + 8;
-        base.left = targetRect.left + targetRect.width / 2;
-        base.transform = 'translateX(-50%)';
+        base.top = targetRect.bottom + gap;
+        base.left = clampX(targetRect.left + targetRect.width / 2 - tooltipWidth / 2);
         break;
       case 'top':
-        base.bottom = window.innerHeight - targetRect.top + padding + 8;
-        base.left = targetRect.left + targetRect.width / 2;
-        base.transform = 'translateX(-50%)';
+        base.bottom = window.innerHeight - targetRect.top + gap;
+        base.left = clampX(targetRect.left + targetRect.width / 2 - tooltipWidth / 2);
         break;
       case 'right':
-        base.top = targetRect.top + targetRect.height / 2;
-        base.left = targetRect.right + padding + 8;
-        base.transform = 'translateY(-50%)';
+        base.top = clampY(targetRect.top + targetRect.height / 2 - tooltipHeight / 2);
+        base.left = targetRect.right + gap;
         break;
       case 'left':
-        base.top = targetRect.top + targetRect.height / 2;
-        base.right = window.innerWidth - targetRect.left + padding + 8;
-        base.transform = 'translateY(-50%)';
+        base.top = clampY(targetRect.top + targetRect.height / 2 - tooltipHeight / 2);
+        base.right = window.innerWidth - targetRect.left + gap;
         break;
     }
 
