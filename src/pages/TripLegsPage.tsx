@@ -826,17 +826,19 @@ export default function TripLegsPage() {
           },
         ];
         if (demoAc) setAircraft(demoAc);
-        setTripForm((prev) =>
-          prev
-            ? {
-                ...prev,
-                itineraryNum: "21SKYIQ",
-                aircraftId: demoAc?.tail_number ?? prev.aircraftId,
-                legs: mockLegs,
-              }
-            : prev
-        );
-        toast({ title: "Itinerary parsed", description: "Found 1 leg(s) — Trip 21SKYIQ" });
+        setTripForm((prev) => {
+          if (!prev) return prev;
+          const existing = appendMode ? prev.legs : [];
+          const maxNum = existing.length > 0 ? Math.max(...existing.map((l) => l.legNum)) : 0;
+          const renumberedMock = mockLegs.map((l, i) => ({ ...l, legNum: maxNum + i + 1 }));
+          return {
+            ...prev,
+            itineraryNum: appendMode ? prev.itineraryNum : "21SKYIQ",
+            aircraftId: demoAc?.tail_number ?? prev.aircraftId,
+            legs: [...existing, ...renumberedMock],
+          };
+        });
+        toast({ title: "Itinerary parsed", description: `Found ${mockLegs.length} leg(s)${appendMode ? " (appended)" : " — Trip 21SKYIQ"}` });
       } else {
         const message = err instanceof Error ? err.message : "Failed to parse itinerary";
         toast({ title: "Parse error", description: message, variant: "destructive" });
