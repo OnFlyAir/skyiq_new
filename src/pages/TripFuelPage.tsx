@@ -293,7 +293,7 @@ export default function TripFuelPage() {
                   </div>
 
                   {/* Fuel burn input — full width, prominent */}
-                  <div className="space-y-1">
+                  <div className="space-y-1" data-demo={`fuel-burn-leg-${leg.legNum}`}>
                     <Label className="text-xs font-medium text-muted-foreground">Fuel Burn (lbs)</Label>
                     <Input
                       type="number"
