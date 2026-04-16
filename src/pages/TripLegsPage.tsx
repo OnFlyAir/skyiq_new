@@ -558,6 +558,17 @@ export default function TripLegsPage() {
     }
   }, [tripForm]);
 
+  // Demo: auto-advance from wait-for-parse step when parsing finishes
+  const wasParsing = useRef(false);
+  useEffect(() => {
+    if (parsing) {
+      wasParsing.current = true;
+    } else if (wasParsing.current && demoActive && currentStep?.id === 'wait-for-parse') {
+      wasParsing.current = false;
+      setTimeout(() => nextStep(), 400);
+    }
+  }, [parsing, demoActive, currentStep, nextStep]);
+
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File, appendMode = false) => {
     if (!tripForm) return;
