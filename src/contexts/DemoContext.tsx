@@ -458,8 +458,20 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const defaultContext: DemoContextType = {
+  active: false,
+  currentStepIndex: 0,
+  currentStep: null,
+  totalSteps: 0,
+  startDemo: () => {},
+  endDemo: () => {},
+  nextStep: () => {},
+  prevStep: () => {},
+  goToStep: () => {},
+};
+
 export function useDemo() {
   const context = useContext(DemoContext);
-  if (!context) throw new Error('useDemo must be used within DemoProvider');
+  return context ?? defaultContext;
   return context;
 }
