@@ -36,6 +36,21 @@ export default function NewTripPage() {
   const [creating, setCreating] = useState(false);
   const [showDemoFilePicker, setShowDemoFilePicker] = useState(false);
   const [demoFileSelected, setDemoFileSelected] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (creating) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Invalid file", description: "Please drop a PDF file", variant: "destructive" });
+      return;
+    }
+    handlePdfUpload(file);
+  };
 
   // Auto-upload demo PDF when demo is active on the upload step
   const demoTriggered = useRef(false);
