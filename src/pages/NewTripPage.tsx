@@ -177,7 +177,19 @@ export default function NewTripPage() {
             }}
           />
 
-          <Button size="lg" className="w-full text-base" onClick={() => fileInputRef.current?.click()} disabled={creating}>
+          <Button data-demo="upload-pdf-area" size="lg" className="w-full text-base" onClick={() => {
+            if (demoActive && currentStep?.id === 'upload-pdf') {
+              // Use sample PDF during demo instead of opening file picker
+              (async () => {
+                const res = await fetch(DEMO_PDF_PATH);
+                const blob = await res.blob();
+                const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+                handlePdfUpload(file);
+              })();
+              return;
+            }
+            fileInputRef.current?.click();
+          }} disabled={creating}>
             {creating ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <FileUp className="h-5 w-5 mr-2" />}
             Upload PDF
           </Button>
