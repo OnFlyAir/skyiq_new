@@ -206,8 +206,12 @@ export default function DemoOverlay() {
     );
   };
 
+  // For select steps, drop z-index below portaled dropdowns (z-50) so they're clickable
+  const isSelectStep = currentStep.action === 'select';
+  const containerZ = isSelectStep ? 'z-[45]' : 'z-[200]';
+
   return (
-    <div className="fixed inset-0 z-[200] pointer-events-none">
+    <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
 
       {/* Spotlight ring */}
