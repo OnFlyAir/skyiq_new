@@ -442,4 +442,5 @@ const defaultContext: DemoContextType = {
 
 export function useDemo() {
   const context = useContext(DemoContext);
+  return context ?? defaultContext;
 }
