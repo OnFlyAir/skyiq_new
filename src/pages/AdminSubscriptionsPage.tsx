@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencyCents } from '@/lib/format';
 
 interface SubRow {
   id: string;

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Loader2, Plane, Search, TrendingUp, CreditCard } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface CompanyRow {
   userId: string;

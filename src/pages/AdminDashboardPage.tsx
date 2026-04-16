@@ -12,6 +12,7 @@ import {
   Shield, Users, Plane, TrendingUp, CreditCard,
   Wrench, Database, BarChart3,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 export default function AdminDashboardPage() {
   const { profile } = useAuthContext();

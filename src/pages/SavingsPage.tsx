@@ -9,6 +9,7 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Plane, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface AircraftSavings {
   tailNumber: string;

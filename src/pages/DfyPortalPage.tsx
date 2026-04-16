@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrencyCents } from "@/lib/format";
 import {
   FileUp, Loader2, Plane, Clock, CheckCircle, Send, XCircle,
   Plus, Trash2, Fuel, FileDown,

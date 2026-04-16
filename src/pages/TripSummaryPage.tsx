@@ -16,10 +16,7 @@ import {
   ToggleLeft, ToggleRight, Lightbulb, ChevronDown, ChevronUp, FileText,
 } from "lucide-react";
 import ItineraryViewer from "@/components/ItineraryViewer";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-}
+import { formatCurrency } from "@/lib/format";
 
 function formatWeight(lbs: number): string {
   return `${Math.round(lbs).toLocaleString()} lbs`;

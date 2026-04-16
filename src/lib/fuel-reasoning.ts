@@ -2,6 +2,7 @@
 // each leg's fueling strategy, based on the summary data.
 
 import type { TripSummaryLeg } from "@/types/trip";
+import { formatCurrency } from "@/lib/format";
 
 export interface LegStrategy {
   label: string;        // Short action: "Skip fuel", "Top off", "Waive fee", etc.
