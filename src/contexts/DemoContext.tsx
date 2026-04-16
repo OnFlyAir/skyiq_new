@@ -74,29 +74,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 4: Enter tail number
-  {
-    id: 'enter-tail',
-    page: '/fleet/add',
-    target: 'tail-number-input',
-    title: 'Tail Number',
-    description: 'Enter your aircraft\'s tail number. For this demo, use NSKYIQ.',
-    placement: 'bottom',
-    action: 'input',
-    inputValue: 'NSKYIQ',
-  },
-  // Step 5: Enter BEW
-  {
-    id: 'enter-bew',
-    page: '/fleet/add',
-    target: 'bew-input',
-    title: 'Basic Empty Weight',
-    description: 'This is from your aircraft\'s Weight & Balance report. Enter 8300 for the demo.',
-    placement: 'bottom',
-    action: 'input',
-    inputValue: '8300',
-  },
-  // Step 6: Select manufacturer
+  // Step 4: Select manufacturer
   {
     id: 'select-manufacturer',
     page: '/fleet/add',
@@ -107,7 +85,7 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'select',
     inputValue: 'Cessna / Textron',
   },
-  // Step 7: Select model
+  // Step 5: Select model
   {
     id: 'select-model',
     page: '/fleet/add',
@@ -118,53 +96,45 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'select',
     inputValue: 'Citation CJ3',
   },
-  // Steps 8–13: Quick field explanations
+  // Step 6: Enter tail number
   {
-    id: 'explain-mtow',
+    id: 'enter-tail',
     page: '/fleet/add',
-    target: 'field-mtow',
-    title: 'Max Takeoff Weight (MTOW)',
-    description: 'The maximum weight the aircraft is allowed to be at takeoff. Auto-filled from the model database.',
-    placement: 'right',
+    target: 'tail-number-input',
+    title: 'Tail Number',
+    description: 'Enter your aircraft\'s tail number. For this demo, type NSKYIQ.',
+    placement: 'bottom',
+    action: 'input',
+    inputValue: 'NSKYIQ',
   },
+  // Step 7: Enter BEW
   {
-    id: 'explain-fuel-capacity',
+    id: 'enter-bew',
     page: '/fleet/add',
-    target: 'field-max-fuel',
-    title: 'Max Fuel Capacity',
-    description: 'How much fuel your tanks can hold. SkyIQ uses this to ensure optimal fuel loads stay within limits.',
-    placement: 'right',
+    target: 'bew-input',
+    title: 'Basic Empty Weight',
+    description: 'This is from your aircraft\'s Weight & Balance report. Enter 8300 for the demo.',
+    placement: 'bottom',
+    action: 'input',
+    inputValue: '8300',
   },
+  // Step 8: Expand performance & defaults
   {
-    id: 'explain-cruise-burn',
+    id: 'expand-performance',
     page: '/fleet/add',
-    target: 'field-cruise-burn',
-    title: 'Cruise Fuel Burn',
-    description: 'Average gallons burned per hour in cruise flight. Used to calculate fuel needed for each leg.',
-    placement: 'right',
+    target: 'performance-defaults-toggle',
+    title: 'Performance & Defaults',
+    description: 'Click to expand this section and see all the auto-filled performance specs and crew defaults we take into account for fuel optimization.',
+    placement: 'bottom',
+    action: 'click',
   },
+  // Step 9: Review the expanded section
   {
-    id: 'explain-reserve',
+    id: 'review-performance',
     page: '/fleet/add',
-    target: 'field-reserve',
-    title: 'Preferred Reserve',
-    description: 'The minimum fuel reserve you want to keep on board after landing. Safety first!',
-    placement: 'right',
-  },
-  {
-    id: 'explain-penalty',
-    page: '/fleet/add',
-    target: 'field-penalty',
-    title: 'Penalty Rate',
-    description: 'Extra fuel burn per lb of excess fuel carried. Heavier planes burn more — this accounts for that.',
-    placement: 'right',
-  },
-  {
-    id: 'explain-defaults',
-    page: '/fleet/add',
-    target: 'field-crew-defaults',
-    title: 'Crew & Passenger Defaults',
-    description: 'Default weights for PIC, SIC, passengers, and baggage. These pre-fill on every trip so you don\'t have to re-enter them.',
+    target: 'performance-defaults-section',
+    title: 'Review Auto-Filled Data',
+    description: 'These values were auto-populated from the model database — MTOW, fuel capacity, cruise burn, reserves, penalty rate, and crew/pax defaults. Adjust any that differ for your specific aircraft.',
     placement: 'top',
   },
   // Step 14: Click save

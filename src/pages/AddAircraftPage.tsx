@@ -275,6 +275,7 @@ export default function AddAircraftPage() {
             <CollapsibleTrigger asChild>
               <button
                 type="button"
+                data-demo="performance-defaults-toggle"
                 className="flex items-center justify-between w-full px-4 py-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
               >
                 <span className="text-sm text-muted-foreground">
@@ -284,7 +285,7 @@ export default function AddAircraftPage() {
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", detailsOpen && "rotate-180")} />
               </button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 space-y-4">
+            <CollapsibleContent data-demo="performance-defaults-section" className="mt-3 space-y-4">
               <Card>
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 gap-x-4 gap-y-3">
