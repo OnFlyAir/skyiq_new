@@ -423,7 +423,22 @@ export default function TripLegsPage() {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addLegOpen, setAddLegOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const appendModeRef = useRef(false);
+
+  const handleLegDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast({ title: "Invalid file", description: "Please drop a PDF file", variant: "destructive" });
+      return;
+    }
+    setAddLegOpen(false);
+    handlePdfUpload(file, true);
+  };
 
   // Load trip + aircraft data + fleet list
   useEffect(() => {
