@@ -111,7 +111,8 @@ export default function DemoOverlay() {
 
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
-    if (!targetRect) {
+    // 'center' placement always centers tooltip on screen, regardless of target
+    if (currentStep.placement === 'center' || !targetRect) {
       return {
         position: 'fixed',
         top: '50%',
