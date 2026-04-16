@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrencyCents } from '@/lib/format';
 
 interface SubRow {
   id: string;
@@ -142,7 +143,7 @@ export default function AdminSubscriptionsPage() {
         <Card>
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-600" />
-            <p className="text-2xl font-bold text-green-600">${(totalMRR / 100).toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-600">{formatCurrencyCents(totalMRR)}</p>
             <p className="text-xs text-muted-foreground">Active MRR</p>
           </CardContent>
         </Card>
@@ -202,7 +203,7 @@ export default function AdminSubscriptionsPage() {
                     {r.billing_cycle === 'annual' ? 'Annual' : '4-week'}
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium">
-                    ${(r.monthly_amount_cents / 100).toLocaleString()}
+                    {formatCurrencyCents(r.monthly_amount_cents)}
                   </td>
                   <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">
                     {r.status === 'trial' ? formatDate(r.trial_ends_at) : formatDate(r.current_period_end)}

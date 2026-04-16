@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Plane, AlertTriangle, ChevronDown } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ItineraryViewer from "@/components/ItineraryViewer";
 
@@ -206,7 +207,7 @@ export default function TripFuelPage() {
 
       if (error) throw error;
 
-      toast({ title: "Optimization complete", description: `Potential savings: $${summary.savings.toFixed(2)}` });
+      toast({ title: "Optimization complete", description: `Potential savings: ${formatCurrency(summary.savings)}` });
       navigate(`/trips/${tripId}/summary`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Optimization failed";

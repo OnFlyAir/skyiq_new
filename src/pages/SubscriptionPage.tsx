@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, Plane, Calendar, AlertCircle } from 'lucide-react';
+import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 
 interface Subscription {
   id: string;
@@ -148,7 +149,7 @@ export default function SubscriptionPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Amount</p>
                   <p className="font-semibold">
-                    {sub.status === 'trial' ? '$1.00 trial' : `$${(sub.monthly_amount_cents / 100).toLocaleString()}`}
+                    {sub.status === 'trial' ? `${formatCurrency(1)} trial` : formatCurrencyCents(sub.monthly_amount_cents)}
                   </p>
                 </div>
               </div>
@@ -186,7 +187,7 @@ export default function SubscriptionPage() {
             {PRICING_TIERS.map((tier) => (
               <div key={tier.range} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <span className="text-sm text-foreground">{tier.range}</span>
-                <span className="text-sm font-semibold">${tier.perPlane}/plane per cycle</span>
+                <span className="text-sm font-semibold">{formatCurrency(tier.perPlane)}/plane per cycle</span>
               </div>
             ))}
           </div>
@@ -195,11 +196,11 @@ export default function SubscriptionPage() {
             <p className="text-sm font-medium text-foreground">Your estimate ({aircraftCount} aircraft):</p>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Every 4 weeks</span>
-              <span className="font-semibold">${fourWeekPrice.toLocaleString()}</span>
+              <span className="font-semibold">{formatCurrency(fourWeekPrice)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Annual (20% off)</span>
-              <span className="font-semibold text-green-600">${annualPrice.toLocaleString()}/yr</span>
+              <span className="font-semibold text-green-600">{formatCurrency(annualPrice)}/yr</span>
             </div>
           </div>
         </CardContent>

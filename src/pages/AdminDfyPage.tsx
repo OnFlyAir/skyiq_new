@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatCurrency, formatCurrencyCents } from "@/lib/format";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -216,7 +217,7 @@ export default function AdminDfyPage() {
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-500" />
             <p className="text-2xl font-bold text-green-500">
-              ${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              {formatCurrency(totalRevenue)}
             </p>
             <p className="text-xs text-muted-foreground">Est. Revenue</p>
           </CardContent>
@@ -392,7 +393,7 @@ export default function AdminDfyPage() {
                         <td className="px-4 py-2 text-muted-foreground">{c.contact_email}</td>
                         <td className="px-4 py-2 text-center">
                           <Badge variant="outline">
-                            {c.pricing_tier === "per_trip" ? `$${(c.per_trip_rate_cents / 100).toFixed(0)}/trip` : `$${(c.monthly_rate_cents / 100).toLocaleString()}/mo`}
+                            {c.pricing_tier === "per_trip" ? `${formatCurrencyCents(c.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(c.monthly_rate_cents)}/mo`}
                           </Badge>
                         </td>
                         <td className="px-4 py-2 text-center">
@@ -435,18 +436,18 @@ export default function AdminDfyPage() {
                         <tr key={b.client.id} className="border-t">
                           <td className="px-4 py-2 font-medium">{b.client.company_name}</td>
                           <td className="px-4 py-2 text-center">
-                            {b.client.pricing_tier === "per_trip" ? "$200/trip" : "$10K/mo"}
+                            {b.client.pricing_tier === "per_trip" ? `${formatCurrencyCents(b.client.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(b.client.monthly_rate_cents)}/mo`}
                           </td>
                           <td className="px-4 py-2 text-center">{b.tripsThisMonth}</td>
                           <td className="px-4 py-2 text-right text-green-500 font-medium">
-                            ${b.revenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                            {formatCurrency(b.revenue)}
                           </td>
                         </tr>
                       ))}
                       <tr className="border-t bg-secondary/50 font-bold">
                         <td className="px-4 py-2" colSpan={3}>Total</td>
                         <td className="px-4 py-2 text-right text-green-500">
-                          ${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                          {formatCurrency(totalRevenue)}
                         </td>
                       </tr>
                     </tbody>

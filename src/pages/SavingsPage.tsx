@@ -9,6 +9,7 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Plane, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface AircraftSavings {
   tailNumber: string;
@@ -89,7 +90,7 @@ export default function SavingsPage() {
           <CardContent className="pt-4 text-center">
             <TrendingUp className="h-6 w-6 mx-auto mb-1 text-green-600" />
             <p className="text-2xl font-bold text-green-600">
-              ${totalSavings.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              {formatCurrency(totalSavings)}
             </p>
             <p className="text-xs text-muted-foreground">Total Savings</p>
           </CardContent>
@@ -118,7 +119,7 @@ export default function SavingsPage() {
                 <Plane className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
                 <p className="font-bold text-lg">{ac.tailNumber}</p>
                 <p className="text-xl font-bold text-green-600 mt-1">
-                  ${ac.savings.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {formatCurrency(ac.savings)}
                 </p>
                 <p className="text-xs text-muted-foreground">{ac.tripsRun} trip{ac.tripsRun !== 1 ? "s" : ""}</p>
               </CardContent>

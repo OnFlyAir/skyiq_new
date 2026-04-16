@@ -2,6 +2,7 @@
 // each leg's fueling strategy, based on the summary data.
 
 import type { TripSummaryLeg } from "@/types/trip";
+import { formatCurrency } from "@/lib/format";
 
 export interface LegStrategy {
   label: string;        // Short action: "Skip fuel", "Top off", "Waive fee", etc.
@@ -68,11 +69,11 @@ export function generateLegReasoning(
     if (leg.hasWaivableFee && leg.feeAmount > 0) {
       if (leg.hasWaivedFee) {
         details.push(
-          `Buying at least ${Math.round(leg.feeMin)} gallons waives the $${leg.feeAmount.toFixed(2)} facility fee at this airport.`
+          `Buying at least ${Math.round(leg.feeMin)} gallons waives the ${formatCurrency(leg.feeAmount)} facility fee at this airport.`
         );
       } else {
         details.push(
-          `A $${leg.feeAmount.toFixed(2)} facility fee applies at ${leg.departure}. Would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
+          `A ${formatCurrency(leg.feeAmount)} facility fee applies at ${leg.departure}. Would need ${Math.round(leg.feeMin)} gallons to waive it, but the optimizer determined it's cheaper to pay the fee than buy the extra fuel.`
         );
       }
     } else if (!leg.hasWaivableFee) {
@@ -173,6 +174,6 @@ export function generateOverallReasoning(
   });
 
   const plan = actions.join(" → ");
-  const savingsNote = savings > 0 ? ` | Saves $${savings.toFixed(0)}` : "";
+  const savingsNote = savings > 0 ? ` | Saves ${formatCurrency(savings)}` : "";
   return `${plan}${savingsNote}`;
 }

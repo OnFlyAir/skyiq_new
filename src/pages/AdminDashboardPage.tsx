@@ -12,6 +12,7 @@ import {
   Shield, Users, Plane, TrendingUp, CreditCard,
   Wrench, Database, BarChart3,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 export default function AdminDashboardPage() {
   const { profile } = useAuthContext();
@@ -115,7 +116,7 @@ export default function AdminDashboardPage() {
             <CardContent className="pt-4 text-center">
               <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
               <p className="text-2xl font-bold text-green-600">
-                ${stats.totalSavings.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                {formatCurrency(stats.totalSavings)}
               </p>
               <p className="text-xs text-muted-foreground">Total Savings</p>
             </CardContent>

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Loader2, Plane, Search, TrendingUp, CreditCard } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface CompanyRow {
   userId: string;
@@ -110,7 +111,7 @@ export default function AdminOverviewTab() {
           <CardContent className="pt-4 text-center">
             <TrendingUp className="h-5 w-5 mx-auto mb-1 text-green-600" />
             <p className="text-2xl font-bold text-green-600">
-              ${totalSavings.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              {formatCurrency(totalSavings)}
             </p>
             <p className="text-xs text-muted-foreground">Total Savings</p>
           </CardContent>
@@ -152,7 +153,7 @@ export default function AdminOverviewTab() {
                   <td className="px-4 py-2 text-center">{c.tripsRun}</td>
                   <td className="px-4 py-2 text-center">{c.tailNumbers}</td>
                   <td className="px-4 py-2 text-right text-green-600 font-medium">
-                    ${c.savings.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                    {formatCurrency(c.savings)}
                   </td>
                   <td className="px-4 py-2 text-center">
                     <Badge variant={subStatusColor(c.subscriptionStatus)}>

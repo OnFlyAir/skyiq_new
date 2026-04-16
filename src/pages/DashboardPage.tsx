@@ -6,6 +6,7 @@ import type { TripSummary } from "@/types/trip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plane, Settings, TrendingUp, ChevronRight, FileUp } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface RecentTrip {
   id: number;
@@ -228,7 +229,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       {trip.savings > 0 ? (
                         <span className="text-sm font-semibold text-primary">
-                          +${trip.savings.toFixed(0)}
+                          +{formatCurrency(trip.savings)}
                         </span>
                       ) : null}
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />

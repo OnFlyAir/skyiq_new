@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrencyCents } from "@/lib/format";
 import {
   FileUp, Loader2, Plane, Clock, CheckCircle, Send, XCircle,
   Plus, Trash2, Fuel, FileDown,
@@ -241,7 +242,7 @@ export default function DfyPortalPage() {
       <div>
         <h1 className="text-2xl font-bold">Fuel Planning Portal</h1>
         <p className="text-sm text-muted-foreground">
-          {client.company_name} · ${(client.per_trip_rate_cents / 100).toFixed(0)}/trip
+          {client.company_name} · {formatCurrencyCents(client.per_trip_rate_cents)}/trip
         </p>
       </div>
 
@@ -342,7 +343,7 @@ export default function DfyPortalPage() {
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Submit Request · ${(client.per_trip_rate_cents / 100).toFixed(0)}
+                Submit Request · {formatCurrencyCents(client.per_trip_rate_cents)}
               </>
             )}
           </Button>
