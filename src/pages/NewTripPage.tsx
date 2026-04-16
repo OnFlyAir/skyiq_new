@@ -38,17 +38,14 @@ export default function NewTripPage() {
   // Auto-upload demo PDF when demo is active on the upload step
   const demoTriggered = useRef(false);
   useEffect(() => {
-    if (!demoActive || !user || demoTriggered.current) return;
+    if (!demoActive || !user) return;
     if (currentStep?.id !== 'upload-pdf') return;
+    if (demoTriggered.current) return;
+    if (creating) return;
     demoTriggered.current = true;
-
-    (async () => {
-      const res = await fetch(DEMO_PDF_PATH);
-      const blob = await res.blob();
-      const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
-      handlePdfUpload(file);
-    })();
-  }, [demoActive, currentStep, user]);
+    // Don't auto-upload — let the user click the button.
+    // The demo overlay will guide them to click "Upload PDF".
+  }, [demoActive, currentStep, user, creating]);
 
   useEffect(() => {
     async function loadAircraft() {
