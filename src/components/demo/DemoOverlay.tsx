@@ -262,6 +262,7 @@ export default function DemoOverlay() {
               <p className="text-[10px] text-primary/70 italic">
                 {currentStep.action === 'input' ? '↑ Type the value above to continue' 
                   : currentStep.action === 'select' ? '↑ Select the option from the dropdown to continue'
+                  : currentStep.action === 'wait' ? '⏳ Please wait…'
                   : '↑ Click the highlighted area to continue'}
               </p>
             </div>
