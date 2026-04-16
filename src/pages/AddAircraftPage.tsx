@@ -55,6 +55,7 @@ const CREW_FIELDS = [
 
 export default function AddAircraftPage() {
   const { user } = useAuthContext();
+  const { active: demoActive, currentStep } = useDemo();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
