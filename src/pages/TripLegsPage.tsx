@@ -103,7 +103,7 @@ function FuelPriceRow({
           type="number"
           step="0.01"
           placeholder="$/gal"
-          value={tier.price || ""}
+          value={tier.price ? tier.price.toFixed(2) : ""}
           onChange={(e) => onChange(index, "price", parseFloat(e.target.value) || 0)}
           className="text-sm"
         />
