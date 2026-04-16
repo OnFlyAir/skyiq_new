@@ -167,13 +167,24 @@ export const DEMO_STEPS: DemoStep[] = [
     action: 'click',
     autoAdvance: true,
   },
-  // Step 13: Upload PDF
+  // Step 13: Upload PDF — click the button to open the file picker
   {
     id: 'upload-pdf',
     page: '/trips/new',
     target: 'upload-pdf-area',
     title: 'Upload Your Trip Sheet',
     description: 'Upload a PDF trip itinerary and SkyIQ will automatically extract all the flight details. For this demo, we\'ll use a sample itinerary.',
+    placement: 'bottom',
+    action: 'click',
+    autoAdvance: true,
+  },
+  // Step 14: Select the sample file from the file picker
+  {
+    id: 'select-sample-file',
+    page: '/trips/new',
+    target: 'demo-sample-file',
+    title: 'Select the Itinerary',
+    description: 'Click the sample trip sheet to load it. SkyIQ will parse it and extract all leg details automatically.',
     placement: 'bottom',
     action: 'click',
   },
