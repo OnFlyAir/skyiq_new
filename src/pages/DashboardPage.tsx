@@ -228,7 +228,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       {trip.savings > 0 ? (
                         <span className="text-sm font-semibold text-primary">
-                          +${trip.savings.toFixed(0)}
+                          +{formatCurrency(trip.savings)}
                         </span>
                       ) : null}
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
