@@ -8,7 +8,7 @@ export interface DemoStep {
   title: string;
   description: string;
   action?: 'click' | 'input' | 'select' | 'wait' | 'navigate';
-  placement?: 'top' | 'bottom' | 'left' | 'right';
+  placement?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   autoAdvance?: boolean;           // advance when target is clicked
   inputValue?: string;             // for pre-fill steps
   highlightOnly?: boolean;         // no "Next" — just spotlight
