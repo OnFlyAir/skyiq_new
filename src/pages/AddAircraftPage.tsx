@@ -1,4 +1,4 @@
-import { useState, useMemo, FormEvent } from 'react';
+import { useState, useMemo, useEffect, useRef, FormEvent } from 'react';
 import { useDemo } from '@/contexts/DemoContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -224,23 +224,31 @@ export default function AddAircraftPage() {
                       <CommandList>
                         <CommandEmpty>No match.</CommandEmpty>
                         <CommandGroup>
-                          {models.map((preset) => (
-                            <CommandItem
-                              key={preset.id}
-                              value={preset.model}
-                              onSelect={() => {
-                                applyPreset(preset);
-                                setModelOpen(false);
-                              }}
-                              className={cn(
-                                demoActive && currentStep?.id === 'select-model' && preset.model === 'Citation CJ3 (C525B)'
-                                  && 'bg-primary text-primary-foreground animate-pulse'
-                              )}
-                            >
-                              <Check className={cn('mr-2 h-4 w-4', selectedPreset?.id === preset.id ? 'opacity-100' : 'opacity-0')} />
-                              {preset.model}
-                            </CommandItem>
-                          ))}
+                          {models.map((preset) => {
+                            const isTarget = preset.model === 'Citation CJ3 (C525B)';
+                            return (
+                              <CommandItem
+                                key={preset.id}
+                                value={preset.model}
+                                ref={(el) => {
+                                  if (isTarget && el && demoActive && currentStep?.id === 'select-model') {
+                                    setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 100);
+                                  }
+                                }}
+                                onSelect={() => {
+                                  applyPreset(preset);
+                                  setModelOpen(false);
+                                }}
+                                className={cn(
+                                  demoActive && currentStep?.id === 'select-model' && isTarget
+                                    && 'bg-primary text-primary-foreground animate-pulse'
+                                )}
+                              >
+                                <Check className={cn('mr-2 h-4 w-4', selectedPreset?.id === preset.id ? 'opacity-100' : 'opacity-0')} />
+                                {preset.model}
+                              </CommandItem>
+                            );
+                          })}
                         </CommandGroup>
                       </CommandList>
                     </Command>
