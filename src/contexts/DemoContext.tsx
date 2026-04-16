@@ -188,7 +188,16 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Steps 15–18: Walk through leg 1 fields
+  // Step 15: Wait for parsing to complete
+  {
+    id: 'wait-for-parse',
+    page: '',  // dynamic — set by tripId
+    title: 'Parsing Your Itinerary',
+    description: 'SkyIQ is reading your trip sheet and extracting all the flight details. This usually takes a few seconds…',
+    placement: 'bottom',
+    action: 'wait',
+  },
+  // Steps 16–19: Walk through leg 1 fields
   {
     id: 'explain-leg-departure',
     page: '',  // dynamic — set by tripId

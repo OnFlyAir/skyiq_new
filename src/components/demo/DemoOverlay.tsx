@@ -103,7 +103,7 @@ export default function DemoOverlay() {
   const padding = 8;
 
   // Is this a "do something" step (no Next button — user must interact)?
-  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.autoAdvance;
+  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.action === 'wait' || currentStep.autoAdvance;
   // Explanation-only steps (no action) get a Next button
   const showNextButton = !isInteractiveStep;
   // Last step always gets a Finish button
@@ -262,6 +262,7 @@ export default function DemoOverlay() {
               <p className="text-[10px] text-primary/70 italic">
                 {currentStep.action === 'input' ? '↑ Type the value above to continue' 
                   : currentStep.action === 'select' ? '↑ Select the option from the dropdown to continue'
+                  : currentStep.action === 'wait' ? '⏳ Please wait…'
                   : '↑ Click the highlighted area to continue'}
               </p>
             </div>
