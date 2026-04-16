@@ -517,7 +517,7 @@ export default function TripLegsPage() {
       setLoading(false);
     }
     load();
-  }, [tripId, user]);
+  }, [tripId, user?.id]);
 
   const aircraftDefaults = getAircraftDefaults(aircraft);
 
