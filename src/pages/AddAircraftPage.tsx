@@ -233,7 +233,7 @@ export default function AddAircraftPage() {
                                 setModelOpen(false);
                               }}
                               className={cn(
-                                demoActive && currentStep?.id === 'select-model' && preset.model.includes('Citation CJ3')
+                                demoActive && currentStep?.id === 'select-model' && preset.model === 'Citation CJ3 (C525B)'
                                   && 'bg-primary text-primary-foreground animate-pulse'
                               )}
                             >

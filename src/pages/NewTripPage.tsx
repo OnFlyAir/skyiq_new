@@ -38,17 +38,14 @@ export default function NewTripPage() {
   // Auto-upload demo PDF when demo is active on the upload step
   const demoTriggered = useRef(false);
   useEffect(() => {
-    if (!demoActive || !user || demoTriggered.current) return;
+    if (!demoActive || !user) return;
     if (currentStep?.id !== 'upload-pdf') return;
+    if (demoTriggered.current) return;
+    if (creating) return;
     demoTriggered.current = true;
-
-    (async () => {
-      const res = await fetch(DEMO_PDF_PATH);
-      const blob = await res.blob();
-      const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
-      handlePdfUpload(file);
-    })();
-  }, [demoActive, currentStep, user]);
+    // Don't auto-upload — let the user click the button.
+    // The demo overlay will guide them to click "Upload PDF".
+  }, [demoActive, currentStep, user, creating]);
 
   useEffect(() => {
     async function loadAircraft() {
@@ -180,7 +177,19 @@ export default function NewTripPage() {
             }}
           />
 
-          <Button size="lg" className="w-full text-base" onClick={() => fileInputRef.current?.click()} disabled={creating}>
+          <Button data-demo="upload-pdf-area" size="lg" className="w-full text-base" onClick={() => {
+            if (demoActive && currentStep?.id === 'upload-pdf') {
+              // Use sample PDF during demo instead of opening file picker
+              (async () => {
+                const res = await fetch(DEMO_PDF_PATH);
+                const blob = await res.blob();
+                const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+                handlePdfUpload(file);
+              })();
+              return;
+            }
+            fileInputRef.current?.click();
+          }} disabled={creating}>
             {creating ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <FileUp className="h-5 w-5 mr-2" />}
             Upload PDF
           </Button>
