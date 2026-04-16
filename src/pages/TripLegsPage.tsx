@@ -651,6 +651,37 @@ export default function TripLegsPage() {
         legs: combinedLegs,
       });
 
+      // In demo mode, always force-select NSKYIQ regardless of parsed tail
+      if (demoActive) {
+        const demoAc = aircraftList.find((ac) => ac.tail_number === "NSKYIQ");
+        if (demoAc) {
+          console.log("Demo mode: force-selecting NSKYIQ aircraft");
+          setAircraft(demoAc);
+          const defs = getAircraftDefaults(demoAc);
+          const refilledNewLegs = renumberedNewLegs.map((leg) => {
+            const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+            const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
+            return {
+              ...leg,
+              baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
+              reserve: defs.reserve,
+              taxiFuelBurn: defs.taxiFuelBurn,
+              maxTakeoffWeight: defs.maxTakeoff,
+              maxLandingWeight: defs.maxLanding,
+              maxRampWeight: defs.maxRamp,
+              crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+            };
+          });
+          setTripForm((prev) =>
+            prev
+              ? { ...prev, aircraftId: demoAc.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
+              : prev
+          );
+          toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
+          return;
+        }
+      }
+
       // Match aircraft from parsed tail number
       if (parsed.aircraft) {
         const parsedTail = parsed.aircraft.replace(/[-\s]/g, "").toUpperCase();
