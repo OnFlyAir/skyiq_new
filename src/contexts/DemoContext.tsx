@@ -188,17 +188,6 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
   },
-  // Step 14: Check itinerary
-  {
-    id: 'check-itinerary',
-    page: '/trips/new',
-    target: 'check-itinerary-btn',
-    title: 'Check Itinerary',
-    description: 'Click "Check Itinerary" to parse the PDF and populate the legs. Verify the info matches your trip sheet.',
-    placement: 'bottom',
-    action: 'click',
-    autoAdvance: true,
-  },
   // Steps 15–18: Walk through leg 1 fields
   {
     id: 'explain-leg-departure',
