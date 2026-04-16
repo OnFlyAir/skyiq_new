@@ -228,6 +228,7 @@ export default function NewTripPage() {
                 </button>
               </div>
               <button
+                data-demo="demo-sample-file"
                 onClick={handleDemoFileSelect}
                 className="w-full flex items-center gap-3 px-3 py-3 hover:bg-accent/50 transition-colors text-left"
               >
