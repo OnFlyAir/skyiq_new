@@ -442,7 +442,38 @@ export default function TripLegsPage() {
         return;
       }
 
-      setAircraftList((fleetRes.data ?? []) as unknown as Aircraft[]);
+      let fleet = (fleetRes.data ?? []) as unknown as Aircraft[];
+
+      // In demo mode, inject mock NSKYIQ aircraft if not already in fleet
+      if (demoActive && !fleet.some((ac) => ac.tail_number === "NSKYIQ")) {
+        const demoAircraft: Aircraft = {
+          id: 99999,
+          tail_number: "NSKYIQ",
+          manufacturer: "Cessna / Textron",
+          type: "Citation CJ3 (C525B)",
+          user_company: user.id,
+          is_enabled: true,
+          basic_empty_weight: 8300,
+          max_takeoff_weight: 13870,
+          max_landing_weight: 12750,
+          max_ramp_weight: 14070,
+          max_fuel_capacity: 4710,
+          preferred_reserve: 780,
+          taxi_fuel_burn: 48,
+          cruise_fuel_burn: 1040,
+          penalty_rate: 0.038,
+          carry_type_id: null,
+          default_pax_weight: 180,
+          default_baggage_with_pax: 30,
+          default_baggage_no_pax: 0,
+          default_pic_weight: 180,
+          default_sic_weight: 180,
+          default_cabin_weight: 0,
+        };
+        fleet = [demoAircraft, ...fleet];
+      }
+
+      setAircraftList(fleet);
 
       const itinerary = tripRes.data.itinerary_details as unknown as TripFormData | null;
       if (itinerary && itinerary.legs && itinerary.legs.length > 0) {
