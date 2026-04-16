@@ -207,7 +207,7 @@ export default function TripFuelPage() {
 
       if (error) throw error;
 
-      toast({ title: "Optimization complete", description: `Potential savings: $${summary.savings.toFixed(2)}` });
+      toast({ title: "Optimization complete", description: `Potential savings: ${formatCurrency(summary.savings)}` });
       navigate(`/trips/${tripId}/summary`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Optimization failed";

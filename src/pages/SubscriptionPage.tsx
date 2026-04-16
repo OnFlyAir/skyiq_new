@@ -149,7 +149,7 @@ export default function SubscriptionPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Amount</p>
                   <p className="font-semibold">
-                    {sub.status === 'trial' ? '$1.00 trial' : `$${(sub.monthly_amount_cents / 100).toLocaleString()}`}
+                    {sub.status === 'trial' ? `${formatCurrency(1)} trial` : formatCurrencyCents(sub.monthly_amount_cents)}
                   </p>
                 </div>
               </div>
@@ -196,11 +196,11 @@ export default function SubscriptionPage() {
             <p className="text-sm font-medium text-foreground">Your estimate ({aircraftCount} aircraft):</p>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Every 4 weeks</span>
-              <span className="font-semibold">${fourWeekPrice.toLocaleString()}</span>
+              <span className="font-semibold">{formatCurrency(fourWeekPrice)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Annual (20% off)</span>
-              <span className="font-semibold text-green-600">${annualPrice.toLocaleString()}/yr</span>
+              <span className="font-semibold text-green-600">{formatCurrency(annualPrice)}/yr</span>
             </div>
           </div>
         </CardContent>

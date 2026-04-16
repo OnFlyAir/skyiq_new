@@ -217,7 +217,7 @@ export default function AdminDfyPage() {
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-500" />
             <p className="text-2xl font-bold text-green-500">
-              ${totalRevenue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              {formatCurrency(totalRevenue)}
             </p>
             <p className="text-xs text-muted-foreground">Est. Revenue</p>
           </CardContent>
@@ -393,7 +393,7 @@ export default function AdminDfyPage() {
                         <td className="px-4 py-2 text-muted-foreground">{c.contact_email}</td>
                         <td className="px-4 py-2 text-center">
                           <Badge variant="outline">
-                            {c.pricing_tier === "per_trip" ? `$${(c.per_trip_rate_cents / 100).toFixed(0)}/trip` : `$${(c.monthly_rate_cents / 100).toLocaleString()}/mo`}
+                            {c.pricing_tier === "per_trip" ? `${formatCurrencyCents(c.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(c.monthly_rate_cents)}/mo`}
                           </Badge>
                         </td>
                         <td className="px-4 py-2 text-center">
