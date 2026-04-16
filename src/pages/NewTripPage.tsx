@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight, Plus } from "lucide-react";
+import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight, Plus, FileText, Check } from "lucide-react";
 
 interface Aircraft {
   id: number;
@@ -34,6 +34,8 @@ export default function NewTripPage() {
   const [selectedTail, setSelectedTail] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showDemoFilePicker, setShowDemoFilePicker] = useState(false);
+  const [demoFileSelected, setDemoFileSelected] = useState(false);
 
   // Auto-upload demo PDF when demo is active on the upload step
   const demoTriggered = useRef(false);
@@ -43,9 +45,15 @@ export default function NewTripPage() {
     if (demoTriggered.current) return;
     if (creating) return;
     demoTriggered.current = true;
-    // Don't auto-upload — let the user click the button.
-    // The demo overlay will guide them to click "Upload PDF".
   }, [demoActive, currentStep, user, creating]);
+
+  // Reset demo file picker when leaving this step
+  useEffect(() => {
+    if (!demoActive || currentStep?.id !== 'upload-pdf') {
+      setShowDemoFilePicker(false);
+      setDemoFileSelected(false);
+    }
+  }, [demoActive, currentStep]);
 
   useEffect(() => {
     async function loadAircraft() {
@@ -97,6 +105,18 @@ export default function NewTripPage() {
 
     pendingParseFile.current = file;
     navigate(`/trips/${data.id}/legs`);
+  };
+
+  const handleDemoFileSelect = async () => {
+    setDemoFileSelected(true);
+    // Brief delay to show the check mark, then upload
+    setTimeout(async () => {
+      const res = await fetch(DEMO_PDF_PATH);
+      const blob = await res.blob();
+      const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+      setShowDemoFilePicker(false);
+      handlePdfUpload(file);
+    }, 600);
   };
 
   const handleManualStart = async () => {
@@ -179,13 +199,7 @@ export default function NewTripPage() {
 
           <Button data-demo="upload-pdf-area" size="lg" className="w-full text-base" onClick={() => {
             if (demoActive && currentStep?.id === 'upload-pdf') {
-              // Use sample PDF during demo instead of opening file picker
-              (async () => {
-                const res = await fetch(DEMO_PDF_PATH);
-                const blob = await res.blob();
-                const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
-                handlePdfUpload(file);
-              })();
+              setShowDemoFilePicker(true);
               return;
             }
             fileInputRef.current?.click();
@@ -193,6 +207,38 @@ export default function NewTripPage() {
             {creating ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <FileUp className="h-5 w-5 mr-2" />}
             Upload PDF
           </Button>
+
+          {/* Demo fake file picker */}
+          {showDemoFilePicker && (
+            <div className="border rounded-lg bg-background shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="px-3 py-2 border-b bg-muted/50 flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground">Select a file</p>
+                <button
+                  onClick={() => setShowDemoFilePicker(false)}
+                  className="text-muted-foreground hover:text-foreground text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                onClick={handleDemoFileSelect}
+                className="w-full flex items-center gap-3 px-3 py-3 hover:bg-accent/50 transition-colors text-left"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30 shrink-0">
+                  <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">sample-itinerary.pdf</p>
+                  <p className="text-xs text-muted-foreground">Trip sheet · 42 KB</p>
+                </div>
+                {demoFileSelected ? (
+                  <Check className="h-5 w-5 text-primary shrink-0 animate-in zoom-in duration-200" />
+                ) : (
+                  <div className="h-5 w-5 rounded border-2 border-muted-foreground/30 shrink-0" />
+                )}
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
