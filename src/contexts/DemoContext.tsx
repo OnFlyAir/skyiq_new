@@ -230,26 +230,26 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Ramp fees, handling fees, etc. Some can be waived with a fuel purchase — SkyIQ accounts for that.',
     placement: 'bottom',
   },
-  // Step 19: Verify legs
+  // Step 19: Verify legs (displayed as 21/35)
   {
     id: 'verify-legs',
     page: '',
     target: 'verify-leg-btn',
     title: 'Verify Each Leg',
     description: 'Click the checkmark to confirm each leg\'s data is correct. Review all legs before proceeding.',
-    placement: 'bottom',
+    placement: 'center',
     action: 'click',
   },
-  // Step 20: Point out trash icon
+  // Step 20: Point out trash icon (displayed as 22/35)
   {
     id: 'explain-trash',
     page: '',
     target: 'delete-leg-btn',
     title: 'Delete a Leg',
     description: 'Use the trash icon to remove any legs already flown or not needed for this trip.',
-    placement: 'left',
+    placement: 'center',
   },
-  // Step 21: Point out add leg
+  // Step 21: Point out add leg (displayed as 23/35)
   {
     id: 'explain-add-leg',
     page: '',
@@ -258,7 +258,7 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Need more legs? Click here to upload additional itineraries or manually add legs.',
     placement: 'center',
   },
-  // Step 22: Click Next: Fuel Burns
+  // Step 22: Click Next: Fuel Burns (displayed as 24/35)
   {
     id: 'click-fuel-burns',
     page: '',
@@ -276,7 +276,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'fuel-burn-inputs',
     title: 'Enter Fuel Burns',
     description: 'Enter the fuel burn for each leg: Leg 1: 700, Leg 2: 1800, Leg 3: 2600, Leg 4: 2300, Leg 5: 2700, Leg 6: 1000.',
-    placement: 'center',
+    placement: 'right',
   },
   // Step 24: Expand weight limits
   {
@@ -285,7 +285,7 @@ export const DEMO_STEPS: DemoStep[] = [
     target: 'weight-limits-toggle',
     title: 'Weight Limits',
     description: 'Expand this to see the weight constraints for each leg. SkyIQ ensures your fuel plan stays within limits.',
-    placement: 'center',
+    placement: 'bottom',
     action: 'click',
   },
   // Step 25: Click Confirm Trip
