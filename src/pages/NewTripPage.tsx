@@ -47,11 +47,18 @@ export default function NewTripPage() {
     demoTriggered.current = true;
   }, [demoActive, currentStep, user, creating]);
 
-  // Reset demo file picker when leaving this step
+  // Reset demo file picker when leaving relevant steps
   useEffect(() => {
-    if (!demoActive || currentStep?.id !== 'upload-pdf') {
+    if (!demoActive || (currentStep?.id !== 'upload-pdf' && currentStep?.id !== 'select-sample-file')) {
       setShowDemoFilePicker(false);
       setDemoFileSelected(false);
+    }
+  }, [demoActive, currentStep]);
+
+  // Auto-show file picker when arriving at select-sample-file step
+  useEffect(() => {
+    if (demoActive && currentStep?.id === 'select-sample-file') {
+      setShowDemoFilePicker(true);
     }
   }, [demoActive, currentStep]);
 
