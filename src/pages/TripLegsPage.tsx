@@ -587,6 +587,17 @@ export default function TripLegsPage() {
     }
   }, [parsing, demoActive, currentStep, nextStep]);
 
+  // Demo: auto-confirm all legs when reaching the "click-fuel-burns" step so the
+  // user can actually click the (otherwise-disabled) Next: Fuel Burns button.
+  useEffect(() => {
+    if (!demoActive || currentStep?.id !== 'click-fuel-burns') return;
+    setTripForm((prev) => {
+      if (!prev) return prev;
+      if (prev.legs.every((l) => l.isConfirmed)) return prev;
+      return { ...prev, legs: prev.legs.map((l) => ({ ...l, isConfirmed: true })) };
+    });
+  }, [demoActive, currentStep]);
+
   // --- PDF Upload Handler ---
   const handlePdfUpload = async (file: File, appendMode = false) => {
     if (!tripForm) return;
