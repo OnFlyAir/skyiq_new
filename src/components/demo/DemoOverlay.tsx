@@ -110,8 +110,11 @@ export default function DemoOverlay() {
 
   // Is this a "do something" step? (still shown as a hint)
   const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.action === 'wait' || currentStep.autoAdvance;
-  // Show Next unless the step explicitly requires the user to perform the action
-  const showNextButton = !currentStep.requireAction;
+  // Show Next unless the step explicitly requires the user to perform the action.
+  // Also hide Next while we're waiting for a target element to appear (page still loading) —
+  // EXCEPT for 'center' placement steps which don't depend on a target being visible.
+  const waitingForTarget = !!currentStep.target && !targetRect && currentStep.placement !== 'center';
+  const showNextButton = !currentStep.requireAction && !waitingForTarget;
   // Last step always gets a Finish button
   const isLastStep = currentStepIndex === totalSteps - 1;
 
