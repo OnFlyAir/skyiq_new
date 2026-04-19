@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Plane } from 'lucide-react';
+import { Plus, Plane, Play } from 'lucide-react';
 import type { Aircraft } from '@/types/database';
 import { Button } from '@/components/ui/button';
 
 export default function FleetPage() {
   const { user } = useAuthContext();
+  const { active: demoActive, startDemo } = useDemo();
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +59,14 @@ export default function FleetPage() {
               <Link to="/trips/new">Upload PDF</Link>
             </Button>
           </div>
+          {!demoActive && (
+            <button
+              onClick={() => startDemo('fleet')}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              <Play className="h-3 w-3" /> Watch the guided demo instead
+            </button>
+          )}
         </div>
       </div>
     );
@@ -64,8 +74,14 @@ export default function FleetPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Fleet</h1>
-
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Fleet</h1>
+        {!demoActive && (
+          <Button variant="outline" size="sm" onClick={() => startDemo('fleet')}>
+            <Play className="h-4 w-4 mr-1.5" /> Demo
+          </Button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
         {aircraft.map((ac) => (
           <Link

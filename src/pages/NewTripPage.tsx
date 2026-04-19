@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight, Plus, FileText, Check } from "lucide-react";
+import { ArrowLeft, FileUp, Loader2, Plane, ArrowRight, Plus, FileText, Check, Play } from "lucide-react";
 
 interface Aircraft {
   id: number;
@@ -27,7 +27,7 @@ export default function NewTripPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuthContext();
-  const { active: demoActive, currentStep } = useDemo();
+  const { active: demoActive, currentStep, startDemo } = useDemo();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [aircraftList, setAircraftList] = useState<Aircraft[]>([]);
@@ -190,9 +190,14 @@ export default function NewTripPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">Start a Trip</h1>
         </div>
+        {!demoActive && (
+          <Button variant="outline" size="sm" onClick={() => startDemo('trip')}>
+            <Play className="h-4 w-4 mr-1.5" /> Demo
+          </Button>
+        )}
       </div>
 
       {/* Primary: Upload PDF */}
