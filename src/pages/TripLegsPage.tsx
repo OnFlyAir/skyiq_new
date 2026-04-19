@@ -137,9 +137,20 @@ function LegEditor({
   aircraftDefaults: { reserve: number; taxiFuelBurn: number; maxTakeoff: number; maxLanding: number; maxRamp: number };
 }) {
   const isConfirmed = leg.isConfirmed;
+  const { active: demoActive, currentStep, nextStep } = useDemo();
 
   const updateField = <K extends keyof LegFormData>(field: K, value: LegFormData[K]) => {
     onUpdate({ ...leg, [field]: value });
+  };
+
+  // During the demo's "explain trash" step, intercept the click so we don't actually
+  // delete the leg — just advance the demo to the next step.
+  const handleDeleteClick = () => {
+    if (demoActive && currentStep?.id === 'explain-trash') {
+      nextStep();
+      return;
+    }
+    onRemove();
   };
 
   const updateFuelTier = (index: number, field: keyof FuelTier, value: number) => {
@@ -195,7 +206,7 @@ function LegEditor({
                 Edit
               </Button>
             )}
-            <Button data-demo="delete-leg-btn" size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-700">
+            <Button data-demo="delete-leg-btn" size="sm" variant="ghost" onClick={handleDeleteClick} className="text-red-500 hover:text-red-700">
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
