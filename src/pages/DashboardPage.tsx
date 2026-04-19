@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useDemo } from "@/contexts/DemoContext";
 import type { TripSummary } from "@/types/trip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plane, Settings, TrendingUp, ChevronRight, FileUp } from "lucide-react";
+import { Loader2, Plane, Settings, TrendingUp, ChevronRight, FileUp, Play } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 interface RecentTrip {
@@ -18,6 +19,7 @@ interface RecentTrip {
 
 export default function DashboardPage() {
   const { user, profile } = useAuthContext();
+  const { startDemo } = useDemo();
   const navigate = useNavigate();
   const [recentTrips, setRecentTrips] = useState<RecentTrip[]>([]);
   const [aircraftCount, setAircraftCount] = useState(0);
