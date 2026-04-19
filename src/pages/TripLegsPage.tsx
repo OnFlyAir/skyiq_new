@@ -1060,22 +1060,30 @@ export default function TripLegsPage() {
 
       {/* Add Leg */}
       <Dialog open={addLegOpen} onOpenChange={setAddLegOpen}>
-        <DialogTrigger asChild>
+        {demoActive && currentStep?.id === 'explain-add-leg' ? (
           <Button
             data-demo="add-leg-btn"
             variant="outline"
             className="w-full"
             onClick={(e) => {
-              if (demoActive && currentStep?.id === 'explain-add-leg') {
-                e.preventDefault();
-                e.stopPropagation();
-                nextStep();
-              }
+              e.preventDefault();
+              e.stopPropagation();
+              nextStep();
             }}
           >
             <Plus className="h-4 w-4 mr-2" /> Add Leg
           </Button>
-        </DialogTrigger>
+        ) : (
+          <DialogTrigger asChild>
+            <Button
+              data-demo="add-leg-btn"
+              variant="outline"
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add Leg
+            </Button>
+          </DialogTrigger>
+        )}
         <DialogContent
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
           onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
