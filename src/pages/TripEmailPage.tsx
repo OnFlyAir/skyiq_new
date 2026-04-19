@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Mail, Plus, Trash2, Check } from "lucide-react";
+import { useDemo } from "@/contexts/DemoContext";
 
 interface EmailEntry {
   email: string;
