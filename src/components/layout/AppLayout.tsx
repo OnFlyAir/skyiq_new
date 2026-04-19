@@ -38,7 +38,7 @@ type NavItem = {
 export default function AppLayout() {
   const { profile, signOut } = useAuthContext();
   const { theme, toggleTheme } = useTheme();
-  const { startDemo } = useDemo();
+  const { endDemo } = useDemo();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -260,10 +260,10 @@ export default function AppLayout() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { startDemo(); navigate('/dashboard'); }}
+                onClick={() => { endDemo(); navigate('/dashboard'); }}
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
               >
-                <Play className="h-4 w-4" /> Demo
+                <Play className="h-4 w-4" /> Demos
               </button>
               <button
                 onClick={toggleTheme}
