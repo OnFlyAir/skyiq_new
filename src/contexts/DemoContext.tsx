@@ -323,7 +323,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     target: 'weight-limits-toggle',
     title: 'Weight Limits',
     description: 'Each leg has weight limits — tap "Weight limits" to see constraints. SkyIQ keeps your fuel plan within them.',
-    placement: 'center',
+    placement: 'right',
   },
   {
     id: 'click-confirm',
