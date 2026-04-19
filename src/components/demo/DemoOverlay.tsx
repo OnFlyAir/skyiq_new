@@ -271,7 +271,7 @@ export default function DemoOverlay() {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="pointer-events-auto max-w-sm w-80"
+        className="pointer-events-auto sm:max-w-sm sm:w-80"
         style={getTooltipStyle()}
       >
         <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
