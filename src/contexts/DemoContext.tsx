@@ -238,9 +238,10 @@ export const DEMO_STEPS: DemoStep[] = [
     page: '',
     target: 'verify-leg-btn',
     title: 'Verify Each Leg',
-    description: 'Click the checkmark to confirm each leg\'s data is correct. Review all legs before proceeding.',
+    description: 'Click the checkmark on Leg 1 to confirm its data is correct. (We\'ll auto-confirm the rest for this demo.)',
     placement: 'center',
     action: 'click',
+    requireAction: true,
   },
   // Step 20: Point out trash icon (displayed as 22/35)
   {
@@ -269,7 +270,6 @@ export const DEMO_STEPS: DemoStep[] = [
     description: 'Legs look good! Click "Next: Fuel Burns" to enter your fuel burn data.',
     placement: 'center',
     action: 'click',
-    autoAdvance: true,
     requireAction: true,
   },
   // Step 23: Enter starting fuel
@@ -282,6 +282,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '1000',
+    requireAction: true,
   },
   // Steps 24–29: Enter fuel burn per leg
   {
@@ -293,6 +294,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '700',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-2',
@@ -303,6 +305,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '1800',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-3',
@@ -313,6 +316,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2600',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-4',
@@ -323,6 +327,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2300',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-5',
@@ -333,6 +338,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2700',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-6',
@@ -343,6 +349,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '1000',
+    requireAction: true,
   },
   // Step 30: Expand weight limits (optional explainer)
   {
