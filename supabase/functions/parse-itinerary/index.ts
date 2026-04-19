@@ -271,21 +271,29 @@ function extractAndRepairJson(raw: string): unknown {
     try {
       return JSON.parse(repaired);
     } catch (_e2) {
-      // Balance braces/brackets (truncation repair)
-      let braces = 0, brackets = 0, inStr = false, esc = false;
-      for (const c of repaired) {
+      // Fix mismatched closers (e.g. AI closes array with } instead of ])
+      // and balance any remaining unclosed structures (truncation).
+      const stack: string[] = [];
+      let inStr = false, esc = false;
+      const chars = repaired.split("");
+      for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
         if (esc) { esc = false; continue; }
         if (c === "\\") { esc = true; continue; }
-        if (c === '"') inStr = !inStr;
+        if (c === '"') { inStr = !inStr; continue; }
         if (inStr) continue;
-        if (c === "{") braces++;
-        else if (c === "}") braces--;
-        else if (c === "[") brackets++;
-        else if (c === "]") brackets--;
+        if (c === "{") stack.push("}");
+        else if (c === "[") stack.push("]");
+        else if (c === "}" || c === "]") {
+          const expected = stack.pop();
+          if (expected && expected !== c) {
+            chars[i] = expected; // swap mismatched closer
+          }
+        }
       }
+      repaired = chars.join("");
       if (inStr) repaired += '"';
-      while (brackets-- > 0) repaired += "]";
-      while (braces-- > 0) repaired += "}";
+      while (stack.length > 0) repaired += stack.pop();
       return JSON.parse(repaired);
     }
   }
