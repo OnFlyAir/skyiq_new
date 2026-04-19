@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Mail, Plus, Trash2, Check } from "lucide-react";
+import { useDemo } from "@/contexts/DemoContext";
 
 interface EmailEntry {
   email: string;
@@ -25,6 +26,7 @@ export default function TripEmailPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { active: demoActive, currentStep, nextStep } = useDemo();
 
   const [emails, setEmails] = useState<EmailEntry[]>([{ email: "", isChecked: true }]);
   const [sending, setSending] = useState(false);
@@ -88,6 +90,14 @@ export default function TripEmailPage() {
 
   const handleSend = async () => {
     if (!user || !tripId) return;
+
+    // Demo guard: skip real send and advance walkthrough
+    if (demoActive && currentStep?.id === 'enter-email') {
+      setSent(true);
+      toast({ title: "Demo: email skipped", description: "No email was actually sent." });
+      nextStep();
+      return;
+    }
 
     const toSend = emails.filter((e) => e.isChecked && e.email.trim());
     if (toSend.length === 0) {
