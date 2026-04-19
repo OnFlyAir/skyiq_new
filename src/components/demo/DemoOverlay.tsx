@@ -130,14 +130,35 @@ export default function DemoOverlay() {
 
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
     // 'center' placement always centers tooltip on screen, regardless of target
     if (currentStep.placement === 'center' || !targetRect) {
+      if (isMobile) {
+        return {
+          position: 'fixed',
+          left: 12,
+          right: 12,
+          bottom: 16,
+          width: 'auto',
+        };
+      }
       return {
         position: 'fixed',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
       };
+    }
+
+    // On mobile: dock to bottom or top of screen depending on where the target is.
+    // Side placements never fit on narrow viewports.
+    if (isMobile) {
+      const targetMid = targetRect.top + targetRect.height / 2;
+      const dockTop = targetMid > window.innerHeight / 2;
+      return dockTop
+        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto' }
+        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto' };
     }
 
     const tooltipHeight = 200; // estimated max tooltip height
@@ -250,7 +271,7 @@ export default function DemoOverlay() {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="pointer-events-auto max-w-sm w-80"
+        className="pointer-events-auto sm:max-w-sm sm:w-80"
         style={getTooltipStyle()}
       >
         <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
