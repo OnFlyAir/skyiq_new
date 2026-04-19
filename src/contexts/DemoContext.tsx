@@ -294,6 +294,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '700',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-2',
@@ -304,6 +305,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '1800',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-3',
@@ -314,6 +316,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2600',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-4',
@@ -324,6 +327,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2300',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-5',
@@ -334,6 +338,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '2700',
+    requireAction: true,
   },
   {
     id: 'enter-burn-leg-6',
@@ -344,6 +349,7 @@ export const DEMO_STEPS: DemoStep[] = [
     placement: 'right',
     action: 'input',
     inputValue: '1000',
+    requireAction: true,
   },
   // Step 30: Expand weight limits (optional explainer)
   {
