@@ -206,7 +206,7 @@ function LegEditor({
                 Edit
               </Button>
             )}
-            <Button data-demo="delete-leg-btn" size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-700">
+            <Button data-demo="delete-leg-btn" size="sm" variant="ghost" onClick={handleDeleteClick} className="text-red-500 hover:text-red-700">
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
