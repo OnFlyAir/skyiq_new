@@ -306,16 +306,16 @@ export default function AddAircraftPage() {
             <CollapsibleContent data-demo="performance-defaults-section" className="mt-3 space-y-4">
               <Card>
                 <CardContent className="pt-4">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     {WEIGHT_FIELDS.map((field) => (
-                      <div key={field.key} className="flex items-center justify-between gap-2">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">{field.label}</Label>
+                      <div key={field.key} className="flex items-center justify-between gap-3">
+                        <Label className="text-xs text-muted-foreground">{field.label}</Label>
                         <Input
                           type="number"
                           step="any"
                           value={formData[field.key] ?? ''}
                           onChange={(e) => updateField(field.key, e.target.value)}
-                          className="h-9 w-24 text-right text-sm"
+                          className="h-9 w-28 shrink-0 text-right text-sm"
                         />
                       </div>
                     ))}
@@ -324,15 +324,15 @@ export default function AddAircraftPage() {
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     {CREW_FIELDS.map((field) => (
-                      <div key={field.key} className="flex items-center justify-between gap-2">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">{field.label}</Label>
+                      <div key={field.key} className="flex items-center justify-between gap-3">
+                        <Label className="text-xs text-muted-foreground">{field.label}</Label>
                         <Input
                           type="number"
                           value={formData[field.key] ?? ''}
                           onChange={(e) => updateField(field.key, e.target.value)}
-                          className="h-9 w-24 text-right text-sm"
+                          className="h-9 w-28 shrink-0 text-right text-sm"
                         />
                       </div>
                     ))}
