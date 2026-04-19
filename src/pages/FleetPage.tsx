@@ -59,6 +59,14 @@ export default function FleetPage() {
               <Link to="/trips/new">Upload PDF</Link>
             </Button>
           </div>
+          {!demoActive && (
+            <button
+              onClick={() => startDemo('fleet')}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            >
+              <Play className="h-3 w-3" /> Watch the guided demo instead
+            </button>
+          )}
         </div>
       </div>
     );
