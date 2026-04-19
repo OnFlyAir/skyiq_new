@@ -156,7 +156,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
   },
   {
     id: 'select-sample-file',
-    page: '/trips/new',
+    page: '',
     target: 'demo-sample-file',
     title: 'Select the Itinerary',
     description: 'Click the sample trip sheet to load it. SkyIQ will parse and extract all leg details.',
