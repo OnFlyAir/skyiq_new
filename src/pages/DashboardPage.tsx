@@ -94,6 +94,37 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card
+          className="cursor-pointer border-primary/30 bg-primary/5 transition-all hover:border-primary/60 hover:bg-primary/10"
+          onClick={() => { startDemo('fleet'); navigate('/fleet'); }}
+        >
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Play className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Add an Aircraft Demo</p>
+              <p className="text-xs text-muted-foreground">~1 min · guided</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card
+          className="cursor-pointer border-primary/30 bg-primary/5 transition-all hover:border-primary/60 hover:bg-primary/10"
+          onClick={() => { startDemo('trip'); navigate('/trips/new'); }}
+        >
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Play className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Plan a Trip Demo</p>
+              <p className="text-xs text-muted-foreground">~3 min · guided</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {isFirstRun ? (
         <div className="grid gap-4">
           <Card
