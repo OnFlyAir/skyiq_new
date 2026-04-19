@@ -91,6 +91,14 @@ export default function TripEmailPage() {
   const handleSend = async () => {
     if (!user || !tripId) return;
 
+    // Demo guard: skip real send and advance walkthrough
+    if (demoActive && currentStep?.id === 'enter-email') {
+      setSent(true);
+      toast({ title: "Demo: email skipped", description: "No email was actually sent." });
+      nextStep();
+      return;
+    }
+
     const toSend = emails.filter((e) => e.isChecked && e.email.trim());
     if (toSend.length === 0) {
       toast({ title: "No recipients", description: "Check at least one email address", variant: "destructive" });
