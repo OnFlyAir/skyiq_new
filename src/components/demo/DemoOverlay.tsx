@@ -26,30 +26,51 @@ export default function DemoOverlay() {
       return;
     }
 
-    // For 'center' placement, keep the tooltip centered on screen, but still scroll the
-    // target into view if it's offscreen so the user can actually see/click it.
     const isCenter = currentStep.placement === 'center';
     let hasScrolledForThisStep = false;
 
     const findTarget = () => {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        setTargetRect(rect);
+      if (!el) {
+        setTargetRect(null);
+        return;
+      }
 
-        const viewportPadding = 24;
-        const isOffscreen =
-          rect.top < viewportPadding ||
-          rect.bottom > window.innerHeight - viewportPadding ||
-          rect.left < viewportPadding ||
-          rect.right > window.innerWidth - viewportPadding;
+      const rect = el.getBoundingClientRect();
+      setTargetRect(rect);
 
-        if ((!isCenter || isOffscreen) && !hasScrolledForThisStep) {
-          hasScrolledForThisStep = true;
+      const isMobile = window.innerWidth < 640;
+      // On mobile the tooltip docks to top or bottom of screen and is ~ this tall.
+      const reservedForTooltip = isMobile ? 260 : 0;
+      const viewportPadding = 24;
+
+      // On mobile we always need clearance above OR below the target equal to the
+      // docked tooltip height, otherwise the tooltip will cover the target.
+      const safeTop = viewportPadding;
+      const safeBottom = window.innerHeight - viewportPadding;
+      const needsClearance = isMobile
+        ? rect.top < safeTop + 8 ||
+          rect.bottom > safeBottom - reservedForTooltip - 8
+        : false;
+
+      const isOffscreen =
+        rect.top < viewportPadding ||
+        rect.bottom > window.innerHeight - viewportPadding ||
+        rect.left < viewportPadding ||
+        rect.right > window.innerWidth - viewportPadding;
+
+      if ((!isCenter || isOffscreen || needsClearance) && !hasScrolledForThisStep) {
+        hasScrolledForThisStep = true;
+        if (isMobile) {
+          // Manually scroll so the target sits in the upper portion of the viewport,
+          // leaving the bottom ~260px clear for the docked tooltip.
+          const scroller = document.scrollingElement || document.documentElement;
+          const desiredTop = 96; // px from top of viewport
+          const delta = rect.top - desiredTop;
+          scroller.scrollBy({ top: delta, behavior: 'smooth' });
+        } else {
           el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
-      } else {
-        setTargetRect(null);
       }
     };
 
