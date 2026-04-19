@@ -26,6 +26,7 @@ export default function TripEmailPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { active: demoActive, currentStep, nextStep } = useDemo();
 
   const [emails, setEmails] = useState<EmailEntry[]>([{ email: "", isChecked: true }]);
   const [sending, setSending] = useState(false);
