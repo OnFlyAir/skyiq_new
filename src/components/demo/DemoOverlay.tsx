@@ -26,17 +26,27 @@ export default function DemoOverlay() {
       return;
     }
 
-    // For 'center' placement, we still track the target (so click/input handlers work
-    // and the spotlight ring shows) but we don't scroll to it — the tooltip stays centered.
+    // For 'center' placement, keep the tooltip centered on screen, but still scroll the
+    // target into view if it's offscreen so the user can actually see/click it.
     const isCenter = currentStep.placement === 'center';
+    let hasScrolledForThisStep = false;
 
     const findTarget = () => {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
       if (el) {
         const rect = el.getBoundingClientRect();
         setTargetRect(rect);
-        if (!isCenter) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const viewportPadding = 24;
+        const isOffscreen =
+          rect.top < viewportPadding ||
+          rect.bottom > window.innerHeight - viewportPadding ||
+          rect.left < viewportPadding ||
+          rect.right > window.innerWidth - viewportPadding;
+
+        if ((!isCenter || isOffscreen) && !hasScrolledForThisStep) {
+          hasScrolledForThisStep = true;
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
       } else {
         setTargetRect(null);
