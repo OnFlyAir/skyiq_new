@@ -71,28 +71,29 @@ export default function DemoOverlay() {
       if ((!isCenter || isOffscreen || needsClearance) && !hasScrolledForThisStep) {
         hasScrolledForThisStep = true;
         if (isMobile) {
-          // Scroll so target clears any sticky headers above it.
-          const scroller = findScrollParent(el);
-          const scrollerRect = scroller === document.scrollingElement || scroller === document.documentElement
-            ? { top: 0 } as DOMRect
-            : (scroller as HTMLElement).getBoundingClientRect();
+          // First, bring the target into view reliably.
+          el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
 
-          // Find sticky/fixed elements that occupy the top of the scroll viewport.
-          const stickies = document.querySelectorAll('.sticky, [data-sticky], .fixed');
-          let stickyBottom = 0;
-          stickies.forEach((s) => {
-            const sEl = s as HTMLElement;
-            if (sEl.contains(el) || el.contains(sEl)) return;
-            const sRect = sEl.getBoundingClientRect();
-            // Consider stickies that are pinned near the top and visible
-            if (sRect.top <= 80 && sRect.bottom > 0 && sRect.bottom < window.innerHeight / 2) {
-              stickyBottom = Math.max(stickyBottom, sRect.bottom);
+          // Then nudge it down to clear any sticky headers and the bottom-docked tooltip.
+          setTimeout(() => {
+            const newRect = el.getBoundingClientRect();
+            const stickies = document.querySelectorAll('.sticky, [data-sticky]');
+            let stickyBottom = 0;
+            stickies.forEach((s) => {
+              const sEl = s as HTMLElement;
+              if (sEl.contains(el) || el.contains(sEl)) return;
+              const sRect = sEl.getBoundingClientRect();
+              if (sRect.top <= 80 && sRect.bottom > 0 && sRect.bottom < window.innerHeight / 2) {
+                stickyBottom = Math.max(stickyBottom, sRect.bottom);
+              }
+            });
+            const desiredTop = Math.max(120, stickyBottom + 24);
+            const delta = newRect.top - desiredTop;
+            if (Math.abs(delta) > 8) {
+              const scroller = findScrollParent(el);
+              scroller.scrollBy({ top: delta, behavior: 'smooth' });
             }
-          });
-
-          const desiredTop = Math.max(140, stickyBottom + 24);
-          const delta = rect.top - desiredTop;
-          scroller.scrollBy({ top: delta, behavior: 'smooth' });
+          }, 350);
         } else {
           el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         }
