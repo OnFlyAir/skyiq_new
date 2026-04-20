@@ -57,8 +57,23 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
         rect.left < viewportPadding ||
         rect.right > window.innerWidth - viewportPadding;
 
-      if ((!isCenter || isOffscreen || needsClearance) && !hasScrolledForThisStep) {
-        hasScrolledForThisStep = true;
+      if ((!isCenter || isOffscreen || needsClearance)) {
+        // Only mark as scrolled once the target is actually visible within
+        // the viewport (clear of sticky headers and the docked tooltip).
+        // If it's still off-screen, the next poll will retry the scroll.
+        const topBound = viewportPadding;
+        const bottomBound = window.innerHeight - reservedForTooltip - viewportPadding;
+        const isWithinViewport =
+          rect.top >= topBound &&
+          rect.bottom <= bottomBound &&
+          rect.left >= viewportPadding &&
+          rect.right <= window.innerWidth - viewportPadding;
+
+        if (isWithinViewport) {
+          hasScrolledForThisStep = true;
+          return;
+        }
+
         if (isMobile) {
           // First, bring the target into view reliably.
           el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
