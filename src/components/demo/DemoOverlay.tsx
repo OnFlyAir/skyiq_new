@@ -71,9 +71,20 @@ export default function DemoOverlay() {
       if ((!isCenter || isOffscreen || needsClearance) && !hasScrolledForThisStep) {
         hasScrolledForThisStep = true;
         if (isMobile) {
-          // Scroll the nearest scrollable ancestor so target sits ~96px from the top.
+          // Scroll the nearest scrollable ancestor so target sits below any sticky header.
+          // Detect sticky elements above the target inside the scroller and reserve their height.
           const scroller = findScrollParent(el);
-          const desiredTop = 96;
+          const scrollerRect = (scroller as HTMLElement).getBoundingClientRect?.() ?? { top: 0 };
+          let stickyOffset = 0;
+          const stickies = (scroller as HTMLElement).querySelectorAll?.('.sticky, [data-sticky]') ?? [];
+          stickies.forEach((s) => {
+            const sRect = (s as HTMLElement).getBoundingClientRect();
+            // Only count stickies that are actually pinned at the top of the scroller and above target.
+            if (sRect.bottom <= rect.top + 1 && sRect.top <= scrollerRect.top + 4) {
+              stickyOffset = Math.max(stickyOffset, sRect.bottom - scrollerRect.top);
+            }
+          });
+          const desiredTop = Math.max(140, stickyOffset + 24);
           const delta = rect.top - desiredTop;
           scroller.scrollBy({ top: delta, behavior: 'smooth' });
         } else {
