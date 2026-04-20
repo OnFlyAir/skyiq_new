@@ -84,7 +84,7 @@ export default function DemoOverlay() {
               stickyOffset = Math.max(stickyOffset, sRect.bottom - scrollerRect.top);
             }
           });
-          const desiredTop = Math.max(96, stickyOffset + 24);
+          const desiredTop = Math.max(140, stickyOffset + 24);
           const delta = rect.top - desiredTop;
           scroller.scrollBy({ top: delta, behavior: 'smooth' });
         } else {
