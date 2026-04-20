@@ -1059,6 +1059,7 @@ export default function TripLegsPage() {
       </div>
 
       {/* Add Leg */}
+      <div data-demo-scroll-offset="160">
       <Dialog open={addLegOpen} onOpenChange={setAddLegOpen}>
         {demoActive && currentStep?.id === 'explain-add-leg' ? (
           <Button
