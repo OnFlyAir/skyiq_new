@@ -1123,6 +1123,7 @@ export default function TripLegsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
 
       {/* Next Button */}
       <div id="next-button" className="flex gap-3 pt-2">
