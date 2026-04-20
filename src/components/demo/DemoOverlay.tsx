@@ -1,14 +1,18 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDemo } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, ArrowRight, ArrowLeft, Play } from 'lucide-react';
+import { useDemoTarget } from './useDemoTarget';
+import { useDemoAutoAdvance } from './useDemoAutoAdvance';
+import { DemoTooltip } from './DemoTooltip';
 
 export default function DemoOverlay() {
   const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
-  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const targetRect = useDemoTarget(active, currentStep);
+  useDemoAutoAdvance(active, currentStep, nextStep);
 
   // Navigate to the step's page if needed
   useEffect(() => {
@@ -19,160 +23,23 @@ export default function DemoOverlay() {
     }
   }, [active, currentStep, location.pathname, navigate]);
 
-  // Find and highlight target element
-  useEffect(() => {
-    if (!active || !currentStep?.target) {
-      setTargetRect(null);
-      return;
-    }
-
-    const isCenter = currentStep.placement === 'center';
-    let hasScrolledForThisStep = false;
-
-    // Walk up the DOM to find the nearest scrollable ancestor.
-    const findScrollParent = (el: Element): Element => {
-      let node: Element | null = el.parentElement;
-      while (node) {
-        const style = getComputedStyle(node);
-        const overflowY = style.overflowY;
-        if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
-          return node;
-        }
-        node = node.parentElement;
-      }
-      return document.scrollingElement || document.documentElement;
-    };
-
-    const findTarget = () => {
-      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
-      if (!el) {
-        setTargetRect(null);
-        return;
-      }
-
-      const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
-
-      const isMobile = window.innerWidth < 640;
-      const reservedForTooltip = isMobile ? 260 : 0;
-      const viewportPadding = 24;
-
-      const needsClearance = isMobile
-        ? rect.top < viewportPadding + 8 ||
-          rect.bottom > window.innerHeight - reservedForTooltip - 8
-        : false;
-
-      const isOffscreen =
-        rect.top < viewportPadding ||
-        rect.bottom > window.innerHeight - viewportPadding ||
-        rect.left < viewportPadding ||
-        rect.right > window.innerWidth - viewportPadding;
-
-      if ((!isCenter || isOffscreen || needsClearance) && !hasScrolledForThisStep) {
-        hasScrolledForThisStep = true;
-        if (isMobile) {
-          // First, bring the target into view reliably.
-          el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-
-          // Then nudge it down to clear any sticky headers and the bottom-docked tooltip.
-          setTimeout(() => {
-            const newRect = el.getBoundingClientRect();
-            const stickies = document.querySelectorAll('.sticky, [data-sticky]');
-            let stickyBottom = 0;
-            stickies.forEach((s) => {
-              const sEl = s as HTMLElement;
-              if (sEl.contains(el) || el.contains(sEl)) return;
-              const sRect = sEl.getBoundingClientRect();
-              if (sRect.top <= 80 && sRect.bottom > 0 && sRect.bottom < window.innerHeight / 2) {
-                stickyBottom = Math.max(stickyBottom, sRect.bottom);
-              }
-            });
-            const desiredTop = Math.max(120, stickyBottom + 24);
-            const delta = newRect.top - desiredTop;
-            if (Math.abs(delta) > 8) {
-              const scroller = findScrollParent(el);
-              scroller.scrollBy({ top: delta, behavior: 'smooth' });
-            }
-          }, 350);
-        } else {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        }
-      }
-    };
-
-    const interval = setInterval(findTarget, 200);
-    findTarget();
-    return () => clearInterval(interval);
-  }, [active, currentStep]);
-
-  // Auto-advance on click for click-action steps
-  useEffect(() => {
-    if (!active || !currentStep?.target) return;
-    if (currentStep.action !== 'click' && !currentStep.autoAdvance) return;
-
-    const handler = (e: MouseEvent) => {
-      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
-      if (el && (el === e.target || el.contains(e.target as Node))) {
-        setTimeout(nextStep, 400);
-      }
-    };
-
-    document.addEventListener('click', handler, true);
-    return () => document.removeEventListener('click', handler, true);
-  }, [active, currentStep, nextStep]);
-
-  // Auto-advance on input for input-action steps
-  useEffect(() => {
-    if (!active || !currentStep?.target || currentStep.action !== 'input') return;
-    const expected = currentStep.inputValue;
-    if (!expected) return;
-
-    const handler = () => {
-      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
-      if (!el) return;
-      const input = el.tagName === 'INPUT' ? el as HTMLInputElement
-        : el.querySelector('input') as HTMLInputElement | null;
-      if (input && input.value.trim().toLowerCase() === expected.trim().toLowerCase()) {
-        setTimeout(nextStep, 500);
-      }
-    };
-
-    document.addEventListener('input', handler, true);
-    return () => document.removeEventListener('input', handler, true);
-  }, [active, currentStep, nextStep]);
-
-  // Auto-advance on select — watch for target button text to contain the expected value
-  useEffect(() => {
-    if (!active || !currentStep?.target || currentStep.action !== 'select') return;
-    const expected = currentStep.inputValue?.toLowerCase();
-    if (!expected) return;
-
-    const checkValue = () => {
-      const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
-      if (!el) return;
-      const text = el.textContent?.toLowerCase() || '';
-      if (text.includes(expected)) {
-        setTimeout(nextStep, 500);
-      }
-    };
-
-    const interval = setInterval(checkValue, 300);
-    return () => clearInterval(interval);
-  }, [active, currentStep, nextStep]);
-
   if (!active || !currentStep) return null;
 
   const hasTarget = !!targetRect;
   const padding = 8;
 
   // Is this a "do something" step? (still shown as a hint)
-  const isInteractiveStep = currentStep.action === 'click' || currentStep.action === 'input' || currentStep.action === 'select' || currentStep.action === 'wait' || currentStep.autoAdvance;
+  const isInteractiveStep =
+    currentStep.action === 'click' ||
+    currentStep.action === 'input' ||
+    currentStep.action === 'select' ||
+    currentStep.action === 'wait' ||
+    currentStep.autoAdvance;
   // Show Next unless the step explicitly requires the user to perform the action.
   // Also hide Next while we're waiting for a target element to appear (page still loading) —
   // EXCEPT for 'center' placement steps which don't depend on a target being visible.
   const waitingForTarget = !!currentStep.target && !targetRect && currentStep.placement !== 'center';
   const showNextButton = !currentStep.requireAction && !waitingForTarget;
-  // Last step always gets a Finish button
   const isLastStep = currentStepIndex === totalSteps - 1;
 
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
@@ -182,24 +49,12 @@ export default function DemoOverlay() {
     // 'center' placement always centers tooltip on screen, regardless of target
     if (currentStep.placement === 'center' || !targetRect) {
       if (isMobile) {
-        return {
-          position: 'fixed',
-          left: 12,
-          right: 12,
-          bottom: 16,
-          width: 'auto',
-        };
+        return { position: 'fixed', left: 12, right: 12, bottom: 16, width: 'auto' };
       }
-      return {
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      };
+      return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
     // On mobile: dock to bottom or top of screen depending on where the target is.
-    // Side placements never fit on narrow viewports.
     if (isMobile) {
       const targetMid = targetRect.top + targetRect.height / 2;
       const dockTop = targetMid > window.innerHeight / 2;
@@ -208,8 +63,8 @@ export default function DemoOverlay() {
         : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto' };
     }
 
-    const tooltipHeight = 200; // estimated max tooltip height
-    const tooltipWidth = 320; // w-80 = 320px
+    const tooltipHeight = 200;
+    const tooltipWidth = 320;
     const gap = padding + 12;
 
     const spaceBottom = window.innerHeight - targetRect.bottom - gap;
@@ -217,7 +72,6 @@ export default function DemoOverlay() {
     const spaceRight = window.innerWidth - targetRect.right - gap;
     const spaceLeft = targetRect.left - gap;
 
-    // Determine best placement: prefer the step's placement, but fall back if it would overlap
     const preferred = currentStep.placement || 'bottom';
     const fits: Record<string, boolean> = {
       bottom: spaceBottom >= tooltipHeight,
@@ -235,7 +89,6 @@ export default function DemoOverlay() {
 
     const base: React.CSSProperties = { position: 'fixed' };
 
-    // Clamp horizontal center so tooltip doesn't go off-screen
     const clampX = (cx: number) => Math.max(8, Math.min(cx, window.innerWidth - tooltipWidth - 8));
     const clampY = (cy: number) => Math.max(8, Math.min(cy, window.innerHeight - tooltipHeight - 8));
 
@@ -267,9 +120,7 @@ export default function DemoOverlay() {
   // Use 4 overlay panels around the spotlight so the target area is fully interactive
   const renderOverlay = () => {
     if (!hasTarget) {
-      return (
-        <div className={`fixed inset-0 bg-black/60 ${overlayPointerClass}`} />
-      );
+      return <div className={`fixed inset-0 bg-black/60 ${overlayPointerClass}`} />;
     }
 
     const r = targetRect!;
@@ -282,13 +133,9 @@ export default function DemoOverlay() {
 
     return (
       <>
-        {/* Top */}
         <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
-        {/* Bottom */}
         <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
-        {/* Left */}
         <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height }} />
-        {/* Right */}
         <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height }} />
       </>
     );
@@ -315,88 +162,19 @@ export default function DemoOverlay() {
         />
       )}
 
-      {/* Tooltip */}
-      <div
+      <DemoTooltip
         ref={tooltipRef}
-        className="pointer-events-auto sm:max-w-sm sm:w-80"
+        step={currentStep}
+        stepIndex={currentStepIndex}
+        totalSteps={totalSteps}
         style={getTooltipStyle()}
-      >
-        <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pt-4">
-            <div className="flex items-center gap-2">
-              <Play className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">
-                Demo · {currentStepIndex + 1}/{totalSteps}
-              </span>
-            </div>
-            <button
-              onClick={endDemo}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="px-4 py-3">
-            <h3 className="text-sm font-semibold text-foreground mb-1">{currentStep.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{currentStep.description}</p>
-          </div>
-
-          {/* Interaction hint for action steps */}
-          {isInteractiveStep && !isLastStep && (
-            <div className="px-4 pb-1">
-              <p className="text-[10px] text-primary/70 italic">
-                {currentStep.action === 'input' ? '↑ Type the value above to continue' 
-                  : currentStep.action === 'select' ? '↑ Select the option from the dropdown to continue'
-                  : currentStep.action === 'wait' ? '⏳ Please wait…'
-                  : '↑ Click the highlighted area to continue'}
-              </p>
-            </div>
-          )}
-
-          {/* Progress bar */}
-          <div className="px-4">
-            <div className="h-1 bg-border rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{ width: `${((currentStepIndex + 1) / totalSteps) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <button
-              onClick={endDemo}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip demo
-            </button>
-            <div className="flex items-center gap-2">
-              {currentStepIndex > 0 && (
-                <button
-                  onClick={prevStep}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-secondary transition-colors"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  Back
-                </button>
-              )}
-              {(showNextButton || isLastStep) && (
-                <button
-                  onClick={nextStep}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                >
-                  {isLastStep ? 'Finish' : 'Next'}
-                  <ArrowRight className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        showNextButton={showNextButton}
+        isLastStep={isLastStep}
+        isInteractiveStep={!!isInteractiveStep}
+        onNext={nextStep}
+        onPrev={prevStep}
+        onSkip={endDemo}
+      />
     </div>
   );
 }
