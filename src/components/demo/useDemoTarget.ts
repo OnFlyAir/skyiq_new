@@ -17,9 +17,15 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
 
     const isCenter = currentStep.placement === 'center';
     let hasScrolledForThisStep = false;
+    let lastTargetTop: number | null = null;
+    let stalledScrollAttempts = 0;
+    let forceWindowScroll = false;
 
     // Walk up the DOM to find the nearest scrollable ancestor.
     const findScrollParent = (el: Element): Element => {
+      if (forceWindowScroll) {
+        return document.scrollingElement || document.documentElement;
+      }
       let node: Element | null = el.parentElement;
       while (node) {
         const style = getComputedStyle(node);
