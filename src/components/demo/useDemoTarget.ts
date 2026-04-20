@@ -17,9 +17,15 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
 
     const isCenter = currentStep.placement === 'center';
     let hasScrolledForThisStep = false;
+    let lastTargetTop: number | null = null;
+    let stalledScrollAttempts = 0;
+    let forceWindowScroll = false;
 
     // Walk up the DOM to find the nearest scrollable ancestor.
     const findScrollParent = (el: Element): Element => {
+      if (forceWindowScroll) {
+        return document.scrollingElement || document.documentElement;
+      }
       let node: Element | null = el.parentElement;
       while (node) {
         const style = getComputedStyle(node);
@@ -71,12 +77,32 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
 
         if (isWithinViewport) {
           hasScrolledForThisStep = true;
+          lastTargetTop = null;
+          stalledScrollAttempts = 0;
           return;
         }
 
+        // Detect stalled scroll: if the target's rect hasn't moved since the
+        // last poll, the chosen scroll ancestor can't bring it into view —
+        // escalate to scrolling the window/document instead.
+        if (lastTargetTop !== null && Math.abs(rect.top - lastTargetTop) < 2) {
+          stalledScrollAttempts += 1;
+          if (stalledScrollAttempts >= 1) {
+            forceWindowScroll = true;
+          }
+        } else {
+          stalledScrollAttempts = 0;
+        }
+        lastTargetTop = rect.top;
+
         if (isMobile) {
           // First, bring the target into view reliably.
-          el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          if (forceWindowScroll) {
+            const absoluteTop = rect.top + window.scrollY - 120;
+            window.scrollTo({ top: Math.max(0, absoluteTop), behavior: 'smooth' });
+          } else {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          }
 
           // Then nudge it down to clear any sticky headers and the bottom-docked tooltip.
           setTimeout(() => {
