@@ -66,17 +66,40 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
           // Then nudge it down to clear any sticky headers and the bottom-docked tooltip.
           setTimeout(() => {
             const newRect = el.getBoundingClientRect();
-            const stickies = document.querySelectorAll('.sticky, [data-sticky]');
-            let stickyBottom = 0;
-            stickies.forEach((s) => {
-              const sEl = s as HTMLElement;
-              if (sEl.contains(el) || el.contains(sEl)) return;
-              const sRect = sEl.getBoundingClientRect();
-              if (sRect.top <= 80 && sRect.bottom > 0 && sRect.bottom < window.innerHeight / 2) {
-                stickyBottom = Math.max(stickyBottom, sRect.bottom);
+
+            // Per-page override: any ancestor (or the target itself) can set
+            // data-demo-scroll-offset="<px>" to force a specific clearance.
+            let overrideOffset: number | null = null;
+            let node: Element | null = el;
+            while (node) {
+              const attr = (node as HTMLElement).getAttribute?.('data-demo-scroll-offset');
+              if (attr != null) {
+                const parsed = parseInt(attr, 10);
+                if (!Number.isNaN(parsed)) {
+                  overrideOffset = parsed;
+                  break;
+                }
               }
-            });
-            const desiredTop = Math.max(120, stickyBottom + 24);
+              node = node.parentElement;
+            }
+
+            let desiredTop: number;
+            if (overrideOffset != null) {
+              desiredTop = overrideOffset;
+            } else {
+              const stickies = document.querySelectorAll('.sticky, [data-sticky]');
+              let stickyBottom = 0;
+              stickies.forEach((s) => {
+                const sEl = s as HTMLElement;
+                if (sEl.contains(el) || el.contains(sEl)) return;
+                const sRect = sEl.getBoundingClientRect();
+                if (sRect.top <= 80 && sRect.bottom > 0 && sRect.bottom < window.innerHeight / 2) {
+                  stickyBottom = Math.max(stickyBottom, sRect.bottom);
+                }
+              });
+              desiredTop = Math.max(120, stickyBottom + 24);
+            }
+
             const delta = newRect.top - desiredTop;
             if (Math.abs(delta) > 8) {
               const scroller = findScrollParent(el);
