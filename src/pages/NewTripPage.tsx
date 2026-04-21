@@ -131,14 +131,13 @@ export default function NewTripPage() {
 
   const handleDemoFileSelect = async () => {
     setDemoFileSelected(true);
-    // Brief delay to show the check mark, then upload
-    setTimeout(async () => {
-      const res = await fetch(DEMO_PDF_PATH);
-      const blob = await res.blob();
-      const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
-      setShowDemoFilePicker(false);
-      handlePdfUpload(file);
-    }, 600);
+    // Hide picker immediately and kick off upload so the "Parsing Your Itinerary"
+    // tooltip can activate without waiting on the file-select animation.
+    setShowDemoFilePicker(false);
+    const res = await fetch(DEMO_PDF_PATH);
+    const blob = await res.blob();
+    const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+    handlePdfUpload(file);
   };
 
   const handleManualStart = async () => {
