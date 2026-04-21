@@ -202,7 +202,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     target: 'leg-1-fees',
     title: 'Airport Fees',
     description: 'Ramp/handling fees. Some can be waived with a fuel purchase — SkyIQ accounts for that.',
-    placement: 'center',
+    placement: 'top',
   },
   {
     id: 'verify-legs',
@@ -323,7 +323,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     target: 'weight-limits-toggle',
     title: 'Weight Limits',
     description: 'Each leg has weight limits — tap "Weight limits" to see constraints. SkyIQ keeps your fuel plan within them.',
-    placement: 'right',
+    placement: 'bottom',
   },
   {
     id: 'click-confirm',
