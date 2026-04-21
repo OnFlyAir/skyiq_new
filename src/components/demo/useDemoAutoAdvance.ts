@@ -20,7 +20,9 @@ export function useDemoAutoAdvance(
     const handler = (e: MouseEvent) => {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`);
       if (el && (el === e.target || el.contains(e.target as Node))) {
-        setTimeout(nextStep, 400);
+        // Snappier transition — show the next tooltip immediately rather than
+        // waiting on a perceptible delay. 400ms felt like the demo was lagging.
+        setTimeout(nextStep, 80);
       }
     };
 
