@@ -1,7 +1,7 @@
 // TripFuelPage — Step 2 of trip planning: enter fuel burns and run the optimizer.
 // Route: /trips/:tripId/fuel
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import ParsingLoader from "@/components/ParsingLoader";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,10 @@ import { ArrowLeft, Loader2, Plane, AlertTriangle, ChevronDown } from "lucide-re
 import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import { useDemo } from "@/contexts/DemoContext";
+
+const DEMO_BURNS_BY_LEG = [700, 1800, 2600, 2300, 2700, 1000];
+const DEMO_STARTING_FUEL = 1000;
 
 const GALS_TO_LBS = 6.7;
 
@@ -108,12 +112,21 @@ export default function TripFuelPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { active: demoActive } = useDemo();
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
   const [startingFuel, setStartingFuel] = useState(0);
   const [fuelBurns, setFuelBurns] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
+
+  const demoFilledRef = useRef(false);
+  useEffect(() => {
+    if (!demoActive || !tripForm || demoFilledRef.current) return;
+    demoFilledRef.current = true;
+    setStartingFuel(DEMO_STARTING_FUEL);
+    setFuelBurns(tripForm.legs.map((_, i) => DEMO_BURNS_BY_LEG[i] ?? 1500));
+  }, [demoActive, tripForm]);
 
   useEffect(() => {
     async function loadTrip() {
