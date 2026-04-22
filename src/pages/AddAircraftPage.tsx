@@ -91,6 +91,32 @@ export default function AddAircraftPage() {
     [selectedMfg],
   );
 
+  // Demo mode: auto-fill the entire form so the user can just click Next.
+  const demoFilled = useRef(false);
+  useEffect(() => {
+    if (!demoActive || demoFilled.current) return;
+    const cessnaModels = getModelsForManufacturer('Cessna / Textron');
+    const cj3 = cessnaModels.find((m) => m.model === 'Citation CJ3 (C525B)');
+    if (!cj3) return;
+    demoFilled.current = true;
+    setSelectedMfg('Cessna / Textron');
+    setSelectedPreset(cj3);
+    setFormData((prev) => ({
+      ...prev,
+      max_takeoff_weight: cj3.mtow,
+      max_landing_weight: cj3.mlw,
+      max_ramp_weight: cj3.mrw,
+      max_fuel_capacity: cj3.maxFuel,
+      preferred_reserve: cj3.preferredReserve,
+      taxi_fuel_burn: cj3.taxiFuel,
+      cruise_fuel_burn: cj3.cruiseBurn,
+      penalty_rate: cj3.penaltyRate,
+      default_cabin_weight: cj3.defaultCabinWeight,
+    }));
+    setTailNumber('NSKYIQ');
+    setBasicEmptyWeight('8300');
+  }, [demoActive]);
+
   function applyPreset(preset: AircraftPreset) {
     setSelectedPreset(preset);
     setFormData((prev) => ({
