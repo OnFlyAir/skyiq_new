@@ -112,12 +112,21 @@ export default function TripFuelPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { active: demoActive } = useDemo();
 
   const [tripForm, setTripForm] = useState<TripFormData | null>(null);
   const [startingFuel, setStartingFuel] = useState(0);
   const [fuelBurns, setFuelBurns] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
+
+  const demoFilledRef = useRef(false);
+  useEffect(() => {
+    if (!demoActive || !tripForm || demoFilledRef.current) return;
+    demoFilledRef.current = true;
+    setStartingFuel(DEMO_STARTING_FUEL);
+    setFuelBurns(tripForm.legs.map((_, i) => DEMO_BURNS_BY_LEG[i] ?? 1500));
+  }, [demoActive, tripForm]);
 
   useEffect(() => {
     async function loadTrip() {
