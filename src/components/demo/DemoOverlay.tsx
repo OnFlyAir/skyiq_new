@@ -25,21 +25,28 @@ export default function DemoOverlay() {
 
   if (!active || !currentStep) return null;
 
+  // When the user clicks Next on a step that has a click-action target, fire
+  // the underlying click for them so the demo drives itself.
+  const handleNext = () => {
+    if (currentStep.target && currentStep.action === 'click') {
+      const el = document.querySelector(`[data-demo="${currentStep.target}"]`) as HTMLElement | null;
+      if (el) {
+        el.click();
+        // auto-advance hook fires nextStep on the click; don't double-advance.
+        return;
+      }
+    }
+    nextStep();
+  };
+
   const hasTarget = !!targetRect;
   const padding = 8;
 
-  // Is this a "do something" step? (still shown as a hint)
-  const isInteractiveStep =
-    currentStep.action === 'click' ||
-    currentStep.action === 'input' ||
-    currentStep.action === 'select' ||
-    currentStep.action === 'wait' ||
-    currentStep.autoAdvance;
-  // Show Next unless the step explicitly requires the user to perform the action.
-  // Also hide Next while we're waiting for a target element to appear (page still loading) —
-  // EXCEPT for 'center' placement steps which don't depend on a target being visible.
+  // Wait steps still need to gate Next.
+  const isWaitStep = currentStep.action === 'wait';
+  // Hide Next while we're waiting for a target to appear, except for center steps.
   const waitingForTarget = !!currentStep.target && !targetRect && currentStep.placement !== 'center';
-  const showNextButton = !currentStep.requireAction && !waitingForTarget;
+  const showNextButton = !currentStep.requireAction && !waitingForTarget && !isWaitStep;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
