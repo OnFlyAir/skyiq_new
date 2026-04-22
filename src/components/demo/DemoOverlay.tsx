@@ -177,8 +177,8 @@ export default function DemoOverlay() {
         style={getTooltipStyle()}
         showNextButton={showNextButton}
         isLastStep={isLastStep}
-        isInteractiveStep={!!isInteractiveStep}
-        onNext={nextStep}
+        isInteractiveStep={isWaitStep}
+        onNext={handleNext}
         onPrev={prevStep}
         onSkip={endDemo}
       />
