@@ -1,7 +1,7 @@
 // TripFuelPage — Step 2 of trip planning: enter fuel burns and run the optimizer.
 // Route: /trips/:tripId/fuel
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import ParsingLoader from "@/components/ParsingLoader";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,10 @@ import { ArrowLeft, Loader2, Plane, AlertTriangle, ChevronDown } from "lucide-re
 import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import { useDemo } from "@/contexts/DemoContext";
+
+const DEMO_BURNS_BY_LEG = [700, 1800, 2600, 2300, 2700, 1000];
+const DEMO_STARTING_FUEL = 1000;
 
 const GALS_TO_LBS = 6.7;
 
