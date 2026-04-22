@@ -241,7 +241,8 @@ export default function NewTripPage() {
 
           <Button data-demo="upload-pdf-area" size="lg" className="w-full text-base" onClick={() => {
             if (demoActive && currentStep?.id === 'upload-pdf') {
-              setShowDemoFilePicker(true);
+              // In demo, skip the fake file picker — load the sample immediately.
+              handleDemoFileSelect();
               return;
             }
             fileInputRef.current?.click();
