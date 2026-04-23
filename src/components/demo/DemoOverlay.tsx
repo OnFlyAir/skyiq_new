@@ -152,6 +152,8 @@ export default function DemoOverlay() {
   const isSelectStep = currentStep.action === 'select';
   const containerZ = isSelectStep ? 'z-[45]' : 'z-[200]';
 
+  const isPdfPreviewStep = currentStep.id === 'preview-itinerary-pdf';
+
   return (
     <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
@@ -167,6 +169,24 @@ export default function DemoOverlay() {
             height: targetRect!.height + padding * 2,
           }}
         />
+      )}
+
+      {/* Inline PDF preview for the "this is a trip itinerary" step */}
+      {isPdfPreviewStep && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            top: 24,
+            width: 'min(720px, calc(100vw - 24px))',
+            height: 'min(60vh, calc(100vh - 280px))',
+          }}
+        >
+          <iframe
+            src={`${DEMO_PDF_PATH}#view=FitH`}
+            title="Sample trip itinerary"
+            className="w-full h-full"
+          />
+        </div>
       )}
 
       <DemoTooltip
