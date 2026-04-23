@@ -120,23 +120,8 @@ export default function TripFuelPage() {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
 
-  const demoFilledRef = useRef(false);
-  useEffect(() => {
-    if (!demoActive || !tripForm || demoFilledRef.current) return;
-    demoFilledRef.current = true;
-    setStartingFuel(DEMO_STARTING_FUEL);
-    // Assign burns by confirmed-leg order so each visible leg gets a value,
-    // regardless of any positioning/legNum=0 entries in the underlying array.
-    const confirmedOrder: number[] = [];
-    tripForm.legs.forEach((l, i) => {
-      if (l.isConfirmed && l.legNum > 0) confirmedOrder.push(i);
-    });
-    const next = tripForm.legs.map((l) => l.fuelBurn || 0);
-    confirmedOrder.forEach((origIdx, slot) => {
-      next[origIdx] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
-    });
-    setFuelBurns(next);
-  }, [demoActive, tripForm]);
+  const demoActiveRef = useRef(demoActive);
+  useEffect(() => { demoActiveRef.current = demoActive; }, [demoActive]);
 
   useEffect(() => {
     async function loadTrip() {
@@ -161,8 +146,23 @@ export default function TripFuelPage() {
       }
 
       setTripForm(itinerary);
-      setStartingFuel(itinerary.startingFuel || 0);
-      setFuelBurns(itinerary.legs.map((l) => l.fuelBurn || 0));
+
+      if (demoActiveRef.current) {
+        // Demo: prefill starting fuel and per-leg burns by confirmed-leg slot
+        setStartingFuel(DEMO_STARTING_FUEL);
+        const next = itinerary.legs.map((l) => l.fuelBurn || 0);
+        let slot = 0;
+        itinerary.legs.forEach((l, i) => {
+          if (l.isConfirmed && l.legNum > 0) {
+            next[i] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
+            slot += 1;
+          }
+        });
+        setFuelBurns(next);
+      } else {
+        setStartingFuel(itinerary.startingFuel || 0);
+        setFuelBurns(itinerary.legs.map((l) => l.fuelBurn || 0));
+      }
       setLoading(false);
     }
     loadTrip();
