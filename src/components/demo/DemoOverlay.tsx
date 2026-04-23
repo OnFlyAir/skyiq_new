@@ -53,6 +53,13 @@ export default function DemoOverlay() {
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
+    // PDF preview step: dock the tooltip below the PDF panel so it doesn't cover it.
+    if (currentStep.id === 'preview-itinerary-pdf') {
+      return isMobile
+        ? { position: 'fixed', left: 12, right: 12, bottom: 16, width: 'auto' }
+        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, width: 360 };
+    }
+
     // 'center' placement always centers tooltip on screen, regardless of target
     if (currentStep.placement === 'center' || !targetRect) {
       if (isMobile) {
