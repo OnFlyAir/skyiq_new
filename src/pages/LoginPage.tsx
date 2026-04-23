@@ -304,8 +304,24 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Dev auto-login */}
+      {/* Try the demo — public access */}
       <div className="mt-5 pt-5 border-t border-border">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleTryDemo}
+          className="w-full py-2.5 bg-primary/10 border border-primary/30 text-primary font-medium rounded-lg hover:bg-primary/15 disabled:opacity-50 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <PlayCircle className="w-4 h-4" />
+          {loading ? 'Loading demo…' : 'Try the Trip Planning Demo'}
+        </button>
+        <p className="mt-2 text-xs text-center text-muted-foreground">
+          No signup needed — see how SkyIQ optimizes fuel in 60 seconds.
+        </p>
+      </div>
+
+      {/* Dev auto-login */}
+      <div className="mt-3">
         <button
           type="button"
           disabled={loading}
