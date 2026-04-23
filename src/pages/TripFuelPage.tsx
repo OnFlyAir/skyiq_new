@@ -335,7 +335,7 @@ export default function TripFuelPage() {
                   </div>
 
                   {/* Expandable weight details */}
-                  <Collapsible>
+                  <Collapsible defaultOpen={demoActive}>
                     <CollapsibleTrigger asChild>
                       <button
                         data-demo="weight-limits-toggle"
@@ -347,7 +347,7 @@ export default function TripFuelPage() {
                       </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pt-2">
-                      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
+                      <div data-demo="weight-limits-details" className="text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
                         <span>Fixed Weight: {Math.floor(fixedWt).toLocaleString()} lbs</span>
                         <span>TO: {leg.maxTakeoffWeight.toLocaleString()} ({Math.floor(maxFuelTakeoff).toLocaleString()} avail)</span>
                         <span>LDG: {leg.maxLandingWeight.toLocaleString()} ({Math.floor(maxFuelLanding).toLocaleString()} avail)</span>
