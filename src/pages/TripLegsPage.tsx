@@ -299,6 +299,7 @@ function LegEditor({
             </div>
           </div>
 
+          <div data-demo={`leg-${leg.legNum}-weights-limits`} className="space-y-4">
           {/* Crew & Passengers */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 items-end">
             <div>
@@ -381,6 +382,7 @@ function LegEditor({
                 onChange={(e) => updateField("maxRampWeight", parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
           </div>
         </CardContent>
       )}
