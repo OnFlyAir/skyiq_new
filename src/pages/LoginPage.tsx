@@ -1,7 +1,10 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
+import { useDemo } from '@/contexts/DemoContext';
+import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle } from 'lucide-react';
+
+const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
