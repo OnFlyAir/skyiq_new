@@ -115,6 +115,31 @@ export default function LoginPage() {
     }
   }
 
+  async function handleTryDemo() {
+    setError('');
+    setLoading(true);
+    localStorage.setItem(DEMO_PENDING_KEY, 'true');
+    try {
+      const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+      if (signInErr) {
+        const { error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+        if (signUpErr) {
+          localStorage.removeItem(DEMO_PENDING_KEY);
+          setError(signUpErr.message); setLoading(false); return;
+        }
+        await new Promise(r => setTimeout(r, 1000));
+        const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+        if (retryErr) {
+          localStorage.removeItem(DEMO_PENDING_KEY);
+          setError(retryErr.message); setLoading(false); return;
+        }
+      }
+    } catch (err: any) {
+      localStorage.removeItem(DEMO_PENDING_KEY);
+      setError(err.message || 'Demo launch failed');
+      setLoading(false);
+    }
+  }
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-12">
