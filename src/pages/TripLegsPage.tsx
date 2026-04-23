@@ -216,7 +216,7 @@ function LegEditor({
       {!isConfirmed && (
         <CardContent className="space-y-4">
           {/* Route */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div data-demo={`leg-${leg.legNum}-route`} className="grid grid-cols-2 gap-2 sm:gap-3">
             <div data-demo={`leg-${leg.legNum}-departure`}>
               <Label className="text-xs">Departure (ICAO)</Label>
               <Input
@@ -299,6 +299,7 @@ function LegEditor({
             </div>
           </div>
 
+          <div data-demo={`leg-${leg.legNum}-weights-limits`} className="space-y-4">
           {/* Crew & Passengers */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3 items-end">
             <div>
@@ -381,6 +382,7 @@ function LegEditor({
                 onChange={(e) => updateField("maxRampWeight", parseFloat(e.target.value) || 0)}
               />
             </div>
+          </div>
           </div>
         </CardContent>
       )}
@@ -1007,7 +1009,7 @@ export default function TripLegsPage() {
 
       {/* Sticky progress bar */}
       {totalLegs > 0 && (
-        <div ref={progressBarRef} className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
+        <div data-demo="verify-progress" ref={progressBarRef} className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">
               {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
