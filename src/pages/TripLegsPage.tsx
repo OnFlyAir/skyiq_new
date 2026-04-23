@@ -216,7 +216,7 @@ function LegEditor({
       {!isConfirmed && (
         <CardContent className="space-y-4">
           {/* Route */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div data-demo={`leg-${leg.legNum}-route`} className="grid grid-cols-2 gap-2 sm:gap-3">
             <div data-demo={`leg-${leg.legNum}-departure`}>
               <Label className="text-xs">Departure (ICAO)</Label>
               <Input
