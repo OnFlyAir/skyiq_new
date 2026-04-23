@@ -1,7 +1,10 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
+import { useDemo } from '@/contexts/DemoContext';
+import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle } from 'lucide-react';
+
+const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
 
 const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
@@ -19,17 +22,24 @@ export default function LoginPage() {
   const [showPinMode, setShowPinMode] = useState(false);
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
+  const { startDemo } = useDemo();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!authLoading && user && profile) {
+      if (localStorage.getItem(DEMO_PENDING_KEY) === 'true') {
+        localStorage.removeItem(DEMO_PENDING_KEY);
+        startDemo('trip');
+        navigate('/trips/new', { replace: true });
+        return;
+      }
       if (profile.role_name === 'Admin') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [authLoading, user, profile, navigate]);
+  }, [authLoading, user, profile, navigate, startDemo]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -105,6 +115,31 @@ export default function LoginPage() {
     }
   }
 
+  async function handleTryDemo() {
+    setError('');
+    setLoading(true);
+    localStorage.setItem(DEMO_PENDING_KEY, 'true');
+    try {
+      const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+      if (signInErr) {
+        const { error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
+        if (signUpErr) {
+          localStorage.removeItem(DEMO_PENDING_KEY);
+          setError(signUpErr.message); setLoading(false); return;
+        }
+        await new Promise(r => setTimeout(r, 1000));
+        const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
+        if (retryErr) {
+          localStorage.removeItem(DEMO_PENDING_KEY);
+          setError(retryErr.message); setLoading(false); return;
+        }
+      }
+    } catch (err: any) {
+      localStorage.removeItem(DEMO_PENDING_KEY);
+      setError(err.message || 'Demo launch failed');
+      setLoading(false);
+    }
+  }
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -269,8 +304,24 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Dev auto-login */}
+      {/* Try the demo — public access */}
       <div className="mt-5 pt-5 border-t border-border">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleTryDemo}
+          className="w-full py-2.5 bg-primary/10 border border-primary/30 text-primary font-medium rounded-lg hover:bg-primary/15 disabled:opacity-50 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <PlayCircle className="w-4 h-4" />
+          {loading ? 'Loading demo…' : 'Try the Trip Planning Demo'}
+        </button>
+        <p className="mt-2 text-xs text-center text-muted-foreground">
+          No signup needed — see how SkyIQ optimizes fuel in 60 seconds.
+        </p>
+      </div>
+
+      {/* Dev auto-login */}
+      <div className="mt-3">
         <button
           type="button"
           disabled={loading}
