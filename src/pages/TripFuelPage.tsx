@@ -125,7 +125,17 @@ export default function TripFuelPage() {
     if (!demoActive || !tripForm || demoFilledRef.current) return;
     demoFilledRef.current = true;
     setStartingFuel(DEMO_STARTING_FUEL);
-    setFuelBurns(tripForm.legs.map((_, i) => DEMO_BURNS_BY_LEG[i] ?? 1500));
+    // Assign burns by confirmed-leg order so each visible leg gets a value,
+    // regardless of any positioning/legNum=0 entries in the underlying array.
+    const confirmedOrder: number[] = [];
+    tripForm.legs.forEach((l, i) => {
+      if (l.isConfirmed && l.legNum > 0) confirmedOrder.push(i);
+    });
+    const next = tripForm.legs.map((l) => l.fuelBurn || 0);
+    confirmedOrder.forEach((origIdx, slot) => {
+      next[origIdx] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
+    });
+    setFuelBurns(next);
   }, [demoActive, tripForm]);
 
   useEffect(() => {
