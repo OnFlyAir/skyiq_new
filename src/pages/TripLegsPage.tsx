@@ -1009,7 +1009,7 @@ export default function TripLegsPage() {
 
       {/* Sticky progress bar */}
       {totalLegs > 0 && (
-        <div ref={progressBarRef} className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
+        <div data-demo="verify-progress" ref={progressBarRef} className="sticky top-0 z-40 -mx-3 sm:-mx-4 px-3 sm:px-4 py-2 bg-background/95 backdrop-blur border-b">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">
               {allConfirmed ? "All legs verified ✓" : `Verify each leg (${confirmedCount}/${totalLegs})`}
