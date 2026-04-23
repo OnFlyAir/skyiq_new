@@ -22,17 +22,24 @@ export default function LoginPage() {
   const [showPinMode, setShowPinMode] = useState(false);
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
+  const { startDemo } = useDemo();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!authLoading && user && profile) {
+      if (localStorage.getItem(DEMO_PENDING_KEY) === 'true') {
+        localStorage.removeItem(DEMO_PENDING_KEY);
+        startDemo('trip');
+        navigate('/trips/new', { replace: true });
+        return;
+      }
       if (profile.role_name === 'Admin') {
         navigate('/admin', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [authLoading, user, profile, navigate]);
+  }, [authLoading, user, profile, navigate, startDemo]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
