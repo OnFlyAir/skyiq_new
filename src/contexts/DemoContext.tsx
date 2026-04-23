@@ -188,6 +188,14 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     autoAdvance: true,
   },
   {
+    id: 'review-starting-fuel',
+    page: '',
+    target: 'starting-fuel-input',
+    title: 'Fuel On Board',
+    description: "We start with the fuel already on the aircraft so the optimizer doesn't tell you to buy fuel you already have. Pre-filled here for the demo.",
+    placement: 'bottom',
+  },
+  {
     id: 'review-fuel-burns',
     page: '',
     target: 'fuel-burn-inputs',
