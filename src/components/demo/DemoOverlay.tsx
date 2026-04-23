@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo, DEMO_PDF_PATH } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
@@ -52,6 +52,13 @@ export default function DemoOverlay() {
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
+    // PDF preview step: dock the tooltip below the PDF panel so it doesn't cover it.
+    if (currentStep.id === 'preview-itinerary-pdf') {
+      return isMobile
+        ? { position: 'fixed', left: 12, right: 12, bottom: 16, width: 'auto' }
+        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, width: 360 };
+    }
 
     // 'center' placement always centers tooltip on screen, regardless of target
     if (currentStep.placement === 'center' || !targetRect) {
@@ -152,6 +159,8 @@ export default function DemoOverlay() {
   const isSelectStep = currentStep.action === 'select';
   const containerZ = isSelectStep ? 'z-[45]' : 'z-[200]';
 
+  const isPdfPreviewStep = currentStep.id === 'preview-itinerary-pdf';
+
   return (
     <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
@@ -167,6 +176,24 @@ export default function DemoOverlay() {
             height: targetRect!.height + padding * 2,
           }}
         />
+      )}
+
+      {/* Inline PDF preview for the "this is a trip itinerary" step */}
+      {isPdfPreviewStep && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            top: 24,
+            width: 'min(720px, calc(100vw - 24px))',
+            height: 'min(60vh, calc(100vh - 280px))',
+          }}
+        >
+          <iframe
+            src={`${DEMO_PDF_PATH}#view=FitH`}
+            title="Sample trip itinerary"
+            className="w-full h-full"
+          />
+        </div>
       )}
 
       <DemoTooltip
