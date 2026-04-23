@@ -125,7 +125,17 @@ export default function TripFuelPage() {
     if (!demoActive || !tripForm || demoFilledRef.current) return;
     demoFilledRef.current = true;
     setStartingFuel(DEMO_STARTING_FUEL);
-    setFuelBurns(tripForm.legs.map((_, i) => DEMO_BURNS_BY_LEG[i] ?? 1500));
+    // Assign burns by confirmed-leg order so each visible leg gets a value,
+    // regardless of any positioning/legNum=0 entries in the underlying array.
+    const confirmedOrder: number[] = [];
+    tripForm.legs.forEach((l, i) => {
+      if (l.isConfirmed && l.legNum > 0) confirmedOrder.push(i);
+    });
+    const next = tripForm.legs.map((l) => l.fuelBurn || 0);
+    confirmedOrder.forEach((origIdx, slot) => {
+      next[origIdx] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
+    });
+    setFuelBurns(next);
   }, [demoActive, tripForm]);
 
   useEffect(() => {
@@ -325,7 +335,7 @@ export default function TripFuelPage() {
                   </div>
 
                   {/* Expandable weight details */}
-                  <Collapsible>
+                  <Collapsible defaultOpen={demoActive}>
                     <CollapsibleTrigger asChild>
                       <button
                         data-demo="weight-limits-toggle"
@@ -337,7 +347,7 @@ export default function TripFuelPage() {
                       </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pt-2">
-                      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
+                      <div data-demo="weight-limits-details" className="text-xs text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
                         <span>Fixed Weight: {Math.floor(fixedWt).toLocaleString()} lbs</span>
                         <span>TO: {leg.maxTakeoffWeight.toLocaleString()} ({Math.floor(maxFuelTakeoff).toLocaleString()} avail)</span>
                         <span>LDG: {leg.maxLandingWeight.toLocaleString()} ({Math.floor(maxFuelLanding).toLocaleString()} avail)</span>
