@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo, DEMO_PDF_PATH } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
