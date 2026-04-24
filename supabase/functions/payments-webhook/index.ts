@@ -292,8 +292,23 @@ Deno.serve(async (req) => {
       default:
         break;
     }
+    } catch (procErr) {
+      processError = procErr instanceof Error ? procErr.message : String(procErr);
+      console.error('[webhook] processing error:', processError);
+    }
 
-    return new Response(JSON.stringify({ received: true }), {
+    if (logId) {
+      await supabase
+        .from('stripe_webhook_events')
+        .update({
+          status: processError ? 'failed' : 'processed',
+          error_message: processError,
+          processed_at: new Date().toISOString(),
+        } as any)
+        .eq('id', logId);
+    }
+
+    return new Response(JSON.stringify({ received: true, ok: !processError }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
