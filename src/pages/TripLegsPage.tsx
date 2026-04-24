@@ -507,7 +507,15 @@ export default function TripLegsPage() {
 
       setAircraftList(fleet);
 
-      const itinerary = tripRes.data.itinerary_details as unknown as TripFormData | null;
+      // Demo mode: prefer the in-flight sessionStorage snapshot over the DB row
+      // so a re-run of this effect (auth state change, focus, etc.) cannot
+      // clobber the freshly parsed legs while the background save is in flight.
+      const demoCacheRaw = demoActive ? sessionStorage.getItem(`skyiq_demo_trip_${tripId}`) : null;
+      const demoCache = demoCacheRaw ? (JSON.parse(demoCacheRaw) as TripFormData) : null;
+
+      const itinerary = (demoCache && demoCache.legs?.length)
+        ? demoCache
+        : (tripRes.data.itinerary_details as unknown as TripFormData | null);
       if (itinerary && itinerary.legs && itinerary.legs.length > 0) {
         setTripForm(itinerary);
       } else {
@@ -589,6 +597,15 @@ export default function TripLegsPage() {
       handlePdfUpload(file, false);
     }
   }, [tripForm]);
+
+  // Demo: continuously mirror tripForm into sessionStorage so any reload of
+  // this page (or load() re-run) restores the multi-leg state instead of the
+  // single-leg DB placeholder.
+  useEffect(() => {
+    if (!demoActive || !tripId || !tripForm) return;
+    if (!tripForm.legs || tripForm.legs.length === 0) return;
+    sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(tripForm));
+  }, [demoActive, tripId, tripForm]);
 
   // Demo: auto-advance from wait-for-parse step when parsing finishes
   const wasParsing = useRef(false);
