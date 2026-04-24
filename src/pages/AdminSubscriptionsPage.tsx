@@ -111,29 +111,25 @@ export default function AdminSubscriptionsPage() {
   }, [isAdmin]);
 
   async function handleCancel(subId: string) {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ status: 'canceled' as any, canceled_at: new Date().toISOString() } as any)
-      .eq('id', subId);
-
+    const { error } = await supabase.functions.invoke('admin-subscription-action', {
+      body: { action: 'cancel', subscription_id: subId },
+    });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       setRows(prev => prev.map(r => r.id === subId ? { ...r, status: 'canceled' } : r));
-      toast({ title: 'Subscription canceled' });
+      toast({ title: 'Subscription canceled', description: 'Access continues until end of current period.' });
     }
   }
 
   async function handleReactivate(subId: string) {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ status: 'active' as any, canceled_at: null } as any)
-      .eq('id', subId);
-
+    const { error } = await supabase.functions.invoke('admin-subscription-action', {
+      body: { action: 'reactivate', subscription_id: subId },
+    });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.id === subId ? { ...r, status: 'active' } : r));
+      setRows(prev => prev.map(r => r.id === subId ? { ...r, status: 'active', is_enabled: true } : r));
       toast({ title: 'Subscription reactivated' });
     }
   }
@@ -152,15 +148,14 @@ export default function AdminSubscriptionsPage() {
   }
 
   async function setCycle(subId: string, cycle: 'four_weekly' | 'annual') {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ billing_cycle: cycle as any } as any)
-      .eq('id', subId);
+    const { error } = await supabase.functions.invoke('admin-subscription-action', {
+      body: { action: 'change_cycle', subscription_id: subId, cycle },
+    });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       setRows(prev => prev.map(r => r.id === subId ? { ...r, billing_cycle: cycle } : r));
-      toast({ title: 'Cycle updated' });
+      toast({ title: 'Cycle change scheduled', description: 'Applies at next renewal.' });
     }
   }
 
