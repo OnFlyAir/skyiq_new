@@ -65,6 +65,12 @@ export default function SubscriptionPage() {
   const [acting, setActing] = useState(false);
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
   const [pendingAddons, setPendingAddons] = useState<{ count: number; cents: number }>({ count: 0, cents: 0 });
+  const [invoices, setInvoices] = useState<Array<{
+    id: string; number: string | null; status: string;
+    amount_cents: number; currency: string; created: number;
+    pdf_url: string | null; hosted_url: string | null;
+  }>>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
 
   const canManageBilling = profile?.role_name === 'Admin'
     || profile?.role_name === 'Dev'
@@ -95,7 +101,27 @@ export default function SubscriptionPage() {
     setLoading(false);
   }
 
+  async function loadInvoices() {
+    if (!profile || invoicesLoading) return;
+    setInvoicesLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('list-invoices', {
+        body: { environment: getStripeEnvironment(), limit: 24 },
+      });
+      if (error) throw error;
+      setInvoices(((data as any)?.invoices ?? []));
+    } catch (e) {
+      console.error('list-invoices failed', e);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }
+
   useEffect(() => { load(); }, [profile?.id]);
+  useEffect(() => {
+    if (sub?.stripe_customer_id) loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sub?.stripe_customer_id]);
 
   useEffect(() => {
     if (checkoutReturn) {
