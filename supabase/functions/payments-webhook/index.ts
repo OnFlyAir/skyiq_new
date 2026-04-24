@@ -24,7 +24,10 @@ import {
 
 const EXEMPT_ROLES = ['Admin', 'Dev'];
 
-type AnyClient = ReturnType<typeof createClient>;
+// Use `any` for the supabase client parameter — the SDK's generic
+// inference narrows the default schema to `never` under strict TS, which
+// rejects downstream `.from('...')` calls. We don't need the inference here.
+type AnyClient = any;
 
 async function setUserEnabled(
   supabase: AnyClient,
