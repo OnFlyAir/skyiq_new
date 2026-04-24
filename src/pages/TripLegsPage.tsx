@@ -712,35 +712,61 @@ export default function TripLegsPage() {
         };
       });
 
-      // In demo mode, always force-select NSKYIQ regardless of parsed tail
+      // In demo mode, always force-select NSKYIQ regardless of parsed tail.
+      // Build it inline if `aircraftList` hasn't fully hydrated yet (state-update race).
       if (demoActive) {
-        const demoAc = aircraftList.find((ac) => ac.tail_number === "NSKYIQ");
-        if (demoAc) {
-          console.log("Demo mode: force-selecting NSKYIQ aircraft");
-          setAircraft(demoAc);
-          const defs = getAircraftDefaults(demoAc);
-          const refilledNewLegs = renumberedNewLegs.map((leg) => {
-            const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
-            const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
-            return {
-              ...leg,
-              baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
-              reserve: defs.reserve,
-              taxiFuelBurn: defs.taxiFuelBurn,
-              maxTakeoffWeight: defs.maxTakeoff,
-              maxLandingWeight: defs.maxLanding,
-              maxRampWeight: defs.maxRamp,
-              crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
-            };
-          });
-          setTripForm((prev) =>
-            prev
-              ? { ...prev, aircraftId: demoAc.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
-              : prev
-          );
-          toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
-          return;
+        let demoAc = aircraftList.find((ac) => ac.tail_number === "NSKYIQ");
+        if (!demoAc) {
+          demoAc = {
+            id: 99999,
+            tail_number: "NSKYIQ",
+            manufacturer: "Cessna / Textron",
+            type: "Citation CJ3 (C525B)",
+            user_company: user!.id,
+            is_enabled: true,
+            basic_empty_weight: 8300,
+            max_takeoff_weight: 13870,
+            max_landing_weight: 12750,
+            max_ramp_weight: 14070,
+            max_fuel_capacity: 4710,
+            preferred_reserve: 780,
+            taxi_fuel_burn: 48,
+            cruise_fuel_burn: 1040,
+            penalty_rate: 0.038,
+            carry_type_id: null,
+            default_pax_weight: 180,
+            default_baggage_with_pax: 30,
+            default_baggage_no_pax: 0,
+            default_pic_weight: 180,
+            default_sic_weight: 180,
+            default_cabin_weight: 0,
+          } as Aircraft;
+          setAircraftList((prev) => (prev.some((a) => a.tail_number === "NSKYIQ") ? prev : [demoAc!, ...prev]));
         }
+        console.log("Demo mode: force-selecting NSKYIQ aircraft");
+        setAircraft(demoAc);
+        const defs = getAircraftDefaults(demoAc);
+        const refilledNewLegs = renumberedNewLegs.map((leg) => {
+          const paxValues = leg.passengerWeights.split(",").map((w) => parseFloat(w.trim())).filter((w) => !isNaN(w));
+          const hasPax = paxValues.length > 0 && paxValues.some((w) => w > 0);
+          return {
+            ...leg,
+            baggage: hasPax ? defs.defaultBaggageWithPax : defs.defaultBaggageNoPax,
+            reserve: defs.reserve,
+            taxiFuelBurn: defs.taxiFuelBurn,
+            maxTakeoffWeight: defs.maxTakeoff,
+            maxLandingWeight: defs.maxLanding,
+            maxRampWeight: defs.maxRamp,
+            crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
+          };
+        });
+        setTripForm((prev) =>
+          prev
+            ? { ...prev, aircraftId: demoAc!.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
+            : prev
+        );
+        toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
+        return;
       }
 
       // Match aircraft from parsed tail number
