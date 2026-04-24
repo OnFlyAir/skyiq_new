@@ -132,15 +132,16 @@ Deno.serve(async (req) => {
     };
 
     if (isFirstTrial) {
-      // 4-week paid trial: $1 charged today via add_invoice_items, then
-      // 28 days of access before regular subscription billing kicks in.
+      // 4-week paid trial: charge $1 now via a one-time line item, and start
+      // the real subscription with a 28-day free trial so the first full
+      // billing cycle hits after week 4.
       sessionParams['subscription_data[trial_period_days]'] = 28;
       sessionParams['payment_method_collection'] = 'always';
       sessionParams['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
-      sessionParams['add_invoice_items[0][price_data][currency]'] = 'usd';
-      sessionParams['add_invoice_items[0][price_data][product_data][name]'] = 'SkyIQ — 4-week trial access';
-      sessionParams['add_invoice_items[0][price_data][unit_amount]'] = 100;
-      sessionParams['add_invoice_items[0][quantity]'] = 1;
+      sessionParams['line_items[1][quantity]'] = 1;
+      sessionParams['line_items[1][price_data][currency]'] = 'usd';
+      sessionParams['line_items[1][price_data][product_data][name]'] = 'SkyIQ — 4-week trial access';
+      sessionParams['line_items[1][price_data][unit_amount]'] = 100;
     }
 
     const session = await stripeFetch('/v1/checkout/sessions', {
