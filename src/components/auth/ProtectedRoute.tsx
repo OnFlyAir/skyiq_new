@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -17,6 +18,7 @@ const ACTIVE_STATUSES = new Set(['active', 'trial', 'trialing', 'past_due']);
 
 export default function ProtectedRoute({ children, requireRole }: Props) {
   const { user, profile, loading } = useAuthContext();
+  const { active: demoActive } = useDemo();
   const location = useLocation();
   const [subStatus, setSubStatus] = useState<string | null | undefined>(undefined);
 
@@ -58,14 +60,18 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
 
   // Billing enforcement: auto-disabled accounts can only access billing/profile.
   const disabled = profile && profile.is_enabled === false;
-  if (disabled && !exempt && !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))) {
+  if (disabled && !exempt && !demoActive && !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/subscription?blocked=1" replace />;
   }
 
   // Paywall for brand-new users: no subscription yet → force onboarding.
   // Waits for subStatus to resolve (undefined = still loading).
+  // Skip the paywall while a guided demo is running so the demo user can
+  // freely move through /trips/new, /fleet, etc. without being kicked to
+  // /onboarding (which would render a blank screen mid-demo).
   if (
     !exempt &&
+    !demoActive &&
     profile &&
     subStatus === null &&
     !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))
@@ -76,6 +82,7 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   // Also gate users whose sub exists but isn't in an access-granting state.
   if (
     !exempt &&
+    !demoActive &&
     profile &&
     typeof subStatus === 'string' &&
     !ACTIVE_STATUSES.has(subStatus) &&
