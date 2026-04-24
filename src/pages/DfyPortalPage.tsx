@@ -74,12 +74,44 @@ export default function DfyPortalPage() {
   }, [user]);
 
   async function loadData() {
-    const { data: clients } = await supabase
+    // Any logged-in user can access the DFY portal. Auto-provision a
+    // dfy_clients row on first visit so the portal is immediately usable.
+    let { data: clients } = await supabase
       .from("dfy_clients" as any)
       .select("id, company_name, pricing_tier, per_trip_rate_cents, status")
       .eq("user_id", user!.id)
-      .eq("status", "active")
       .limit(1);
+
+    if (!clients || clients.length === 0) {
+      // Pull name/email from profile for a sensible default company name.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, email, company")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      const companyName =
+        (profile?.company && profile.company.trim()) ||
+        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
+        profile?.email ||
+        "DFY Client";
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("dfy_clients" as any)
+        .insert({
+          user_id: user!.id,
+          company_name: companyName,
+          contact_name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
+          contact_email: profile?.email ?? "",
+          pricing_tier: "per_trip",
+        } as any)
+        .select("id, company_name, pricing_tier, per_trip_rate_cents, status")
+        .limit(1);
+
+      if (!insertErr && inserted) {
+        clients = inserted;
+      }
+    }
 
     if (clients && clients.length > 0) {
       const c = clients[0] as any;
@@ -87,7 +119,7 @@ export default function DfyPortalPage() {
 
       const { data: reqs } = await supabase
         .from("dfy_requests" as any)
-        .select("id, status, created_at, admin_notes, pdf_storage_path, fuel_burns, parsed_result")
+        .select("id, status, created_at, admin_notes, pdf_storage_path, fuel_burns, fuel_on_board_lbs, parsed_result")
         .eq("client_id", c.id)
         .order("created_at", { ascending: false });
 
