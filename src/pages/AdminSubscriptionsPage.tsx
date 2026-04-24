@@ -218,6 +218,9 @@ export default function AdminSubscriptionsPage() {
                 <th className="text-center px-4 py-2.5 font-medium">Cycle</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
                 <th className="text-center px-4 py-2.5 font-medium">Ends</th>
+                <th className="text-center px-4 py-2.5 font-medium">
+                  <span className="inline-flex items-center gap-1"><Shield className="h-3 w-3" />Billing Mgr</span>
+                </th>
                 <th className="text-center px-4 py-2.5 font-medium">Actions</th>
               </tr>
             </thead>
@@ -226,19 +229,36 @@ export default function AdminSubscriptionsPage() {
                 <tr key={r.id} className="border-t hover:bg-secondary/30 transition-colors">
                   <td className="px-4 py-2.5 font-medium">{r.company}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">
-                    <div>{r.name}</div>
+                    <div>{r.name} <span className="text-[10px] uppercase tracking-wide text-muted-foreground">({r.role_name})</span></div>
                     <div className="text-xs">{r.email}</div>
                   </td>
                   <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
                   <td className="px-4 py-2.5 text-center">{r.aircraft_count}</td>
                   <td className="px-4 py-2.5 text-center text-xs">
-                    {r.billing_cycle === 'annual' ? 'Annual' : '4-week'}
+                    <select
+                      value={r.billing_cycle}
+                      onChange={(e) => setCycle(r.id, e.target.value as 'four_weekly' | 'annual')}
+                      className="bg-background border border-border rounded px-1.5 py-0.5 text-xs"
+                    >
+                      <option value="four_weekly">4-week</option>
+                      <option value="annual">Annual</option>
+                    </select>
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium">
                     {formatCurrencyCents(r.monthly_amount_cents)}
                   </td>
                   <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">
                     {r.status === 'trial' ? formatDate(r.trial_ends_at) : formatDate(r.current_period_end)}
+                  </td>
+                  <td className="px-4 py-2.5 text-center">
+                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
+                      <span className="text-[10px] text-muted-foreground">auto</span>
+                    ) : (
+                      <Switch
+                        checked={r.is_billing_manager}
+                        onCheckedChange={() => toggleBillingManager(r.userId, r.is_billing_manager)}
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {(r.status === 'active' || r.status === 'trial') && (
@@ -255,7 +275,7 @@ export default function AdminSubscriptionsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
               )}
             </tbody>
           </table>
