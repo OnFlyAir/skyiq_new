@@ -95,6 +95,10 @@ export default function AdminDfyPage() {
   });
   const [profiles, setProfiles] = useState<{ id: string; email: string; company: string }[]>([]);
   const [savingClient, setSavingClient] = useState(false);
+  const [usageCharges, setUsageCharges] = useState<Array<{
+    id: string; user_id: string; amount_cents: number; status: string;
+    invoice_period_end: string | null; created_at: string; description: string;
+  }>>([]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -102,13 +106,16 @@ export default function AdminDfyPage() {
   }, [isAdmin]);
 
   async function loadData() {
-    const [clientsRes, requestsRes, profilesRes] = await Promise.all([
+    const [clientsRes, requestsRes, profilesRes, chargesRes] = await Promise.all([
       supabase.from("dfy_clients" as any).select("*").order("created_at", { ascending: false }),
       supabase
         .from("dfy_requests" as any)
         .select("id, client_id, status, pdf_storage_path, admin_notes, created_at, reviewed_at, sent_at, fuel_burns, fuel_on_board_lbs, parsed_result")
         .order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, email, company"),
+      (supabase.from("dfy_usage_charges" as any) as any)
+        .select("id, user_id, amount_cents, status, invoice_period_end, created_at, description")
+        .order("created_at", { ascending: false }),
     ]);
 
     const clientsList = (clientsRes.data ?? []) as unknown as DfyClient[];
@@ -123,6 +130,7 @@ export default function AdminDfyPage() {
     setClients(clientsList);
     setRequests(enriched);
     setProfiles((profilesRes.data ?? []) as { id: string; email: string; company: string }[]);
+    setUsageCharges((chargesRes.data ?? []) as any);
     setLoading(false);
   }
 
