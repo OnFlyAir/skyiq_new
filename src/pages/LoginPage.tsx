@@ -97,24 +97,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleDevLogin() {
-    setError('');
-    setLoading(true);
-    try {
-      const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-      if (signInErr) {
-        const { error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-        if (signUpErr) { setError(signUpErr.message); setLoading(false); return; }
-        await new Promise(r => setTimeout(r, 1000));
-        const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-        if (retryErr) { setError(retryErr.message); setLoading(false); return; }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Auto-login failed');
-      setLoading(false);
-    }
-  }
-
   async function handleTryDemo() {
     setError('');
     setLoading(true);
