@@ -115,6 +115,7 @@ export default function AddAircraftPage() {
     }));
     setTailNumber('NSKYIQ');
     setBasicEmptyWeight('8300');
+    setDetailsOpen(true);
   }, [demoActive]);
 
   function applyPreset(preset: AircraftPreset) {
