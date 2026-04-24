@@ -257,10 +257,10 @@ export default function DemoOverlay() {
           style={{
             top: 'max(24px, env(safe-area-inset-top, 0px))',
             width: 'min(720px, calc(100vw - 24px))',
-            // Reserve ~280px for the tooltip dock below; otherwise fill the screen
-            // so the user can scroll through every page of the sample itinerary.
-            height: 'calc(100vh - 320px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-            maxHeight: 'calc(100vh - 280px)',
+            // Reserve enough room at the bottom for the tooltip dock so the
+            // user can always see the "Next" button on small mobile screens.
+            height: 'calc(100vh - 360px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100vh - 340px)',
           }}
         >
           <iframe
