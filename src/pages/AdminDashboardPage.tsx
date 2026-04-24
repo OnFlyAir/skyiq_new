@@ -86,6 +86,9 @@ export default function AdminDashboardPage() {
           <Button variant="outline" onClick={() => navigate("/admin/subscriptions")}>
             <CreditCard className="h-4 w-4 mr-2" /> Manage Subscriptions
           </Button>
+          <Button variant="outline" onClick={() => navigate("/admin/transaction-history")}>
+            <CreditCard className="h-4 w-4 mr-2" /> Transaction History
+          </Button>
         </div>
       </div>
 

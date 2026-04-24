@@ -35,6 +35,7 @@ import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
 import AdminDfyPage from "@/pages/AdminDfyPage";
 import AdminEmailLogPage from "@/pages/AdminEmailLogPage";
+import AdminWebhookEventsPage from "@/pages/AdminWebhookEventsPage";
 import DfyPortalPage from "@/pages/DfyPortalPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
@@ -101,6 +102,8 @@ function App() {
                   <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
                   <Route path="/admin/dfy" element={<AdminDfyPage />} />
                   <Route path="/admin/email-log" element={<AdminEmailLogPage />} />
+                  <Route path="/admin/webhook-events" element={<AdminWebhookEventsPage />} />
+                  <Route path="/admin/transaction-history" element={<AdminWebhookEventsPage />} />
 
                   {/* DFY Client Portal */}
                   <Route path="/dfy" element={<DfyPortalPage />} />
