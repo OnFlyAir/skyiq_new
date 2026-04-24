@@ -170,6 +170,10 @@ export default function AdminEmailLogPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={sendTestSuite} disabled={sendingTest}>
+            <Mail className={`h-4 w-4 mr-2 ${sendingTest ? 'animate-pulse' : ''}`} />
+            {sendingTest ? 'Sending…' : 'Send test emails'}
+          </Button>
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
