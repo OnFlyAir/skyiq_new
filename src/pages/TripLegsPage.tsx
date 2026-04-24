@@ -1003,7 +1003,8 @@ export default function TripLegsPage() {
 
   const confirmedCount = tripForm?.legs.filter((l) => l.isConfirmed).length ?? 0;
   const totalLegs = tripForm?.legs.length ?? 0;
-  const allConfirmed = confirmedCount === totalLegs && totalLegs > 0;
+  const hasRenderableLegs = totalLegs > 0;
+  const allConfirmed = hasRenderableLegs && (demoActive || confirmedCount === totalLegs);
 
   if (loading) {
     return (
