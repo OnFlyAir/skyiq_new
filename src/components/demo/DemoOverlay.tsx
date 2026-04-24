@@ -174,12 +174,13 @@ export default function DemoOverlay() {
     const bottom = top + height;
     const right = left + width;
 
+    const panelTransition = 'top 250ms ease, left 250ms ease, width 250ms ease, height 250ms ease, bottom 250ms ease, right 250ms ease';
     return (
       <>
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top), transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0, transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height, transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height, transition: panelTransition }} />
       </>
     );
   };
