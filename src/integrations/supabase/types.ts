@@ -265,6 +265,60 @@ export type Database = {
           },
         ]
       }
+      dfy_usage_charges: {
+        Row: {
+          amount_cents: number
+          client_id: string
+          created_at: string
+          description: string
+          id: string
+          invoice_period_end: string | null
+          invoiced_at: string | null
+          notes: string
+          refunded_at: string | null
+          request_id: string
+          status: string
+          stripe_invoice_item_id: string | null
+          updated_at: string
+          user_id: string
+          voided_at: string | null
+        }
+        Insert: {
+          amount_cents?: number
+          client_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_period_end?: string | null
+          invoiced_at?: string | null
+          notes?: string
+          refunded_at?: string | null
+          request_id: string
+          status?: string
+          stripe_invoice_item_id?: string | null
+          updated_at?: string
+          user_id: string
+          voided_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          client_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_period_end?: string | null
+          invoiced_at?: string | null
+          notes?: string
+          refunded_at?: string | null
+          request_id?: string
+          status?: string
+          stripe_invoice_item_id?: string | null
+          updated_at?: string
+          user_id?: string
+          voided_at?: string | null
+        }
+        Relationships: []
+      }
       email_lists: {
         Row: {
           emails: Json | null
