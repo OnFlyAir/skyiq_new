@@ -59,6 +59,11 @@ export default function OnboardingPage() {
   const [cycle, setCycle] = useState<'four_weekly' | 'annual'>('four_weekly');
   const [activating, setActivating] = useState(false);
 
+  // Track step views (one event per distinct step seen).
+  useEffect(() => {
+    track('onboarding_step_viewed', { step, total_steps: TOTAL_STEPS });
+  }, [step]);
+
   const fourWeeklyTotal = useMemo(() => calc4WeeklyTotal(planeCount), [planeCount]);
   const annualTotal = useMemo(
     () => Math.round(fourWeeklyTotal * 13 * (1 - ANNUAL_DISCOUNT)),
