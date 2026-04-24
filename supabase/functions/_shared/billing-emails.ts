@@ -2,7 +2,7 @@
 // using the RESEND_API_KEY secret. Used by payments-webhook and check-trial-reminders.
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
-const FROM_ADDRESS = 'SkyIQ <info@skyIQ.net>';
+const FROM_ADDRESS = 'SkyIQ <info@skyiq.net>';
 
 export type BillingEmailType =
   | 'trial_started'
