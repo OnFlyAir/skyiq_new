@@ -350,7 +350,7 @@ export default function OnboardingPage() {
                     <p className="text-xs text-muted-foreground">
                       {isExempt
                         ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
-                        : '$1 charged today · 30 days free · cancel anytime'}
+                        : '$1 today · 4 weeks of access · cancel anytime'}
                     </p>
                   </div>
                 </div>
