@@ -947,7 +947,7 @@ export default function TripLegsPage() {
     <div className="max-w-2xl mx-auto space-y-4 px-3 sm:p-4">
       {/* Header with Trip ID */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/trips/new")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
