@@ -24,6 +24,13 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     let lastTargetTop: number | null = null;
     let forceWindowScroll = false;
     let scrollLockUntil = 0;
+    // While a CSS transition is in flight on the overlay (spotlight + tooltip),
+    // suppress further rect commits so the visuals never update mid-animation.
+    // Matches the 250ms CSS transition in DemoOverlay with a small buffer.
+    const TRANSITION_MS = 260;
+    let transitionUntil = 0;
+    let pendingRect: DOMRect | null = null;
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
     const findScrollParent = (el: Element): Element => {
       if (forceWindowScroll) {
