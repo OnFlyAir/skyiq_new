@@ -61,7 +61,7 @@ export default function LoginPage() {
 
       if (demoPending) {
         localStorage.removeItem(DEMO_PENDING_KEY);
-        startDemo('trip');
+        startDemo('public');
         navigate('/trips/new', { replace: true });
         return;
       }
