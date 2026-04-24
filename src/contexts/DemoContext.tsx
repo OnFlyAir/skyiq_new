@@ -302,17 +302,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     title: 'All Data Is Pulled Automatically',
     description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to move on to fuel burns.",
     placement: 'right',
-  },
-  {
-    id: 'click-fuel-burns',
-    page: '',
-    target: 'next-fuel-burns-btn',
-    title: '',
-    description: '',
-    placement: 'center',
-    action: 'click',
-    autoAdvance: true,
-    requireAction: true,
+    clickOnNext: 'next-fuel-burns-btn',
   },
   {
     id: 'public-fuel-burns',
