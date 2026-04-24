@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
+import { track } from '@/lib/analytics';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 // Tiered per-plane pricing (mirrors public.calculate_subscription_price).
