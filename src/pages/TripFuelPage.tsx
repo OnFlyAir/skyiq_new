@@ -1,7 +1,7 @@
 // TripFuelPage — Step 2 of trip planning: enter fuel burns and run the optimizer.
 // Route: /trips/:tripId/fuel
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ParsingLoader from "@/components/ParsingLoader";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,12 +120,31 @@ export default function TripFuelPage() {
   const [loading, setLoading] = useState(true);
   const [optimizing, setOptimizing] = useState(false);
 
-  const demoActiveRef = useRef(demoActive);
-  useEffect(() => { demoActiveRef.current = demoActive; }, [demoActive]);
-
   useEffect(() => {
     async function loadTrip() {
       if (!tripId) return;
+
+      const cachedDemoItinerary = demoActive
+        ? sessionStorage.getItem(`skyiq_demo_trip_${tripId}`)
+        : null;
+
+      if (cachedDemoItinerary) {
+        const itinerary = JSON.parse(cachedDemoItinerary) as TripFormData;
+        setTripForm(itinerary);
+        setStartingFuel(DEMO_STARTING_FUEL);
+        const next = itinerary.legs.map((l) => l.fuelBurn || 0);
+        let slot = 0;
+        itinerary.legs.forEach((l, i) => {
+          if (l.isConfirmed && l.legNum > 0) {
+            next[i] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
+            slot += 1;
+          }
+        });
+        setFuelBurns(next);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("trips")
         .select("*")
@@ -147,7 +166,7 @@ export default function TripFuelPage() {
 
       setTripForm(itinerary);
 
-      if (demoActiveRef.current) {
+      if (demoActive) {
         // Demo: prefill starting fuel and per-leg burns by confirmed-leg slot
         setStartingFuel(DEMO_STARTING_FUEL);
         const next = itinerary.legs.map((l) => l.fuelBurn || 0);
@@ -166,7 +185,7 @@ export default function TripFuelPage() {
       setLoading(false);
     }
     loadTrip();
-  }, [tripId]);
+  }, [tripId, demoActive, navigate, toast]);
 
   const confirmedLegsWithIndex = useMemo(() => {
     if (!tripForm) return [];
@@ -191,19 +210,6 @@ export default function TripFuelPage() {
   }, [tripForm, fuelBurns, startingFuel]);
 
   const hasErrors = validations.some((v) => v.errors.length > 0);
-
-  // Demo: skip the fuel-burns page entirely. Burns are pre-filled, so auto-run
-  // the optimizer the moment we land here and validation passes.
-  const autoOptimizedRef = useRef(false);
-  useEffect(() => {
-    if (!demoActive || autoOptimizedRef.current) return;
-    if (loading || optimizing) return;
-    if (!tripForm || fuelBurns.length === 0) return;
-    if (fuelBurns.some((b) => b <= 0) || hasErrors) return;
-    autoOptimizedRef.current = true;
-    handleOptimize();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoActive, loading, optimizing, tripForm, fuelBurns, hasErrors]);
 
   const handleFuelBurnChange = (index: number, value: number) => {
     setFuelBurns((prev) => {
