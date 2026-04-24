@@ -197,6 +197,7 @@ export default function AdminSubscriptionsPage() {
   const totalMRR = rows.filter(r => r.status === 'active').reduce((s, r) => s + r.monthly_amount_cents, 0);
   const trialCount = rows.filter(r => r.status === 'trial').length;
   const pastDueCount = rows.filter(r => r.status === 'past_due').length;
+  const autoDisabledCount = rows.filter(r => !r.is_enabled && AUTO_DISABLE_STATUSES.has(r.status)).length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
