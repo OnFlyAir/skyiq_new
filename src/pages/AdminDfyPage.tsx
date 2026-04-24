@@ -35,6 +35,24 @@ interface DfyClient {
   created_at: string;
 }
 
+interface FuelBurnEntry {
+  leg: number;
+  departure: string;
+  destination: string;
+  fuel_burn_lbs: number;
+}
+
+interface ParsedLeg {
+  departure?: string;
+  destination?: string;
+}
+
+interface ParsedResult {
+  itinerary_num?: string;
+  aircraft?: string;
+  legs?: ParsedLeg[];
+}
+
 interface DfyRequest {
   id: string;
   client_id: string;
@@ -44,6 +62,9 @@ interface DfyRequest {
   created_at: string;
   reviewed_at: string | null;
   sent_at: string | null;
+  fuel_burns: FuelBurnEntry[] | null;
+  fuel_on_board_lbs: number | null;
+  parsed_result: ParsedResult | null;
   client?: DfyClient;
 }
 
@@ -83,7 +104,10 @@ export default function AdminDfyPage() {
   async function loadData() {
     const [clientsRes, requestsRes, profilesRes] = await Promise.all([
       supabase.from("dfy_clients" as any).select("*").order("created_at", { ascending: false }),
-      supabase.from("dfy_requests" as any).select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("dfy_requests" as any)
+        .select("id, client_id, status, pdf_storage_path, admin_notes, created_at, reviewed_at, sent_at, fuel_burns, fuel_on_board_lbs, parsed_result")
+        .order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, email, company"),
     ]);
 
@@ -144,8 +168,94 @@ export default function AdminDfyPage() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: `Request marked as ${status}` });
+
+    // When marking sent, fire the client completion email.
+    if (status === "sent") {
+      try {
+        await supabase.functions.invoke("notify-dfy", {
+          body: { kind: "client_completed", request_id: requestId },
+        });
+        toast({ title: "Client notified", description: "Completion email sent." });
+      } catch (e) {
+        console.error("client email failed", e);
+        toast({ title: "Email failed", description: "Status saved, but client email did not send.", variant: "destructive" });
+      }
+    } else {
+      toast({ title: `Request marked as ${status}` });
+    }
     loadData();
+  };
+
+  const runStandardFlow = async (req: DfyRequest) => {
+    if (!req.client) {
+      toast({ title: "Missing client", variant: "destructive" });
+      return;
+    }
+    const parsed = req.parsed_result || {};
+    const fuelBurns = req.fuel_burns || [];
+
+    // Build legs prefilled from parsed itinerary + fuel burns. We merge by leg
+    // index so admin sees airports + burns already populated in /trips/.../legs.
+    const parsedLegs = parsed.legs || [];
+    const legs = (parsedLegs.length ? parsedLegs : fuelBurns).map((src, i) => {
+      const burn = fuelBurns[i];
+      const departure = (parsedLegs[i]?.departure || burn?.departure || "").toUpperCase();
+      const destination = (parsedLegs[i]?.destination || burn?.destination || "").toUpperCase();
+      return {
+        departure,
+        destination,
+        fuelBurn: burn?.fuel_burn_lbs ?? 0,
+      };
+    });
+
+    // Find an aircraft owned by the client matching the parsed tail number, if any.
+    let aircraftTail = parsed.aircraft || "";
+    if (aircraftTail) {
+      const { data: ac } = await supabase
+        .from("aircrafts")
+        .select("tail_number")
+        .eq("user_company", req.client.user_id)
+        .eq("tail_number", aircraftTail)
+        .limit(1);
+      if (!ac || ac.length === 0) aircraftTail = "";
+    }
+
+    const { data: trip, error } = await supabase
+      .from("trips")
+      .insert({
+        user_company: req.client.user_id,
+        itinerary_num: parsed.itinerary_num || "",
+        details: { source: "dfy", dfy_request_id: req.id },
+        itinerary_details: {
+          itineraryNum: parsed.itinerary_num || "",
+          startingFuel: req.fuel_on_board_lbs ?? 0,
+          aircraftId: aircraftTail,
+          basicEmptyWeight: 0,
+          maxFuelReserve: 0,
+          penalty: 0,
+          lbsPerHour: 0,
+          legs,
+        },
+        savings: 0,
+      })
+      .select("id")
+      .single();
+
+    if (error || !trip) {
+      toast({ title: "Failed to create trip", description: error?.message ?? "", variant: "destructive" });
+      return;
+    }
+
+    // Move the request to processing if it's still pending so the dashboard reflects work-in-progress.
+    if (req.status === "pending") {
+      await supabase
+        .from("dfy_requests" as any)
+        .update({ status: "processing", reviewed_by: profile?.id, reviewed_at: new Date().toISOString() } as any)
+        .eq("id", req.id);
+    }
+
+    toast({ title: "Trip prefilled", description: "Opening standard fuel-planning flow…" });
+    navigate(`/trips/${trip.id}/legs`);
   };
 
   if (!isAdmin) {
@@ -247,13 +357,19 @@ export default function AdminDfyPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {requests.map((req) => (
+              {requests.map((req) => {
+                const parsed = req.parsed_result || {};
+                const burns = req.fuel_burns || [];
+                const itineraryNum = parsed.itinerary_num;
+                const aircraft = parsed.aircraft;
+                return (
                 <Card key={req.id}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between">
-                      <div>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
                         <p className="font-medium">{req.client?.company_name || "Unknown Client"}</p>
                         <p className="text-xs text-muted-foreground">
+                          {req.client?.contact_email || "—"} ·{" "}
                           {new Date(req.created_at).toLocaleDateString("en-US", {
                             month: "short", day: "numeric", year: "numeric",
                             hour: "numeric", minute: "2-digit",
@@ -263,10 +379,15 @@ export default function AdminDfyPage() {
                           <p className="text-xs text-muted-foreground mt-1">Notes: {req.admin_notes}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
                         <Badge variant={statusColors[req.status] || "secondary"}>
                           {req.status}
                         </Badge>
+                        {(req.status === "pending" || req.status === "processing") && (
+                          <Button size="sm" variant="default" onClick={() => runStandardFlow(req)}>
+                            <FileText className="h-3 w-3 mr-1" /> Run Standard Flow
+                          </Button>
+                        )}
                         {req.status === "pending" && (
                           <Button size="sm" variant="outline" onClick={() => updateRequestStatus(req.id, "processing")}>
                             Start Processing
@@ -279,7 +400,7 @@ export default function AdminDfyPage() {
                         )}
                         {req.status === "approved" && (
                           <Button size="sm" onClick={() => updateRequestStatus(req.id, "sent")}>
-                            <Send className="h-3 w-3 mr-1" /> Mark Sent
+                            <Send className="h-3 w-3 mr-1" /> Mark Sent &amp; Email Client
                           </Button>
                         )}
                         {(req.status === "pending" || req.status === "processing") && (
@@ -289,9 +410,40 @@ export default function AdminDfyPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Parsed itinerary + fuel data preview for the admin */}
+                    <div className="rounded-md border bg-secondary/40 p-3 text-xs space-y-2">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <span><span className="text-muted-foreground">Itinerary #:</span>{" "}
+                          <span className="font-medium">{itineraryNum || "—"}</span></span>
+                        <span><span className="text-muted-foreground">Aircraft:</span>{" "}
+                          <span className="font-medium">{aircraft || "—"}</span></span>
+                        <span><span className="text-muted-foreground">Fuel on board:</span>{" "}
+                          <span className="font-medium">
+                            {req.fuel_on_board_lbs != null ? `${req.fuel_on_board_lbs} lbs` : "—"}
+                          </span></span>
+                        {req.pdf_storage_path && (
+                          <span className="text-muted-foreground truncate max-w-[260px]">
+                            PDF: {req.pdf_storage_path.split("/").pop()}
+                          </span>
+                        )}
+                      </div>
+                      {burns.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {burns.map((b, i) => (
+                            <span key={i} className="bg-background border rounded px-2 py-0.5">
+                              L{b.leg} {b.departure}→{b.destination}: <strong>{b.fuel_burn_lbs}</strong> lbs
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No fuel burns provided.</p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
