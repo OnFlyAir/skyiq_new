@@ -194,15 +194,17 @@ export default function DemoOverlay() {
     <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
 
-      {/* Spotlight ring */}
+      {/* Spotlight ring — smooth transition + soft glow instead of pulse to avoid wobble */}
       {hasTarget && (
         <div
-          className="absolute border-2 border-primary rounded-lg pointer-events-none animate-pulse"
+          className="absolute border-2 border-primary rounded-lg pointer-events-none"
           style={{
             top: targetRect!.top - padding,
             left: targetRect!.left - padding,
             width: targetRect!.width + padding * 2,
             height: targetRect!.height + padding * 2,
+            transition: 'top 250ms ease, left 250ms ease, width 250ms ease, height 250ms ease',
+            boxShadow: '0 0 24px hsl(var(--primary) / 0.45)',
           }}
         />
       )}
