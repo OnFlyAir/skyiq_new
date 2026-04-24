@@ -31,6 +31,9 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     let transitionUntil = 0;
     let pendingRect: DOMRect | null = null;
     let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+    // Track every scroller we've issued a smooth-scroll on so we can cancel
+    // them on cleanup (i.e. when the user advances to the next step).
+    const activeScrollers = new Set<Element>();
 
     const findScrollParent = (el: Element): Element => {
       if (forceWindowScroll) {
@@ -178,6 +181,7 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
         if (Math.abs(delta) > 8) {
           const scroller = findScrollParent(el);
           scroller.scrollBy({ top: delta, behavior: 'smooth' });
+          activeScrollers.add(scroller);
           // Lock further scroll attempts for ~500ms while the animation runs.
           scrollLockUntil = Date.now() + 500;
         } else {
@@ -185,6 +189,8 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
         }
       } else {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        activeScrollers.add(findScrollParent(el));
+        activeScrollers.add(document.scrollingElement || document.documentElement);
         scrollLockUntil = Date.now() + 500;
       }
     };
@@ -195,6 +201,18 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     return () => {
       clearInterval(interval);
       if (pendingTimer) clearTimeout(pendingTimer);
+      // Cancel any in-flight smooth scrolls from this step so they can't bleed
+      // into the next step's animation. Issuing a 0-delta `auto` scroll on the
+      // same element interrupts an ongoing smooth scroll in all major browsers.
+      activeScrollers.forEach((scroller) => {
+        try {
+          const el = scroller as HTMLElement;
+          el.scrollTo({ top: el.scrollTop, left: el.scrollLeft, behavior: 'auto' });
+        } catch {
+          /* noop — scroller may have unmounted */
+        }
+      });
+      activeScrollers.clear();
     };
   }, [active, currentStep]);
 
