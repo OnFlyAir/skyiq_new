@@ -134,9 +134,7 @@ export default function NewTripPage() {
     // Hide picker immediately and kick off upload so the "Parsing Your Itinerary"
     // tooltip can activate without waiting on the file-select animation.
     setShowDemoFilePicker(false);
-    const res = await fetch(DEMO_PDF_PATH);
-    const blob = await res.blob();
-    const file = new File([blob], 'sample-itinerary.pdf', { type: 'application/pdf' });
+    const file = new File(['demo itinerary'], 'sample-itinerary.pdf', { type: 'application/pdf' });
     handlePdfUpload(file);
   };
 

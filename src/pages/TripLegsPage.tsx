@@ -462,6 +462,20 @@ export default function TripLegsPage() {
     async function load() {
       if (!tripId || !user) return;
 
+      if (demoActive && pendingParseFile.current) {
+        setTripForm((prev) => prev ?? {
+          itineraryNum: "",
+          startingFuel: 0,
+          aircraftId: "NSKYIQ",
+          basicEmptyWeight: 0,
+          maxFuelReserve: 0,
+          penalty: 0,
+          lbsPerHour: 0,
+          legs: [],
+        });
+        setLoading(false);
+      }
+
       // Load fleet list and trip in parallel
       const [tripRes, fleetRes] = await Promise.all([
         supabase.from("trips").select("*").eq("id", parseInt(tripId)).single(),

@@ -191,8 +191,11 @@ export default function TripFuelPage() {
     if (!tripForm) return [];
     return tripForm.legs
       .map((leg, originalIndex) => ({ leg, originalIndex }))
-      .filter(({ leg }) => leg.isConfirmed && leg.legNum > 0);
-  }, [tripForm]);
+      .filter(({ leg }) => {
+        if (demoActive) return leg.legNum > 0 && !!(leg.departure || leg.destination);
+        return leg.isConfirmed && leg.legNum > 0;
+      });
+  }, [tripForm, demoActive]);
 
   // Validate all legs
   const validations = useMemo(() => {
