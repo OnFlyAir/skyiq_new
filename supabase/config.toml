@@ -2,3 +2,6 @@ project_id = "bfoxdonskxtlxfqayili"
 
 [functions.payments-webhook]
 verify_jwt = false
+
+[functions.check-trial-reminders]
+verify_jwt = false
