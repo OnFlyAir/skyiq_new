@@ -282,7 +282,7 @@ export default function DemoOverlay() {
         isInteractiveStep={isWaitStep}
         onNext={handleNext}
         onPrev={prevStep}
-        onSkip={endDemo}
+        onSkip={handleSkip}
       />
     </div>
   );
