@@ -66,17 +66,27 @@ export default function DemoOverlay() {
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
 
+    // Respect iOS/Android safe-area insets so the tooltip never sits under the
+    // status bar / notch (top) or the home indicator (bottom). Also pad the
+    // sides for landscape notches.
+    const safeTop = 'max(12px, env(safe-area-inset-top, 0px))';
+    const safeBottom = 'max(16px, env(safe-area-inset-bottom, 0px))';
+    const safeLeft = 'max(12px, env(safe-area-inset-left, 0px))';
+    const safeRight = 'max(12px, env(safe-area-inset-right, 0px))';
+    // Top-dock sits below the sticky app header (~64px) PLUS the safe-area top inset.
+    const safeTopDock = 'calc(env(safe-area-inset-top, 0px) + 80px)';
+
     // PDF preview step: dock the tooltip below the PDF panel so it doesn't cover it.
     if (currentStep.id === 'preview-itinerary-pdf') {
       return isMobile
-        ? { position: 'fixed', left: 12, right: 12, bottom: 16, width: 'auto' }
+        ? { position: 'fixed', left: safeLeft, right: safeRight, bottom: safeBottom, width: 'auto' }
         : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, width: 360 };
     }
 
     // 'center' placement always centers tooltip on screen, regardless of target
     if (currentStep.placement === 'center' || !targetRect) {
       if (isMobile) {
-        return { position: 'fixed', left: 12, right: 12, bottom: 16, width: 'auto' };
+        return { position: 'fixed', left: safeLeft, right: safeRight, bottom: safeBottom, width: 'auto' };
       }
       return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
@@ -90,10 +100,9 @@ export default function DemoOverlay() {
         dock = targetMid > window.innerHeight / 2 ? 'top' : 'bottom';
         setTimeout(() => setLockedMobileDock(dock!), 0);
       }
-      // Top-dock sits BELOW the sticky app header (~64px) so it doesn't cover the page title.
       return dock === 'top'
-        ? { position: 'fixed', top: 80, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
-        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' };
+        ? { position: 'fixed', top: safeTopDock, left: safeLeft, right: safeRight, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
+        : { position: 'fixed', bottom: safeBottom, left: safeLeft, right: safeRight, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' };
     }
 
     const tooltipHeight = 200;

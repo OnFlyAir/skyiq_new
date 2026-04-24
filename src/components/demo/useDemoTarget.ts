@@ -97,11 +97,24 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
       const rect = el.getBoundingClientRect();
 
       const isMobile = window.innerWidth < 640;
-      const reservedForTooltip = isMobile ? 260 : 0;
+      // Read iOS/Android safe-area insets so the spotlight clearance accounts
+      // for the status bar / notch (top) and home indicator (bottom).
+      const readInset = (side: 'top' | 'bottom' | 'left' | 'right'): number => {
+        if (typeof window === 'undefined') return 0;
+        const probe = document.createElement('div');
+        probe.style.cssText = `position:fixed;${side}:env(safe-area-inset-${side},0px);visibility:hidden;pointer-events:none;`;
+        document.body.appendChild(probe);
+        const value = parseFloat(getComputedStyle(probe)[side as any]) || 0;
+        probe.remove();
+        return value;
+      };
+      const safeTopInset = isMobile ? readInset('top') : 0;
+      const safeBottomInset = isMobile ? readInset('bottom') : 0;
+      const reservedForTooltip = isMobile ? 260 + safeBottomInset : 0;
       const viewportPadding = 24;
 
       const isWithinViewport =
-        rect.top >= viewportPadding &&
+        rect.top >= viewportPadding + safeTopInset &&
         rect.bottom <= window.innerHeight - reservedForTooltip - viewportPadding &&
         rect.left >= viewportPadding &&
         rect.right <= window.innerWidth - viewportPadding;
