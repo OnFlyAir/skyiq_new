@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrencyCents } from '@/lib/format';
 
@@ -22,6 +23,8 @@ interface SubRow {
   monthly_amount_cents: number;
   trial_ends_at: string;
   current_period_end: string | null;
+  is_billing_manager: boolean;
+  role_name: string;
 }
 
 function statusBadge(status: string) {
