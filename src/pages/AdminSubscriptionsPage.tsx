@@ -163,7 +163,20 @@ export default function AdminSubscriptionsPage() {
       toast({ title: 'Cycle updated' });
     }
   }
-  if (!isAdmin) {
+
+  async function toggleAccountEnabled(userId: string, current: boolean) {
+    const next = !current;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_enabled: next } as any)
+      .eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_enabled: next } : r));
+      toast({ title: next ? 'Account enabled' : 'Account disabled' });
+    }
+  }
     return (
       <div className="max-w-md mx-auto text-center p-8">
         <h1 className="text-xl font-bold mb-2">Access Denied</h1>
