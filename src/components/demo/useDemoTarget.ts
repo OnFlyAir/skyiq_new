@@ -180,10 +180,25 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
           node = node.parentElement;
         }
 
+        // Compute desiredTop so the target sits in the half of the viewport
+        // NOT occupied by the docked tooltip.
         let desiredTop: number;
         if (overrideOffset != null) {
           desiredTop = overrideOffset;
+        } else if (tooltipDock === 'top') {
+          // Tooltip docks at top; place target in lower free area.
+          // Center the target in the free zone if it's small enough; otherwise
+          // align it just below the tooltip band.
+          const freeStart = tooltipTopBand + 16;
+          const freeEnd = window.innerHeight - safeBottomInset - 24;
+          const freeHeight = Math.max(120, freeEnd - freeStart);
+          if (rect.height < freeHeight) {
+            desiredTop = freeStart + Math.max(0, (freeHeight - rect.height) / 2);
+          } else {
+            desiredTop = freeStart;
+          }
         } else {
+          // Tooltip docks at bottom; place target in upper free area.
           const stickies = document.querySelectorAll('.sticky, [data-sticky]');
           let stickyBottom = 0;
           stickies.forEach((s) => {
@@ -194,7 +209,14 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
               stickyBottom = Math.max(stickyBottom, sRect.bottom);
             }
           });
-          desiredTop = Math.max(120, stickyBottom + 24);
+          const freeStart = Math.max(safeTopInset + MOBILE_HEADER, stickyBottom) + 16;
+          const freeEnd = window.innerHeight - tooltipBottomBand - 16;
+          const freeHeight = Math.max(120, freeEnd - freeStart);
+          if (rect.height < freeHeight) {
+            desiredTop = freeStart + Math.max(0, (freeHeight - rect.height) / 2);
+          } else {
+            desiredTop = freeStart;
+          }
         }
 
         const delta = rect.top - desiredTop;
