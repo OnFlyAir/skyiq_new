@@ -35,6 +35,7 @@ import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
 import AdminDfyPage from "@/pages/AdminDfyPage";
 import AdminEmailLogPage from "@/pages/AdminEmailLogPage";
+import AdminWebhookEventsPage from "@/pages/AdminWebhookEventsPage";
 import DfyPortalPage from "@/pages/DfyPortalPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
