@@ -16,6 +16,12 @@ export default function DemoOverlay() {
   const targetRect = useDemoTarget(active, currentStep);
   useDemoAutoAdvance(active, currentStep, nextStep);
 
+  // ---------- ALL HOOKS MUST BE DECLARED BEFORE ANY EARLY RETURN ----------
+  // Lock the chosen placement & mobile dock side per-step so smooth scroll
+  // movement doesn't cause the tooltip to flip mid-animation.
+  const [lockedPlacement, setLockedPlacement] = useState<Placement | null>(null);
+  const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
+
   // Navigate to the step's page if needed
   useEffect(() => {
     if (!active || !currentStep) return;
@@ -25,6 +31,13 @@ export default function DemoOverlay() {
     }
   }, [active, currentStep, location.pathname, navigate]);
 
+  // Reset locks whenever the step changes (or the demo is closed).
+  useEffect(() => {
+    setLockedPlacement(null);
+    setLockedMobileDock(null);
+  }, [currentStep?.id]);
+
+  // ---------- Safe to early-return below this line ----------
   if (!active || !currentStep) return null;
 
   // When the user clicks Next on a step that has a click-action target, fire
@@ -51,16 +64,6 @@ export default function DemoOverlay() {
   const showNextButton = !currentStep.requireAction && !waitingForTarget && !isWaitStep;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
-  // Lock the chosen placement & mobile dock side per-step so smooth scroll
-  // movement doesn't cause the tooltip to flip mid-animation.
-  const [lockedPlacement, setLockedPlacement] = useState<Placement | null>(null);
-  const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
-
-  // Reset locks whenever the step changes.
-  useEffect(() => {
-    setLockedPlacement(null);
-    setLockedMobileDock(null);
-  }, [currentStep?.id]);
 
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
