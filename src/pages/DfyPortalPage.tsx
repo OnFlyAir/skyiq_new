@@ -465,6 +465,12 @@ export default function DfyPortalPage() {
                       </div>
                     )}
 
+                    {typeof req.fuel_on_board_lbs === "number" && req.fuel_on_board_lbs > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Fuel on board at start: <strong>{req.fuel_on_board_lbs} lbs</strong>
+                      </p>
+                    )}
+
                     {req.admin_notes && (
                       <p className="text-xs text-muted-foreground border-t pt-2 mt-2">
                         Admin: {req.admin_notes}
