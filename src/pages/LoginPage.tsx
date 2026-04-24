@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { POST_DEMO_HIGHLIGHT_KEY } from '@/components/demo/DemoOverlay';
+import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
 
-const DEV_EMAIL = 'dev@skyiq.test';
+export const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
 const ADMIN_EMAIL = 'admin@skyiq.net';
 const ADMIN_PASSWORD = 'admin123';
@@ -46,7 +47,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && user && profile) {
-      if (localStorage.getItem(DEMO_PENDING_KEY) === 'true') {
+      const isDev = profile.email === DEV_EMAIL;
+      const demoPending = localStorage.getItem(DEMO_PENDING_KEY) === 'true';
+
+      // Dev/demo user is sandbox-only — never let it into the real app.
+      // The only valid path is: click "Try the Demo" → demoPending flag set
+      // → start the guided tour. Anything else means a stale/cached session,
+      // so sign it out and stay on the login page.
+      if (isDev && !demoPending) {
+        supabase.auth.signOut();
+        return;
+      }
+
+      if (demoPending) {
         localStorage.removeItem(DEMO_PENDING_KEY);
         startDemo('trip');
         navigate('/trips/new', { replace: true });

@@ -54,6 +54,13 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
     return <Navigate to="/login" replace />;
   }
 
+  // Dev/demo sandbox account is locked to the guided demo only. If somehow
+  // a session for it lands on a real protected route without the demo
+  // active, kick it back to /login (RootRedirect will sign it out).
+  if (profile?.email === 'dev@skyiq.test' && !demoActive) {
+    return <Navigate to="/" replace />;
+  }
+
   if (requireRole && profile && !requireRole.includes(profile.role_name)) {
     return <Navigate to="/dashboard" replace />;
   }
