@@ -140,6 +140,17 @@ export default function LoginPage() {
   async function handleTryDemo() {
     setError('');
     setLoading(true);
+    // Wipe any stale demo state so a re-launch always starts cleanly at step 0
+    // and doesn't try to resume on a previous trip's cached data.
+    try {
+      localStorage.removeItem('skyiq_demo_step');
+      localStorage.removeItem('skyiq_demo_flow');
+      localStorage.removeItem('skyiq_demo_active');
+      sessionStorage.removeItem('skyiq_public_demo_session');
+      Object.keys(sessionStorage)
+        .filter((k) => k.startsWith('skyiq_demo_trip_'))
+        .forEach((k) => sessionStorage.removeItem(k));
+    } catch { /* ignore */ }
     localStorage.setItem(DEMO_PENDING_KEY, 'true');
     try {
       const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
