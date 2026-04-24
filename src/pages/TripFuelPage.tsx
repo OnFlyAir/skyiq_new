@@ -135,7 +135,7 @@ export default function TripFuelPage() {
         const next = itinerary.legs.map((l) => l.fuelBurn || 0);
         let slot = 0;
         itinerary.legs.forEach((l, i) => {
-          if (l.isConfirmed && l.legNum > 0) {
+          if (l.legNum > 0 && (l.departure || l.destination)) {
             next[i] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
             slot += 1;
           }
@@ -167,12 +167,12 @@ export default function TripFuelPage() {
       setTripForm(itinerary);
 
       if (demoActive) {
-        // Demo: prefill starting fuel and per-leg burns by confirmed-leg slot
+        // Demo: prefill starting fuel and per-leg burns by visible-leg slot
         setStartingFuel(DEMO_STARTING_FUEL);
         const next = itinerary.legs.map((l) => l.fuelBurn || 0);
         let slot = 0;
         itinerary.legs.forEach((l, i) => {
-          if (l.isConfirmed && l.legNum > 0) {
+          if (l.legNum > 0 && (l.departure || l.destination)) {
             next[i] = DEMO_BURNS_BY_LEG[slot] ?? 1500;
             slot += 1;
           }
@@ -300,7 +300,7 @@ export default function TripFuelPage() {
         </Card>
 
         {/* Per-Leg Fuel Burns */}
-        <h2 className="text-lg font-semibold text-muted-foreground">Enter fuel burns for each leg</h2>
+        <h2 className="text-lg font-semibold text-muted-foreground">Enter in your fuel burns here</h2>
         <div data-demo="fuel-burn-inputs" className="space-y-2.5">
           {confirmedLegsWithIndex.map(({ leg, originalIndex }) => {
             const v = validations[originalIndex];
