@@ -328,21 +328,20 @@ export default function AdminDfyPage() {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
 
-  // Billing summary
+  // Real billing rollup driven by dfy_usage_charges (the source of truth
+  // that flows onto the user's next subscription invoice).
   const billingByClient = clients.map((c) => {
-    const clientReqs = requests.filter((r) => r.client_id === c.id && (r.status === "sent" || r.status === "approved"));
-    const monthReqs = clientReqs.filter((r) => {
-      const d = new Date(r.created_at);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    const revenue = c.pricing_tier === "per_trip"
-      ? monthReqs.length * (c.per_trip_rate_cents / 100)
-      : c.monthly_rate_cents / 100;
-    return { client: c, tripsThisMonth: monthReqs.length, revenue };
+    const userCharges = usageCharges.filter((ch) => ch.user_id === c.user_id);
+    const pendingCents = userCharges.filter((ch) => ch.status === "pending_invoice").reduce((s, ch) => s + ch.amount_cents, 0);
+    const invoicedCents = userCharges.filter((ch) => ch.status === "invoiced").reduce((s, ch) => s + ch.amount_cents, 0);
+    const refundedCents = userCharges.filter((ch) => ch.status === "refunded").reduce((s, ch) => s + ch.amount_cents, 0);
+    return {
+      client: c,
+      pendingCount: userCharges.filter((ch) => ch.status === "pending_invoice").length,
+      pendingCents, invoicedCents, refundedCents,
+    };
   });
-
-  const totalRevenue = billingByClient.reduce((s, b) => s + b.revenue, 0);
+  const totalPendingCents = billingByClient.reduce((s, b) => s + b.pendingCents, 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 p-4">
