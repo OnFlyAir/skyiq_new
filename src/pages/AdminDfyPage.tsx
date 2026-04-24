@@ -35,6 +35,24 @@ interface DfyClient {
   created_at: string;
 }
 
+interface FuelBurnEntry {
+  leg: number;
+  departure: string;
+  destination: string;
+  fuel_burn_lbs: number;
+}
+
+interface ParsedLeg {
+  departure?: string;
+  destination?: string;
+}
+
+interface ParsedResult {
+  itinerary_num?: string;
+  aircraft?: string;
+  legs?: ParsedLeg[];
+}
+
 interface DfyRequest {
   id: string;
   client_id: string;
@@ -44,6 +62,9 @@ interface DfyRequest {
   created_at: string;
   reviewed_at: string | null;
   sent_at: string | null;
+  fuel_burns: FuelBurnEntry[] | null;
+  fuel_on_board_lbs: number | null;
+  parsed_result: ParsedResult | null;
   client?: DfyClient;
 }
 
