@@ -312,7 +312,7 @@ export default function LoginPage() {
           Sign up today for $1
         </Link>
         <p className="mt-2 text-xs text-center text-muted-foreground">
-          $1 today · 30 days free · cancel anytime
+          $1 today · 4 weeks of access · cancel anytime
         </p>
       </div>
 

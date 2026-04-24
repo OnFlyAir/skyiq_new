@@ -162,20 +162,20 @@ export default function OnboardingPage() {
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-foreground">Try SkyIQ for $1</h2>
-                    <p className="text-xs text-muted-foreground">30 days · cancel anytime</p>
+                    <h2 className="text-xl font-bold text-foreground">4 weeks of SkyIQ for $1</h2>
+                    <p className="text-xs text-muted-foreground">28 days · cancel anytime</p>
                   </div>
                 </div>
                 <p className="text-sm text-foreground/90">
-                  We charge <strong>$1 today</strong> just to verify your card. You then get
-                  <strong> 30 full days free</strong> to explore every feature. Your subscription
-                  only starts after the trial ends — cancel any time before and pay nothing more.
+                  Pay just <strong>$1 today</strong> and get <strong>4 full weeks</strong> of
+                  SkyIQ — every feature unlocked. Your regular subscription only kicks in
+                  after the 4 weeks end. Cancel any time before and pay nothing more.
                 </p>
                 <ul className="space-y-1.5 text-sm">
                   {[
-                    '$1 charged today (refundable)',
-                    '30 days of full access — every feature unlocked',
-                    'Cancel before day 30 and pay nothing more',
+                    '$1 charged today',
+                    '4 full weeks of access — every feature unlocked',
+                    'Cancel before week 4 and pay nothing more',
                   ].map((it) => (
                     <li key={it} className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
@@ -291,7 +291,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Nothing's charged today beyond the $1 trial verification.
+                  Nothing else is charged today beyond the $1 for your 4-week trial.
                 </p>
               </div>
             )}
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
                     <p className="text-xs text-muted-foreground">
                       {isExempt
                         ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
-                        : '$1 charged today · 30 days free · cancel anytime'}
+                        : '$1 today · 4 weeks of access · cancel anytime'}
                     </p>
                   </div>
                 </div>

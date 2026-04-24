@@ -275,7 +275,7 @@ export default function SubscriptionPage() {
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
               <div>
                 <p className="font-medium text-amber-900">No subscription yet</p>
-                <p className="text-sm text-amber-700 mt-1">{isExempt ? 'Click below to activate your account.' : 'Start your $1 trial to unlock all features for 30 days.'}</p>
+                <p className="text-sm text-amber-700 mt-1">{isExempt ? 'Click below to activate your account.' : 'Pay $1 today to unlock 4 weeks of full access.'}</p>
               </div>
             </div>
           ) : (
