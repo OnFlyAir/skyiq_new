@@ -322,8 +322,9 @@ export default function LoginPage() {
       </div>
 
       {/* Sign up today for $1 — primary conversion CTA */}
-      <div className="mt-4">
+      <div className={`mt-4 ${postDemoHighlight ? 'rounded-lg ring-4 ring-primary/60 ring-offset-2 ring-offset-background animate-pulse' : ''}`}>
         <Link
+          ref={signupCtaRef}
           to="/signup?tour=1"
           className="w-full py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-lg hover:opacity-95 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2 shadow-md shadow-primary/20"
         >
@@ -331,7 +332,7 @@ export default function LoginPage() {
           Sign up today for $1
         </Link>
         <p className="mt-2 text-xs text-center text-muted-foreground">
-          $1 today · 4 weeks of access · cancel anytime
+          {postDemoHighlight ? '👆 Loved the demo? Get 4 weeks of access for $1 — cancel anytime.' : '$1 today · 4 weeks of access · cancel anytime'}
         </p>
       </div>
 
