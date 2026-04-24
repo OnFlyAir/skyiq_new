@@ -205,11 +205,22 @@ export default function AdminDfyPage() {
       );
       if (chargeErr) console.error("usage charge insert failed", chargeErr);
 
+      // Push the charge to Stripe as an invoice item so it auto-attaches to
+      // the customer's next renewal invoice.
+      try {
+        const { error: pushErr } = await supabase.functions.invoke("push-dfy-charge", {
+          body: { request_id: requestId },
+        });
+        if (pushErr) console.error("push-dfy-charge failed", pushErr);
+      } catch (e) {
+        console.error("push-dfy-charge threw", e);
+      }
+
       try {
         await supabase.functions.invoke("notify-dfy", {
           body: { kind: "client_completed", request_id: requestId },
         });
-        toast({ title: "Sent & billed", description: "$25 added to client's next invoice." });
+        toast({ title: "Sent & billed", description: "$25 added to client's next Stripe invoice." });
       } catch (e) {
         console.error("client email failed", e);
         toast({ title: "Email failed", description: "Status & charge saved, but email did not send.", variant: "destructive" });
