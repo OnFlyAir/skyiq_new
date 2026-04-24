@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2 } from 'lucide-react';
+import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, ExternalLink, ShieldAlert } from 'lucide-react';
 import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
+import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
+import { getStripeEnvironment } from '@/lib/stripe';
 
 interface Subscription {
   id: string;
@@ -19,6 +22,7 @@ interface Subscription {
   aircraft_count: number;
   monthly_amount_cents: number;
   canceled_at: string | null;
+  stripe_customer_id: string | null;
 }
 
 const PRICING_TIERS = [
@@ -41,6 +45,7 @@ function statusColor(status: string) {
     case 'trial': return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'active': return 'bg-green-100 text-green-800 border-green-200';
     case 'past_due': return 'bg-red-100 text-red-800 border-red-200';
+    case 'canceled': return 'bg-gray-100 text-gray-800 border-gray-200';
     default: return 'bg-muted text-muted-foreground';
   }
 }
@@ -53,137 +58,166 @@ function formatDate(d: string | null) {
 export default function SubscriptionPage() {
   const { profile } = useAuthContext();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [aircraftCount, setAircraftCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
+  const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
 
   const canManageBilling = profile?.role_name === 'Admin'
     || profile?.role_name === 'Dev'
     || !!profile?.is_billing_manager;
 
   const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
+  const isBlocked = profile?.is_enabled === false && !isExempt;
+  const showCheckoutBanner = searchParams.get('blocked') === '1';
+  const checkoutReturn = searchParams.get('checkout') === 'return';
 
-  useEffect(() => {
+  async function load() {
     if (!profile) return;
-    async function load() {
-      const [subRes, acRes] = await Promise.all([
-        supabase.from('subscriptions').select('*').eq('user_id', profile!.id).maybeSingle(),
-        supabase.from('aircrafts').select('id').eq('user_company', profile!.id).eq('is_enabled', true),
-      ]);
-      setSub(subRes.data as unknown as Subscription);
-      setAircraftCount(acRes.data?.length ?? 0);
-      setLoading(false);
-    }
-    load();
-  }, [profile]);
-
-  async function startCheckout(cycle: 'four_weekly' | 'annual') {
-    setActing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { cycle, return_url: `${window.location.origin}/subscription` },
-      });
-      if (error) throw error;
-      if (data?.bypassed) {
-        toast({ title: 'Account activated', description: 'No billing required for your role.' });
-        window.location.reload();
-        return;
-      }
-      if (data?.url) window.location.href = data.url;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Checkout failed';
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
-    } finally {
-      setActing(false);
-    }
+    const [subRes, acRes] = await Promise.all([
+      supabase.from('subscriptions').select('*').eq('user_id', profile.id).maybeSingle(),
+      supabase.from('aircrafts').select('id').eq('user_company', profile.id).eq('is_enabled', true),
+    ]);
+    setSub(subRes.data as unknown as Subscription);
+    setAircraftCount(acRes.data?.length ?? 0);
+    setLoading(false);
   }
 
-  async function schedulCycleSwitch(target: 'four_weekly' | 'annual') {
+  useEffect(() => { load(); }, [profile?.id]);
+
+  useEffect(() => {
+    if (checkoutReturn) {
+      toast({ title: 'Checkout complete', description: 'Your subscription is syncing — this takes a few seconds.' });
+      const t = setTimeout(load, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [checkoutReturn]);
+
+  async function startCheckout(cycle: 'four_weekly' | 'annual') {
+    if (isExempt) {
+      setActing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: { cycle, return_url: `${window.location.origin}/subscription`, environment: getStripeEnvironment() },
+        });
+        if (error) throw error;
+        if (data?.bypassed) {
+          toast({ title: 'Account activated', description: 'No billing required for your role.' });
+          await load();
+        }
+      } catch (e) {
+        toast({ title: 'Error', description: e instanceof Error ? e.message : 'Checkout failed', variant: 'destructive' });
+      } finally { setActing(false); }
+      return;
+    }
+    setCheckoutCycle(cycle);
+  }
+
+  async function openBillingPortal() {
+    setActing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-portal-session', {
+        body: { return_url: `${window.location.origin}/subscription`, environment: getStripeEnvironment() },
+      });
+      if (error) throw error;
+      if (data?.url) window.open(data.url, '_blank');
+    } catch (e) {
+      toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed to open portal', variant: 'destructive' });
+    } finally { setActing(false); }
+  }
+
+  async function scheduleCycleSwitch(target: 'four_weekly' | 'annual') {
     if (!sub) return;
     setActing(true);
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ pending_billing_cycle: target } as any)
-      .eq('id', sub.id);
+    const { error } = await supabase.from('subscriptions').update({ pending_billing_cycle: target } as any).eq('id', sub.id);
     setActing(false);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       setSub({ ...sub, pending_billing_cycle: target });
-      toast({
-        title: 'Change scheduled',
-        description: `Switching to ${target === 'annual' ? 'annual' : '4-week'} billing at next renewal.`,
-      });
+      toast({ title: 'Change scheduled', description: `Switching at next renewal.` });
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
-  // ============================================================
-  // VIEW 1 — Non-billing user (pilot etc.) sees a read-only card
-  // ============================================================
+  // Non-billing user view
   if (!canManageBilling) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border">
-              <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground">Billing is managed by your account administrator</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Plan changes, payment methods, and invoices are handled at the company level.
-                  Reach out to your admin if you need an adjustment.
-                </p>
-              </div>
+        {isBlocked && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+            <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5" />
+            <div>
+              <p className="font-medium text-red-900">Account access paused</p>
+              <p className="text-sm text-red-700 mt-1">Your account has been disabled due to a billing issue. Please contact your billing administrator.</p>
             </div>
-            {sub && (
-              <div className="grid grid-cols-2 gap-3 text-sm pt-2">
-                <div>
-                  <p className="text-muted-foreground">Plan status</p>
-                  <p className="font-medium capitalize">{sub.status}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Billing cycle</p>
-                  <p className="font-medium">{sub.billing_cycle === 'annual' ? 'Annual' : 'Every 4 weeks'}</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        )}
+        <Card><CardContent className="pt-6">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border">
+            <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="font-medium text-foreground">Billing is managed by your account administrator</p>
+              <p className="text-sm text-muted-foreground mt-1">Reach out to your admin for plan or payment changes.</p>
+            </div>
+          </div>
+        </CardContent></Card>
       </div>
     );
   }
 
-  // ============================================================
-  // VIEW 2 — Billing-eligible user (Admin / Dev / Billing Manager)
-  // ============================================================
+  // Checkout overlay
+  if (checkoutCycle) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">Complete your subscription</h1>
+          <Button variant="ghost" onClick={() => setCheckoutCycle(null)}>Back</Button>
+        </div>
+        <StripeEmbeddedCheckout
+          cycle={checkoutCycle}
+          onBypass={async () => { setCheckoutCycle(null); await load(); }}
+          onError={(msg) => { toast({ title: 'Checkout error', description: msg, variant: 'destructive' }); setCheckoutCycle(null); }}
+        />
+      </div>
+    );
+  }
+
   const daysLeft = sub?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(sub.trial_ends_at).getTime() - Date.now()) / 86400000))
     : 0;
-
-  const monthlyPrice = calcPrice(aircraftCount);
-  const fourWeekPrice = monthlyPrice;
-  const annualPrice = Math.round(monthlyPrice * 13 * 0.8);
+  const fourWeekPrice = calcPrice(aircraftCount);
+  const annualPrice = Math.round(fourWeekPrice * 13 * 0.8);
+  const needsReactivate = sub && (sub.status === 'canceled' || sub.status === 'expired' || sub.status === 'past_due');
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
 
+      {(showCheckoutBanner || isBlocked) && (
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+          <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900">Account access paused</p>
+            <p className="text-sm text-red-700 mt-1">
+              {sub?.status === 'past_due'
+                ? 'Your last payment failed. Update your card to restore access.'
+                : 'Your subscription is canceled. Resubscribe below to restore access.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {isExempt && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-sm">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <span className="text-green-900">
-            Your <span className="font-semibold">{profile?.role_name}</span> account is billing-exempt — no charges will apply.
-          </span>
+          <span className="text-green-900">Your <strong>{profile?.role_name}</strong> account is billing-exempt.</span>
         </div>
       )}
 
@@ -205,31 +239,19 @@ export default function SubscriptionPage() {
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
               <div>
                 <p className="font-medium text-amber-900">No subscription yet</p>
-                <p className="text-sm text-amber-700 mt-1">
-                  {isExempt
-                    ? 'Click below to activate your account.'
-                    : 'Start your $1 trial to unlock all features for 30 days.'}
-                </p>
+                <p className="text-sm text-amber-700 mt-1">{isExempt ? 'Click below to activate your account.' : 'Start your $1 trial to unlock all features for 30 days.'}</p>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               <Stat icon={<Plane className="h-5 w-5 text-muted-foreground" />} label="Aircraft" value={aircraftCount} />
-              <Stat
-                icon={<CreditCard className="h-5 w-5 text-muted-foreground" />}
-                label="Billing Cycle"
-                value={sub.billing_cycle === 'annual' ? 'Annual (20% off)' : 'Every 4 weeks'}
-              />
-              <Stat
-                icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
+              <Stat icon={<CreditCard className="h-5 w-5 text-muted-foreground" />} label="Billing Cycle"
+                value={sub.billing_cycle === 'annual' ? 'Annual (20% off)' : 'Every 4 weeks'} />
+              <Stat icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
                 label={sub.status === 'trial' ? 'Trial Ends' : 'Next Billing'}
-                value={formatDate(sub.status === 'trial' ? sub.trial_ends_at : sub.current_period_end)}
-              />
-              <Stat
-                icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
-                label="Amount"
-                value={sub.status === 'trial' ? `${formatCurrency(1)} trial` : formatCurrencyCents(sub.monthly_amount_cents)}
-              />
+                value={formatDate(sub.status === 'trial' ? sub.trial_ends_at : sub.current_period_end)} />
+              <Stat icon={<CreditCard className="h-5 w-5 text-muted-foreground" />} label="Amount"
+                value={sub.status === 'trial' ? `${formatCurrency(1)} trial` : formatCurrencyCents(sub.monthly_amount_cents)} />
             </div>
           )}
 
@@ -241,13 +263,13 @@ export default function SubscriptionPage() {
           )}
 
           <div className="flex flex-wrap gap-3 pt-2">
-            {!sub && !isExempt && (
+            {(!sub || needsReactivate) && !isExempt && (
               <>
                 <Button onClick={() => startCheckout('four_weekly')} disabled={acting} className="flex-1 min-w-[180px]">
-                  {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Start $1 Trial · 4-week billing'}
+                  {needsReactivate ? 'Resubscribe · 4-week' : 'Start $1 Trial · 4-week'}
                 </Button>
                 <Button onClick={() => startCheckout('annual')} disabled={acting} variant="outline" className="flex-1 min-w-[180px]">
-                  Start $1 Trial · Annual (20% off)
+                  {needsReactivate ? 'Resubscribe · Annual (20% off)' : 'Start $1 Trial · Annual (20% off)'}
                 </Button>
               </>
             )}
@@ -259,13 +281,18 @@ export default function SubscriptionPage() {
             {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
               <>
                 {sub.billing_cycle === 'four_weekly' && sub.pending_billing_cycle !== 'annual' && (
-                  <Button onClick={() => schedulCycleSwitch('annual')} disabled={acting} variant="outline">
+                  <Button onClick={() => scheduleCycleSwitch('annual')} disabled={acting} variant="outline">
                     Switch to annual (save 20%)
                   </Button>
                 )}
                 {sub.billing_cycle === 'annual' && sub.pending_billing_cycle !== 'four_weekly' && (
-                  <Button onClick={() => schedulCycleSwitch('four_weekly')} disabled={acting} variant="outline">
+                  <Button onClick={() => scheduleCycleSwitch('four_weekly')} disabled={acting} variant="outline">
                     Switch to 4-week billing
+                  </Button>
+                )}
+                {sub.stripe_customer_id && (
+                  <Button onClick={openBillingPortal} disabled={acting} variant="outline" className="gap-1.5">
+                    <ExternalLink className="h-4 w-4" /> Manage billing
                   </Button>
                 )}
               </>
@@ -278,7 +305,7 @@ export default function SubscriptionPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Pricing</CardTitle>
-          <p className="text-xs text-muted-foreground">Aircraft count auto-adjusts at your next billing cycle.</p>
+          <p className="text-xs text-muted-foreground">Aircraft changes prorate to your next invoice automatically.</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -289,17 +316,10 @@ export default function SubscriptionPage() {
               </div>
             ))}
           </div>
-
           <div className="mt-4 p-4 bg-secondary/50 rounded-lg space-y-2">
             <p className="text-sm font-medium text-foreground">Your estimate ({aircraftCount} aircraft):</p>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Every 4 weeks</span>
-              <span className="font-semibold">{formatCurrency(fourWeekPrice)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Annual (20% off)</span>
-              <span className="font-semibold text-green-600">{formatCurrency(annualPrice)}/yr</span>
-            </div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Every 4 weeks</span><span className="font-semibold">{formatCurrency(fourWeekPrice)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Annual (20% off)</span><span className="font-semibold text-green-600">{formatCurrency(annualPrice)}/yr</span></div>
           </div>
         </CardContent>
       </Card>
@@ -316,13 +336,5 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
         <p className="font-semibold">{value}</p>
       </div>
     </div>
-  );
-}
-
-function DollarSign(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
   );
 }
