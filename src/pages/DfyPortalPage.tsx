@@ -205,7 +205,7 @@ export default function DfyPortalPage() {
         console.error("Auto-parse failed (non-blocking):", parseErr);
       }
 
-      // Create request with fuel burns and parsed result
+      // Create request with fuel burns, fuel-on-board estimate, and parsed result
       const { error: insertErr } = await supabase
         .from("dfy_requests" as any)
         .insert({
@@ -213,6 +213,7 @@ export default function DfyPortalPage() {
           pdf_storage_path: fileName,
           status: "pending",
           fuel_burns: fuelBurns,
+          fuel_on_board_lbs: typeof fuelOnBoard === "number" ? fuelOnBoard : null,
           parsed_result: parsedResult,
         } as any);
 
@@ -221,6 +222,7 @@ export default function DfyPortalPage() {
       toast({ title: "Request submitted", description: "Your trip sheet and fuel burns have been submitted for review." });
       setSelectedFile(null);
       setFuelBurns([{ leg: 1, departure: "", destination: "", fuel_burn_lbs: 0 }]);
+      setFuelOnBoard("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       await loadData();
     } catch (err) {
