@@ -25,6 +25,27 @@ interface SubRow {
   current_period_end: string | null;
   is_billing_manager: boolean;
   role_name: string;
+  is_enabled: boolean;
+}
+
+// Statuses that automatically disable the user's account access (per billing logic).
+const AUTO_DISABLE_STATUSES = new Set(['canceled', 'past_due', 'expired', 'unpaid']);
+
+function accountBadge(isEnabled: boolean, status: string) {
+  if (isEnabled) {
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+        <CheckCircle2 className="h-3 w-3" /> Enabled
+      </Badge>
+    );
+  }
+  const auto = AUTO_DISABLE_STATUSES.has(status);
+  return (
+    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1">
+      <XCircle className="h-3 w-3" />
+      {auto ? 'Auto-disabled' : 'Disabled'}
+    </Badge>
+  );
 }
 
 function statusBadge(status: string) {
