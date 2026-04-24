@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { track } from '@/lib/analytics';
 
 interface Props {
   cycle: 'four_weekly' | 'annual';
