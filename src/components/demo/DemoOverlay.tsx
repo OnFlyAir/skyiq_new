@@ -43,15 +43,22 @@ export default function DemoOverlay() {
   // ---------- Safe to early-return below this line ----------
   if (!active || !currentStep) return null;
 
-  // When the user clicks Next on a step that has a click-action target, fire
-  // the underlying click for them so the demo drives itself.
+  // End-of-demo handler: sign out the demo account, drop user back on the
+  // login page, and flag the signup-for-$1 CTA so it pulses to grab attention.
+  const finishAndReturnToLogin = async () => {
+    endDemo();
+    sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* noop — even if sign out fails we still want to land on /login */
+    }
+    navigate('/login', { replace: true });
+  };
+
   const handleNext = () => {
-    // Finish on the last step — end the demo and always land the user on a
-    // known-good page so we can never reveal a half-rendered route underneath
-    // the overlay (e.g. an aborted save still on /fleet/add).
     if (currentStepIndex === totalSteps - 1) {
-      endDemo();
-      navigate('/dashboard');
+      void finishAndReturnToLogin();
       return;
     }
     if (currentStep.target && currentStep.action === 'click') {
@@ -63,6 +70,10 @@ export default function DemoOverlay() {
       }
     }
     nextStep();
+  };
+
+  const handleSkip = () => {
+    void finishAndReturnToLogin();
   };
 
   const hasTarget = !!targetRect;
