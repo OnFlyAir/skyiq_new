@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
       const result = await sendBillingEmail({
         to: (profile as any).email,
         type: 'trial_ending',
+        userId: s.user_id,
         data: {
           firstName: (profile as any).first_name,
           trialEndsAt: new Date(s.trial_ends_at).toLocaleDateString(),

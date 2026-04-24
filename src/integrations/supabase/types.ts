@@ -104,6 +104,48 @@ export type Database = {
           },
         ]
       }
+      billing_email_log: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          provider_response: string | null
+          recipient_email: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          provider_response?: string | null
+          recipient_email: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          provider_response?: string | null
+          recipient_email?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       carry_types: {
         Row: {
           cruise_fuel_burn: number | null

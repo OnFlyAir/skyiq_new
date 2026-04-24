@@ -15,6 +15,7 @@ interface SendArgs {
   to: string;
   type: BillingEmailType;
   data?: Record<string, any>;
+  userId?: string;
 }
 
 const baseStyle = `
@@ -97,15 +98,46 @@ function build(type: BillingEmailType, data: Record<string, any> = {}): { subjec
   }
 }
 
-export async function sendBillingEmail({ to, type, data }: SendArgs): Promise<{ ok: boolean; error?: string }> {
+async function logAttempt(args: {
+  userId?: string;
+  to: string;
+  type: BillingEmailType;
+  status: 'sent' | 'failed';
+  error?: string;
+  providerResponse?: string;
+}) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceKey) return;
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+    const supabase = createClient(supabaseUrl, serviceKey);
+    await supabase.from('billing_email_log').insert({
+      user_id: args.userId ?? null,
+      recipient_email: args.to,
+      email_type: args.type,
+      status: args.status,
+      error_message: args.error ?? null,
+      provider_response: args.providerResponse ?? null,
+    } as any);
+  } catch (e) {
+    console.error('[billing-email] log insert failed', e);
+  }
+}
+
+export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Promise<{ ok: boolean; error?: string }> {
   const lovableKey = Deno.env.get('LOVABLE_API_KEY');
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!lovableKey || !resendKey) {
-    console.error('[billing-email] missing keys', { lovableKey: !!lovableKey, resendKey: !!resendKey });
-    return { ok: false, error: 'missing api keys' };
+    const error = 'missing api keys (LOVABLE_API_KEY or RESEND_API_KEY)';
+    console.error('[billing-email]', error);
+    await logAttempt({ userId, to, type, status: 'failed', error });
+    return { ok: false, error };
   }
   if (!to || !/.+@.+\..+/.test(to)) {
-    return { ok: false, error: 'invalid recipient' };
+    const error = 'invalid recipient email';
+    await logAttempt({ userId, to: to || '(empty)', type, status: 'failed', error });
+    return { ok: false, error };
   }
 
   const { subject, html } = build(type, data);
@@ -122,13 +154,21 @@ export async function sendBillingEmail({ to, type, data }: SendArgs): Promise<{ 
     const body = await res.text();
     if (!res.ok) {
       console.error(`[billing-email] ${type} failed`, res.status, body);
+      await logAttempt({
+        userId, to, type, status: 'failed',
+        error: `Resend ${res.status}`,
+        providerResponse: body.slice(0, 2000),
+      });
       return { ok: false, error: `${res.status}: ${body}` };
     }
     console.log(`[billing-email] sent ${type} to ${to}`);
+    await logAttempt({ userId, to, type, status: 'sent', providerResponse: body.slice(0, 500) });
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`[billing-email] ${type} threw`, msg);
+    await logAttempt({ userId, to, type, status: 'failed', error: msg });
     return { ok: false, error: msg };
   }
 }
+
