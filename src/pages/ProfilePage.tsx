@@ -27,9 +27,12 @@ type AdminStats = {
 export default function ProfilePage() {
   const { profile, refreshProfile } = useAuthContext();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [company, setCompany] = useState('');
+  const [emailPref, setEmailPref] = useState<EmailPref>('all');
+  const [savingPref, setSavingPref] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -47,8 +50,27 @@ export default function ProfilePage() {
       setFirstName(profile.first_name);
       setLastName(profile.last_name);
       setCompany(profile.company || '');
+      setEmailPref(((profile as any).billing_email_preference as EmailPref) || 'all');
     }
   }, [profile]);
+
+  async function updateEmailPref(next: EmailPref) {
+    if (!profile || next === emailPref) return;
+    setSavingPref(true);
+    setEmailPref(next);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ billing_email_preference: next } as any)
+      .eq('id', profile.id);
+    if (error) {
+      toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
+      setEmailPref(((profile as any).billing_email_preference as EmailPref) || 'all');
+    } else {
+      await refreshProfile();
+      toast({ title: 'Email preference updated' });
+    }
+    setSavingPref(false);
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
