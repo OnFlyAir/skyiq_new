@@ -95,6 +95,10 @@ export default function AdminDfyPage() {
   });
   const [profiles, setProfiles] = useState<{ id: string; email: string; company: string }[]>([]);
   const [savingClient, setSavingClient] = useState(false);
+  const [usageCharges, setUsageCharges] = useState<Array<{
+    id: string; user_id: string; amount_cents: number; status: string;
+    invoice_period_end: string | null; created_at: string; description: string;
+  }>>([]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -102,13 +106,16 @@ export default function AdminDfyPage() {
   }, [isAdmin]);
 
   async function loadData() {
-    const [clientsRes, requestsRes, profilesRes] = await Promise.all([
+    const [clientsRes, requestsRes, profilesRes, chargesRes] = await Promise.all([
       supabase.from("dfy_clients" as any).select("*").order("created_at", { ascending: false }),
       supabase
         .from("dfy_requests" as any)
         .select("id, client_id, status, pdf_storage_path, admin_notes, created_at, reviewed_at, sent_at, fuel_burns, fuel_on_board_lbs, parsed_result")
         .order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, email, company"),
+      (supabase.from("dfy_usage_charges" as any) as any)
+        .select("id, user_id, amount_cents, status, invoice_period_end, created_at, description")
+        .order("created_at", { ascending: false }),
     ]);
 
     const clientsList = (clientsRes.data ?? []) as unknown as DfyClient[];
@@ -123,6 +130,7 @@ export default function AdminDfyPage() {
     setClients(clientsList);
     setRequests(enriched);
     setProfiles((profilesRes.data ?? []) as { id: string; email: string; company: string }[]);
+    setUsageCharges((chargesRes.data ?? []) as any);
     setLoading(false);
   }
 
@@ -169,17 +177,62 @@ export default function AdminDfyPage() {
       return;
     }
 
-    // When marking sent, fire the client completion email.
-    if (status === "sent") {
+    // Billing side-effects: when sent → create a $25 metered charge that
+    // attaches to the user's next subscription invoice. When rejected →
+    // void the pending charge (or flag refund if already invoiced).
+    const reqRow = requests.find((r) => r.id === requestId);
+    const userId = reqRow?.client?.user_id;
+
+    if (status === "sent" && userId && reqRow) {
+      // Look up current subscription period end so the charge knows which invoice to attach to.
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const { error: chargeErr } = await (supabase.from("dfy_usage_charges" as any) as any).upsert(
+        {
+          user_id: userId,
+          request_id: requestId,
+          client_id: reqRow.client_id,
+          amount_cents: reqRow.client?.per_trip_rate_cents ?? 2500,
+          description: "Fuel Planning (DFY)",
+          status: "pending_invoice",
+          invoice_period_end: sub?.current_period_end ?? null,
+        },
+        { onConflict: "request_id" },
+      );
+      if (chargeErr) console.error("usage charge insert failed", chargeErr);
+
       try {
         await supabase.functions.invoke("notify-dfy", {
           body: { kind: "client_completed", request_id: requestId },
         });
-        toast({ title: "Client notified", description: "Completion email sent." });
+        toast({ title: "Sent & billed", description: "$25 added to client's next invoice." });
       } catch (e) {
         console.error("client email failed", e);
-        toast({ title: "Email failed", description: "Status saved, but client email did not send.", variant: "destructive" });
+        toast({ title: "Email failed", description: "Status & charge saved, but email did not send.", variant: "destructive" });
       }
+    } else if (status === "rejected") {
+      // Void any pending charge; flag for refund if it was already invoiced.
+      const { data: existing } = await (supabase
+        .from("dfy_usage_charges" as any) as any)
+        .select("id, status")
+        .eq("request_id", requestId)
+        .maybeSingle();
+      if (existing) {
+        if (existing.status === "pending_invoice") {
+          await (supabase.from("dfy_usage_charges" as any) as any)
+            .update({ status: "voided", voided_at: new Date().toISOString() })
+            .eq("id", existing.id);
+        } else if (existing.status === "invoiced") {
+          await (supabase.from("dfy_usage_charges" as any) as any)
+            .update({ status: "refunded", refunded_at: new Date().toISOString(), notes: "Auto-refund on reject" })
+            .eq("id", existing.id);
+        }
+      }
+      toast({ title: "Request rejected", description: "Any pending charge was voided / flagged for refund." });
     } else {
       toast({ title: `Request marked as ${status}` });
     }
@@ -275,21 +328,20 @@ export default function AdminDfyPage() {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
 
-  // Billing summary
+  // Real billing rollup driven by dfy_usage_charges (the source of truth
+  // that flows onto the user's next subscription invoice).
   const billingByClient = clients.map((c) => {
-    const clientReqs = requests.filter((r) => r.client_id === c.id && (r.status === "sent" || r.status === "approved"));
-    const monthReqs = clientReqs.filter((r) => {
-      const d = new Date(r.created_at);
-      const now = new Date();
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    const revenue = c.pricing_tier === "per_trip"
-      ? monthReqs.length * (c.per_trip_rate_cents / 100)
-      : c.monthly_rate_cents / 100;
-    return { client: c, tripsThisMonth: monthReqs.length, revenue };
+    const userCharges = usageCharges.filter((ch) => ch.user_id === c.user_id);
+    const pendingCents = userCharges.filter((ch) => ch.status === "pending_invoice").reduce((s, ch) => s + ch.amount_cents, 0);
+    const invoicedCents = userCharges.filter((ch) => ch.status === "invoiced").reduce((s, ch) => s + ch.amount_cents, 0);
+    const refundedCents = userCharges.filter((ch) => ch.status === "refunded").reduce((s, ch) => s + ch.amount_cents, 0);
+    return {
+      client: c,
+      pendingCount: userCharges.filter((ch) => ch.status === "pending_invoice").length,
+      pendingCents, invoicedCents, refundedCents,
+    };
   });
-
-  const totalRevenue = billingByClient.reduce((s, b) => s + b.revenue, 0);
+  const totalPendingCents = billingByClient.reduce((s, b) => s + b.pendingCents, 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 p-4">
@@ -327,9 +379,9 @@ export default function AdminDfyPage() {
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-500" />
             <p className="text-2xl font-bold text-green-500">
-              {formatCurrency(totalRevenue)}
+              {formatCurrencyCents(totalPendingCents)}
             </p>
-            <p className="text-xs text-muted-foreground">Est. Revenue</p>
+            <p className="text-xs text-muted-foreground">Pending Invoice</p>
           </CardContent>
         </Card>
       </div>
@@ -567,7 +619,10 @@ export default function AdminDfyPage() {
         <TabsContent value="billing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">This Month's Billing Summary</CardTitle>
+              <CardTitle className="text-lg">Usage charges (next invoice)</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Pending charges roll up onto each user's next subscription invoice. Voided / refunded rows are excluded.
+              </p>
             </CardHeader>
             <CardContent>
               {billingByClient.length === 0 ? (
@@ -578,29 +633,34 @@ export default function AdminDfyPage() {
                     <thead className="bg-secondary">
                       <tr>
                         <th className="text-left px-4 py-2 font-medium">Client</th>
-                        <th className="text-center px-4 py-2 font-medium">Tier</th>
-                        <th className="text-center px-4 py-2 font-medium">Trips</th>
-                        <th className="text-right px-4 py-2 font-medium">Revenue</th>
+                        <th className="text-center px-4 py-2 font-medium">Pending</th>
+                        <th className="text-right px-4 py-2 font-medium">To bill</th>
+                        <th className="text-right px-4 py-2 font-medium">Invoiced</th>
+                        <th className="text-right px-4 py-2 font-medium">Refunded</th>
                       </tr>
                     </thead>
                     <tbody>
                       {billingByClient.map((b) => (
                         <tr key={b.client.id} className="border-t">
                           <td className="px-4 py-2 font-medium">{b.client.company_name}</td>
-                          <td className="px-4 py-2 text-center">
-                            {b.client.pricing_tier === "per_trip" ? `${formatCurrencyCents(b.client.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(b.client.monthly_rate_cents)}/mo`}
-                          </td>
-                          <td className="px-4 py-2 text-center">{b.tripsThisMonth}</td>
+                          <td className="px-4 py-2 text-center">{b.pendingCount}</td>
                           <td className="px-4 py-2 text-right text-green-500 font-medium">
-                            {formatCurrency(b.revenue)}
+                            {formatCurrencyCents(b.pendingCents)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-muted-foreground">
+                            {formatCurrencyCents(b.invoicedCents)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-destructive">
+                            {formatCurrencyCents(b.refundedCents)}
                           </td>
                         </tr>
                       ))}
                       <tr className="border-t bg-secondary/50 font-bold">
-                        <td className="px-4 py-2" colSpan={3}>Total</td>
+                        <td className="px-4 py-2" colSpan={2}>Total pending</td>
                         <td className="px-4 py-2 text-right text-green-500">
-                          {formatCurrency(totalRevenue)}
+                          {formatCurrencyCents(totalPendingCents)}
                         </td>
+                        <td colSpan={2}></td>
                       </tr>
                     </tbody>
                   </table>

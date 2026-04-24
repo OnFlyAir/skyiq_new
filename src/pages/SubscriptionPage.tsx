@@ -64,6 +64,7 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
+  const [pendingAddons, setPendingAddons] = useState<{ count: number; cents: number }>({ count: 0, cents: 0 });
 
   const canManageBilling = profile?.role_name === 'Admin'
     || profile?.role_name === 'Dev'
@@ -76,12 +77,21 @@ export default function SubscriptionPage() {
 
   async function load() {
     if (!profile) return;
-    const [subRes, acRes] = await Promise.all([
+    const [subRes, acRes, chargesRes] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('user_id', profile.id).maybeSingle(),
       supabase.from('aircrafts').select('id').eq('user_company', profile.id).eq('is_enabled', true),
+      (supabase.from('dfy_usage_charges' as any) as any)
+        .select('amount_cents')
+        .eq('user_id', profile.id)
+        .eq('status', 'pending_invoice'),
     ]);
     setSub(subRes.data as unknown as Subscription);
     setAircraftCount(acRes.data?.length ?? 0);
+    const charges = (chargesRes.data ?? []) as Array<{ amount_cents: number }>;
+    setPendingAddons({
+      count: charges.length,
+      cents: charges.reduce((s, c) => s + (c.amount_cents ?? 0), 0),
+    });
     setLoading(false);
   }
 
@@ -252,6 +262,14 @@ export default function SubscriptionPage() {
                 value={formatDate(sub.status === 'trial' ? sub.trial_ends_at : sub.current_period_end)} />
               <Stat icon={<CreditCard className="h-5 w-5 text-muted-foreground" />} label="Amount"
                 value={sub.status === 'trial' ? `${formatCurrency(1)} trial` : formatCurrencyCents(sub.monthly_amount_cents)} />
+            </div>
+          )}
+
+          {pendingAddons.count > 0 && (
+            <div className="text-sm p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900">
+              <span className="font-medium">Add-ons this period:</span> Fuel Planning (DFY) ×{' '}
+              {pendingAddons.count} = <strong>{formatCurrencyCents(pendingAddons.cents)}</strong>
+              <span className="text-emerald-700"> — added to your next invoice on {formatDate(sub?.current_period_end ?? null)}.</span>
             </div>
           )}
 
