@@ -111,7 +111,7 @@ function App() {
                 </Route>
 
                 {/* Redirects */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/" element={<RootRedirect />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <DemoOverlay />
