@@ -189,12 +189,12 @@ export default function TripFuelPage() {
 
   const confirmedLegsWithIndex = useMemo(() => {
     if (!tripForm) return [];
-    const visibleLegs = demoActive
-      ? tripForm.legs.filter((leg) => leg.legNum > 0 && (leg.departure || leg.destination))
-      : tripForm.legs.filter((leg) => leg.isConfirmed && leg.legNum > 0);
-    return visibleLegs
+    return tripForm.legs
       .map((leg, originalIndex) => ({ leg, originalIndex }))
-      .filter(({ leg }) => demoActive || (leg.isConfirmed && leg.legNum > 0));
+      .filter(({ leg }) => {
+        if (demoActive) return leg.legNum > 0 && !!(leg.departure || leg.destination);
+        return leg.isConfirmed && leg.legNum > 0;
+      });
   }, [tripForm, demoActive]);
 
   // Validate all legs
