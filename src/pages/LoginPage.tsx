@@ -25,6 +25,24 @@ export default function LoginPage() {
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const { startDemo } = useDemo();
   const navigate = useNavigate();
+  const signupCtaRef = useRef<HTMLAnchorElement>(null);
+  const [postDemoHighlight, setPostDemoHighlight] = useState(false);
+
+  // After the public demo ends we land back here. Pulse the $1 CTA so the
+  // user sees the obvious next step.
+  useEffect(() => {
+    if (sessionStorage.getItem(POST_DEMO_HIGHLIGHT_KEY) === '1') {
+      sessionStorage.removeItem(POST_DEMO_HIGHLIGHT_KEY);
+      setPostDemoHighlight(true);
+      // Wait a tick for the layout, then scroll the CTA into view.
+      setTimeout(() => {
+        signupCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+      // Auto-stop the pulse after a few seconds so it doesn't loop forever.
+      const t = setTimeout(() => setPostDemoHighlight(false), 8000);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user && profile) {
