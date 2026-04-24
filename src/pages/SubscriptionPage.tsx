@@ -4,7 +4,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, ExternalLink, ShieldAlert } from 'lucide-react';
+import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, ExternalLink, ShieldAlert, FileText, Download } from 'lucide-react';
 import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
