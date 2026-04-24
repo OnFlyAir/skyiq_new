@@ -69,6 +69,10 @@ export default function DemoOverlay() {
         return;
       }
     }
+    if (currentStep.clickOnNext) {
+      const el = document.querySelector(`[data-demo="${currentStep.clickOnNext}"]`) as HTMLElement | null;
+      if (el) el.click();
+    }
     nextStep();
   };
 

@@ -14,6 +14,8 @@ export interface DemoStep {
   inputValue?: string;
   highlightOnly?: boolean;
   requireAction?: boolean;
+  /** When user clicks Next on the tooltip, also click this data-demo target (e.g. to advance the page). */
+  clickOnNext?: string;
 }
 
 interface DemoContextType {
@@ -300,18 +302,9 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     page: '',
     target: 'leg-1-card',
     title: 'All Data Is Pulled Automatically',
-    description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to continue.",
+    description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to move on to fuel burns.",
     placement: 'right',
-  },
-  {
-    id: 'click-fuel-burns',
-    page: '',
-    target: 'next-fuel-burns-btn',
-    title: 'Next: Fuel Burns',
-    description: "Click Next and we'll move on to enter fuel burns from your flight plan.",
-    placement: 'top',
-    action: 'click',
-    autoAdvance: true,
+    clickOnNext: 'next-fuel-burns-btn',
   },
   {
     id: 'public-fuel-burns',
