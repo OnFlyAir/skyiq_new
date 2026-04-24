@@ -590,11 +590,6 @@ export default function TripLegsPage() {
     }
   }, [tripForm]);
 
-  // [debug] watch leg count changes
-  useEffect(() => {
-    console.log("[debug] tripForm.legs.length =", tripForm?.legs?.length, "nums:", tripForm?.legs?.map((l) => l.legNum));
-  }, [tripForm?.legs]);
-
   // Demo: auto-advance from wait-for-parse step when parsing finishes
   const wasParsing = useRef(false);
   useEffect(() => {
