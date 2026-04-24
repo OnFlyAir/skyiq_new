@@ -27,7 +27,7 @@ export const DemoTooltip = forwardRef<HTMLDivElement, DemoTooltipProps>(function
           <div className="flex items-center gap-2">
             <Play className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-medium text-muted-foreground">
-              Demo · {stepIndex + 1}/{totalSteps}
+              Demo
             </span>
           </div>
           <button
