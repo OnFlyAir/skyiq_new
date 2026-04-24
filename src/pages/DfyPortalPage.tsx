@@ -219,6 +219,25 @@ export default function DfyPortalPage() {
 
       if (insertErr) throw insertErr;
 
+      // Fire-and-forget admin notification. We re-fetch the latest request id
+      // so the edge function can pull parsed_result + fuel_burns from the row.
+      try {
+        const { data: latest } = await supabase
+          .from("dfy_requests" as any)
+          .select("id")
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const newId = (latest?.[0] as any)?.id;
+        if (newId) {
+          supabase.functions.invoke("notify-dfy", {
+            body: { kind: "admin_new_request", request_id: newId },
+          }).catch((e) => console.error("notify-dfy admin failed", e));
+        }
+      } catch (notifyErr) {
+        console.error("notify-dfy dispatch failed", notifyErr);
+      }
+
       toast({ title: "Request submitted", description: "Your trip sheet and fuel burns have been submitted for review." });
       setSelectedFile(null);
       setFuelBurns([{ leg: 1, departure: "", destination: "", fuel_burn_lbs: 0 }]);
