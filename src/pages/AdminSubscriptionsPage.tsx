@@ -279,6 +279,22 @@ export default function AdminSubscriptionsPage() {
                     <div className="text-xs">{r.email}</div>
                   </td>
                   <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
+                  <td className="px-4 py-2.5 text-center">
+                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
+                      <Badge variant="outline" className="bg-secondary text-muted-foreground gap-1">
+                        <Shield className="h-3 w-3" /> Exempt
+                      </Badge>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleAccountEnabled(r.userId, r.is_enabled)}
+                        title={r.is_enabled ? 'Click to disable account' : 'Click to enable account'}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        {accountBadge(r.is_enabled, r.status)}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-center">{r.aircraft_count}</td>
                   <td className="px-4 py-2.5 text-center text-xs">
                     <select
