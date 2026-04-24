@@ -241,9 +241,12 @@ export default function DemoOverlay() {
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            top: 24,
+            top: 'max(24px, env(safe-area-inset-top, 0px))',
             width: 'min(720px, calc(100vw - 24px))',
-            height: 'min(60vh, calc(100vh - 280px))',
+            // Reserve ~280px for the tooltip dock below; otherwise fill the screen
+            // so the user can scroll through every page of the sample itinerary.
+            height: 'calc(100vh - 320px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100vh - 280px)',
           }}
         >
           <iframe
