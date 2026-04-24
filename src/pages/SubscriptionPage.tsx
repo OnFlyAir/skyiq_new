@@ -125,7 +125,6 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (checkoutReturn) {
-      toast({ title: 'Checkout complete', description: 'Your subscription is syncing — this takes a few seconds.' });
       const t = setTimeout(load, 3000);
       return () => clearTimeout(t);
     }
