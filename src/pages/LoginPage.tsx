@@ -97,24 +97,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleDevLogin() {
-    setError('');
-    setLoading(true);
-    try {
-      const { error: signInErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-      if (signInErr) {
-        const { error: signUpErr } = await signUp(DEV_EMAIL, DEV_PASSWORD, 'Dev', 'User');
-        if (signUpErr) { setError(signUpErr.message); setLoading(false); return; }
-        await new Promise(r => setTimeout(r, 1000));
-        const { error: retryErr } = await signIn(DEV_EMAIL, DEV_PASSWORD);
-        if (retryErr) { setError(retryErr.message); setLoading(false); return; }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Auto-login failed');
-      setLoading(false);
-    }
-  }
-
   async function handleTryDemo() {
     setError('');
     setLoading(true);
@@ -318,18 +300,6 @@ export default function LoginPage() {
         <p className="mt-2 text-xs text-center text-muted-foreground">
           No signup needed — see how SkyIQ optimizes fuel in 60 seconds.
         </p>
-      </div>
-
-      {/* Dev auto-login */}
-      <div className="mt-3">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleDevLogin}
-          className="w-full py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-all text-sm active:scale-[0.98]"
-        >
-          {loading ? 'Signing in...' : 'Dev Auto-Login'}
-        </button>
       </div>
 
       <p className="mt-8 text-sm text-center text-muted-foreground">
