@@ -1,20 +1,52 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plane, Check, TrendingDown, Sparkles, Loader2 } from 'lucide-react';
+import { Plane, Check, TrendingDown, Sparkles, Loader2, Minus, Plus, Wrench } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
+// Tiered per-plane pricing (mirrors public.calculate_subscription_price).
+// Billed every 4 weeks. Tiers apply marginally — first 4 at $200,
+// next 5 at $150, everything above 9 at $100.
 const PRICING_TIERS = [
-  { range: '1–4 aircraft', perPlane: 200, note: 'Starter' },
-  { range: '5–9 aircraft', perPlane: 150, note: 'Growing fleet' },
-  { range: '10+ aircraft', perPlane: 100, note: 'Enterprise' },
+  { range: '1–4 aircraft', min: 1, max: 4, perPlane: 200, note: 'Starter' },
+  { range: '5–9 aircraft', min: 5, max: 9, perPlane: 150, note: 'Growing fleet' },
+  { range: '10+ aircraft', min: 10, max: Infinity, perPlane: 100, note: 'Enterprise' },
 ];
+
+const DFY_RATE = 25;
+const ANNUAL_DISCOUNT = 0.2; // 20%
+
+function calc4WeeklyTotal(count: number): number {
+  if (count <= 0) return 0;
+  let total = 0;
+  const first = Math.min(count, 4);
+  total += first * 200;
+  if (count > 4) {
+    const second = Math.min(count - 4, 5);
+    total += second * 150;
+  }
+  if (count > 9) {
+    total += (count - 9) * 100;
+  }
+  return total;
+}
+
+function effectivePerPlane(count: number): number {
+  if (count <= 0) return 0;
+  return calc4WeeklyTotal(count) / count;
+}
+
+function activeTierIndex(count: number): number {
+  if (count <= 4) return 0;
+  if (count <= 9) return 1;
+  return 2;
+}
 
 export default function OnboardingPage() {
   const { profile, user } = useAuthContext();
