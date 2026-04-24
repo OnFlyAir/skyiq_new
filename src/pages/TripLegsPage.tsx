@@ -760,11 +760,13 @@ export default function TripLegsPage() {
             crewWeight: `${defs.defaultPicWeight}, ${defs.defaultSicWeight}, ${defs.defaultCabinWeight}`,
           };
         });
-        setTripForm((prev) =>
-          prev
+        setTripForm((prev) => {
+          const next = prev
             ? { ...prev, aircraftId: demoAc!.tail_number, itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum, legs: [...existingLegs, ...refilledNewLegs] }
-            : prev
-        );
+            : prev;
+          console.log("[demo] setTripForm with legs:", next?.legs?.length, "from prev:", prev?.legs?.length);
+          return next;
+        });
         toast({ title: "Itinerary parsed", description: `Found ${newLegs.length} leg(s) — Trip ${parsedItineraryNum}` });
         return;
       }
