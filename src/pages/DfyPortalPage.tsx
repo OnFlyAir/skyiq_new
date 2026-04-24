@@ -370,6 +370,27 @@ export default function DfyPortalPage() {
             </div>
           </div>
 
+          {/* Fuel on board */}
+          <div>
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Fuel className="h-4 w-4 text-primary" />
+              Estimated Fuel On Board (lbs)
+            </Label>
+            <Input
+              type="number"
+              placeholder="e.g. 3500"
+              value={fuelOnBoard}
+              onChange={(e) =>
+                setFuelOnBoard(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              min={0}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Approximately how much fuel is already in the aircraft at trip start. Leave blank if unknown.
+            </p>
+          </div>
+
           <Button onClick={handleSubmit} disabled={uploading || !selectedFile} className="w-full">
             {uploading ? (
               <>
