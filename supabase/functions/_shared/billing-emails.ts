@@ -125,7 +125,46 @@ async function logAttempt(args: {
   }
 }
 
-export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Promise<{ ok: boolean; error?: string }> {
+// Maps each email type to which preference categories it belongs to.
+// 'all' always receives everything; 'none' never receives anything.
+const TYPE_CATEGORY: Record<BillingEmailType, 'critical' | 'changes' | 'lifecycle'> = {
+  trial_started: 'lifecycle',
+  trial_ending: 'lifecycle',
+  payment_failed: 'critical',
+  subscription_canceled: 'critical',
+  plan_changed: 'changes',
+};
+
+async function getUserPreference(userId?: string): Promise<'all' | 'critical' | 'changes' | 'none'> {
+  if (!userId) return 'all';
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceKey) return 'all';
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+    const supabase = createClient(supabaseUrl, serviceKey);
+    const { data } = await supabase
+      .from('profiles')
+      .select('billing_email_preference')
+      .eq('id', userId)
+      .maybeSingle();
+    return ((data as any)?.billing_email_preference as any) || 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function shouldSend(type: BillingEmailType, pref: 'all' | 'critical' | 'changes' | 'none'): boolean {
+  if (pref === 'all') return true;
+  if (pref === 'none') return false;
+  const category = TYPE_CATEGORY[type];
+  // Critical emails always go through unless user picked 'none' or 'changes'
+  if (pref === 'critical') return category === 'critical';
+  if (pref === 'changes') return category === 'changes' || category === 'critical';
+  return true;
+}
+
+export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Promise<{ ok: boolean; error?: string; skipped?: boolean }> {
   const lovableKey = Deno.env.get('LOVABLE_API_KEY');
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!lovableKey || !resendKey) {
@@ -138,6 +177,13 @@ export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Pr
     const error = 'invalid recipient email';
     await logAttempt({ userId, to: to || '(empty)', type, status: 'failed', error });
     return { ok: false, error };
+  }
+
+  // Respect user preference (skipped if no userId — e.g. system tests)
+  const pref = await getUserPreference(userId);
+  if (!shouldSend(type, pref)) {
+    console.log(`[billing-email] skipped ${type} for user ${userId} (preference=${pref})`);
+    return { ok: true, skipped: true };
   }
 
   const { subject, html } = build(type, data);

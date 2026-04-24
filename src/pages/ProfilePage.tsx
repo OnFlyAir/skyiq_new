@@ -5,7 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Plane, Database, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Shield, Users, Plane, Database, CreditCard, Mail, AlertTriangle, RefreshCw, Bell } from 'lucide-react';
+
+type EmailPref = 'all' | 'critical' | 'changes' | 'none';
+
+const EMAIL_PREF_OPTIONS: { value: EmailPref; label: string; description: string; icon: typeof Mail }[] = [
+  { value: 'all', label: 'All billing emails', description: 'Trial updates, payment failures, cancellations, and plan changes.', icon: Bell },
+  { value: 'changes', label: 'Critical + plan changes', description: 'Payment failures, cancellations, and any plan updates. No trial reminders.', icon: RefreshCw },
+  { value: 'critical', label: 'Critical only', description: 'Just payment failures and subscription cancellations.', icon: AlertTriangle },
+  { value: 'none', label: 'None', description: 'Mute all billing emails. You may miss important account notices.', icon: Mail },
+];
 
 type AdminStats = {
   totalUsers: number;
@@ -17,9 +27,12 @@ type AdminStats = {
 export default function ProfilePage() {
   const { profile, refreshProfile } = useAuthContext();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [company, setCompany] = useState('');
+  const [emailPref, setEmailPref] = useState<EmailPref>('all');
+  const [savingPref, setSavingPref] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -37,8 +50,27 @@ export default function ProfilePage() {
       setFirstName(profile.first_name);
       setLastName(profile.last_name);
       setCompany(profile.company || '');
+      setEmailPref(((profile as any).billing_email_preference as EmailPref) || 'all');
     }
   }, [profile]);
+
+  async function updateEmailPref(next: EmailPref) {
+    if (!profile || next === emailPref) return;
+    setSavingPref(true);
+    setEmailPref(next);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ billing_email_preference: next } as any)
+      .eq('id', profile.id);
+    if (error) {
+      toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
+      setEmailPref(((profile as any).billing_email_preference as EmailPref) || 'all');
+    } else {
+      await refreshProfile();
+      toast({ title: 'Email preference updated' });
+    }
+    setSavingPref(false);
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -232,6 +264,71 @@ export default function ProfilePage() {
           {saved ? 'Saved!' : saving ? 'Saving...' : 'Save changes'}
         </Button>
       </form>
+
+      <EmailPreferencesCard value={emailPref} onChange={updateEmailPref} saving={savingPref} />
     </div>
+  );
+}
+
+function EmailPreferencesCard({
+  value,
+  onChange,
+  saving,
+}: {
+  value: EmailPref;
+  onChange: (next: EmailPref) => void;
+  saving: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-primary" /> Billing email preferences
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Choose which billing notifications you want delivered to your inbox.
+        </p>
+        <div className="space-y-2">
+          {EMAIL_PREF_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const active = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={saving}
+                onClick={() => onChange(opt.value)}
+                className={`w-full text-left rounded-lg border p-3 transition-all ${
+                  active
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/30'
+                    : 'border-border bg-secondary/30 hover:border-primary/40'
+                } ${saving ? 'opacity-60 cursor-wait' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Icon className={`h-4 w-4 mt-0.5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm font-medium ${active ? 'text-foreground' : 'text-foreground/90'}`}>
+                        {opt.label}
+                      </span>
+                      {active && <Badge variant="outline" className="text-xs">Active</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {value === 'none' && (
+          <p className="mt-3 text-xs text-destructive flex items-start gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+            You won't be notified about payment failures. Your account may be disabled without warning.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
