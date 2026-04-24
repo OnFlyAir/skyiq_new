@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
+import PricingTour from '@/components/onboarding/PricingTour';
 
 // Tiered per-plane pricing (mirrors public.calculate_subscription_price).
 // Billed every 4 weeks. Tiers apply marginally — first 4 at $200,
@@ -54,6 +55,16 @@ export default function OnboardingPage() {
   const { toast } = useToast();
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
   const [activating, setActivating] = useState(false);
+  // Show the guided pricing walkthrough unless the user has already finished/skipped it.
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('skyiq_pricing_tour_done') !== 'true';
+  });
+
+  const finishTour = () => {
+    localStorage.setItem('skyiq_pricing_tour_done', 'true');
+    setShowTour(false);
+  };
 
   // Interactive calculator — preview the real-time monthly cost.
   const [planeCount, setPlaneCount] = useState<number>(3);
@@ -168,6 +179,9 @@ export default function OnboardingPage() {
             your subscription begins.
           </p>
         </div>
+
+        {/* Guided pricing walkthrough — one concept at a time */}
+        {showTour && <PricingTour onFinish={finishTour} />}
 
         {/* Real-time pricing calculator */}
         <Card className="border-primary/30">
