@@ -90,8 +90,9 @@ export default function DemoOverlay() {
         dock = targetMid > window.innerHeight / 2 ? 'top' : 'bottom';
         setTimeout(() => setLockedMobileDock(dock!), 0);
       }
+      // Top-dock sits BELOW the sticky app header (~64px) so it doesn't cover the page title.
       return dock === 'top'
-        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
+        ? { position: 'fixed', top: 80, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
         : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' };
     }
 
