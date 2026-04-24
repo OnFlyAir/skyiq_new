@@ -606,7 +606,7 @@ export default function TripLegsPage() {
   useEffect(() => {
     if (!demoActive) return;
     const stepId = currentStep?.id;
-    if (stepId !== 'click-fuel-burns' && stepId !== 'public-data-pulled') return;
+    if (stepId !== 'click-fuel-burns' && stepId !== 'public-data-pulled' && stepId !== 'public-fuel-burns-nav') return;
     setTripForm((prev) => {
       if (!prev) return prev;
       if (prev.legs.every((l) => l.isConfirmed)) return prev;
@@ -924,6 +924,22 @@ export default function TripLegsPage() {
       lbsPerHour: aircraftDefaults.cruiseFuelBurn,
     };
 
+    if (demoActive) {
+      sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(updatedForm));
+      navigate(`/trips/${tripId}/fuel`);
+
+      void supabase
+        .from("trips")
+        .update({
+          itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
+          itinerary_num: updatedForm.itineraryNum,
+        })
+        .eq("id", parseInt(tripId));
+
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("trips")
       .update({
@@ -1050,14 +1066,6 @@ export default function TripLegsPage() {
               onConfirm={() => {
                 const confirmedLeg = { ...leg, isConfirmed: true };
                 updateLeg(index, confirmedLeg);
-                const willAllBeConfirmed = tripForm.legs.every((l, i) => i === index || l.isConfirmed);
-
-                if (demoActive && willAllBeConfirmed) {
-                  setTimeout(() => {
-                    void handleNext();
-                  }, 150);
-                  return;
-                }
 
                 // Auto-scroll to next unconfirmed leg
                 const nextUnconfirmedIdx = tripForm.legs.findIndex(

@@ -24,6 +24,7 @@ export default function DemoOverlay() {
   // movement doesn't cause the tooltip to flip mid-animation.
   const [lockedPlacement, setLockedPlacement] = useState<Placement | null>(null);
   const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
+  const [pendingRouteAdvanceFrom, setPendingRouteAdvanceFrom] = useState<string | null>(null);
 
   // Navigate to the step's page if needed
   useEffect(() => {
@@ -40,8 +41,15 @@ export default function DemoOverlay() {
     setLockedMobileDock(null);
   }, [currentStep?.id]);
 
+  useEffect(() => {
+    if (!pendingRouteAdvanceFrom) return;
+    if (location.pathname === pendingRouteAdvanceFrom) return;
+    setPendingRouteAdvanceFrom(null);
+    nextStep();
+  }, [location.pathname, nextStep, pendingRouteAdvanceFrom]);
+
   // ---------- Safe to early-return below this line ----------
-  if (!active || !currentStep) return null;
+  if (!active || !currentStep || pendingRouteAdvanceFrom) return null;
 
   // End-of-demo handler: sign out the demo account, drop user back on the
   // login page, and flag the signup-for-$1 CTA so it pulses to grab attention.
@@ -71,7 +79,11 @@ export default function DemoOverlay() {
     }
     if (currentStep.clickOnNext) {
       const el = document.querySelector(`[data-demo="${currentStep.clickOnNext}"]`) as HTMLElement | null;
-      if (el) el.click();
+      if (el) {
+        setPendingRouteAdvanceFrom(location.pathname);
+        el.click();
+        return;
+      }
     }
     nextStep();
   };
