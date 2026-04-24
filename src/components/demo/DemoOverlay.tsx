@@ -51,6 +51,17 @@ export default function DemoOverlay() {
   const showNextButton = !currentStep.requireAction && !waitingForTarget && !isWaitStep;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
+  // Lock the chosen placement & mobile dock side per-step so smooth scroll
+  // movement doesn't cause the tooltip to flip mid-animation.
+  const [lockedPlacement, setLockedPlacement] = useState<Placement | null>(null);
+  const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
+
+  // Reset locks whenever the step changes.
+  useEffect(() => {
+    setLockedPlacement(null);
+    setLockedMobileDock(null);
+  }, [currentStep?.id]);
+
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -70,13 +81,18 @@ export default function DemoOverlay() {
       return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
-    // On mobile: dock to bottom or top of screen depending on where the target is.
+    // Mobile: dock to top or bottom — but lock the choice once made so smooth
+    // scroll doesn't cause the tooltip to flip across the screen.
     if (isMobile) {
-      const targetMid = targetRect.top + targetRect.height / 2;
-      const dockTop = targetMid > window.innerHeight / 2;
-      return dockTop
-        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto' }
-        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto' };
+      let dock = lockedMobileDock;
+      if (!dock) {
+        const targetMid = targetRect.top + targetRect.height / 2;
+        dock = targetMid > window.innerHeight / 2 ? 'top' : 'bottom';
+        setTimeout(() => setLockedMobileDock(dock!), 0);
+      }
+      return dock === 'top'
+        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
+        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' };
     }
 
     const tooltipHeight = 200;
@@ -96,14 +112,25 @@ export default function DemoOverlay() {
       left: spaceLeft >= tooltipWidth,
     };
 
-    const placement = fits[preferred] ? preferred
-      : fits.bottom ? 'bottom'
-      : fits.right ? 'right'
-      : fits.top ? 'top'
-      : fits.left ? 'left'
-      : 'bottom';
+    let placement: Placement;
+    if (lockedPlacement) {
+      placement = lockedPlacement;
+    } else {
+      placement = (fits[preferred] ? preferred
+        : fits.bottom ? 'bottom'
+        : fits.right ? 'right'
+        : fits.top ? 'top'
+        : fits.left ? 'left'
+        : 'bottom') as Placement;
+      // Lock the chosen placement so it doesn't flip while we scroll into view.
+      setTimeout(() => setLockedPlacement(placement), 0);
+    }
 
-    const base: React.CSSProperties = { position: 'fixed' };
+    // Smooth positional transitions kill the "snap" feeling.
+    const base: React.CSSProperties = {
+      position: 'fixed',
+      transition: 'top 250ms ease, left 250ms ease, right 250ms ease, bottom 250ms ease',
+    };
 
     const clampX = (cx: number) => Math.max(8, Math.min(cx, window.innerWidth - tooltipWidth - 8));
     const clampY = (cy: number) => Math.max(8, Math.min(cy, window.innerHeight - tooltipHeight - 8));
