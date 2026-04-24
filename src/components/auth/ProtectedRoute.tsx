@@ -18,6 +18,7 @@ const ACTIVE_STATUSES = new Set(['active', 'trial', 'trialing', 'past_due']);
 
 export default function ProtectedRoute({ children, requireRole }: Props) {
   const { user, profile, loading } = useAuthContext();
+  const { active: demoActive } = useDemo();
   const location = useLocation();
   const [subStatus, setSubStatus] = useState<string | null | undefined>(undefined);
 
