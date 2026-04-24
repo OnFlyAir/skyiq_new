@@ -102,6 +102,8 @@ function App() {
                   <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
                   <Route path="/admin/dfy" element={<AdminDfyPage />} />
                   <Route path="/admin/email-log" element={<AdminEmailLogPage />} />
+                  <Route path="/admin/webhook-events" element={<AdminWebhookEventsPage />} />
+                  <Route path="/admin/transaction-history" element={<AdminWebhookEventsPage />} />
 
                   {/* DFY Client Portal */}
                   <Route path="/dfy" element={<DfyPortalPage />} />
