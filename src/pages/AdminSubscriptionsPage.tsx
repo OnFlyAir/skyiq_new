@@ -80,7 +80,7 @@ export default function AdminSubscriptionsPage() {
       const { data: subs } = await supabase.from('subscriptions').select('*');
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, company, email, role_name, is_billing_manager');
+        .select('id, first_name, last_name, company, email, role_name, is_billing_manager, is_enabled');
 
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
