@@ -239,18 +239,23 @@ export default function TripFuelPage() {
     try {
       const tripInput = formToTripInput(updatedForm);
       const result = await runFuelOptimization(tripInput);
-      const summary: TripSummary = resultToSummary(result, tripInput, parseInt(tripId));
+      const summary: TripSummary = resultToSummary(result, tripInput, parseInt(tripId) || 0);
 
-      const { error } = await supabase
-        .from("trips")
-        .update({
-          details: summary as unknown as import("@/integrations/supabase/types").Json,
-          itinerary_details: updatedForm as unknown as import("@/integrations/supabase/types").Json,
-          savings: summary.savings,
-        })
-        .eq("id", parseInt(tripId));
+      if (demoActive) {
+        sessionStorage.setItem(`skyiq_demo_summary_${tripId}`, JSON.stringify(summary));
+        sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(updatedForm));
+      } else {
+        const { error } = await supabase
+          .from("trips")
+          .update({
+            details: summary as unknown as import("@/integrations/supabase/types").Json,
+            itinerary_details: updatedForm as unknown as import("@/integrations/supabase/types").Json,
+            savings: summary.savings,
+          })
+          .eq("id", parseInt(tripId));
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({ title: "Optimization complete", description: `Potential savings: ${formatCurrency(summary.savings)}` });
       navigate(`/trips/${tripId}/summary`);
