@@ -3,7 +3,7 @@ import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 export default function AuthLayout() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 pt-16 sm:pt-24 relative overflow-hidden">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-skyiq-cyan/5 via-transparent to-skyiq-cyan/3" />
 
