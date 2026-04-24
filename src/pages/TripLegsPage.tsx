@@ -1047,7 +1047,17 @@ export default function TripLegsPage() {
               leg={leg}
               onUpdate={(updated) => updateLeg(index, updated)}
               onConfirm={() => {
-                updateLeg(index, { ...leg, isConfirmed: true });
+                const confirmedLeg = { ...leg, isConfirmed: true };
+                updateLeg(index, confirmedLeg);
+                const willAllBeConfirmed = tripForm.legs.every((l, i) => i === index || l.isConfirmed);
+
+                if (demoActive && willAllBeConfirmed) {
+                  setTimeout(() => {
+                    void handleNext();
+                  }, 150);
+                  return;
+                }
+
                 // Auto-scroll to next unconfirmed leg
                 const nextUnconfirmedIdx = tripForm.legs.findIndex(
                   (l, i) => i > index && !l.isConfirmed
