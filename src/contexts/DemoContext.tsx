@@ -202,8 +202,8 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     id: 'review-fuel-burns',
     page: '',
     target: 'fuel-burn-leg-1',
-    title: 'Fuel Burns',
-    description: "Fuel burns come straight from your flight plan for each leg. We've entered them here for the demo so you can keep clicking Next.",
+    title: 'Enter in your fuel burns here',
+    description: "Fuel burns are entered for each leg from the filed flight plans. They are already filled in for the demo so you can review them instantly.",
     placement: 'top',
   },
   {
