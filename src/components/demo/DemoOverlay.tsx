@@ -43,6 +43,14 @@ export default function DemoOverlay() {
   // When the user clicks Next on a step that has a click-action target, fire
   // the underlying click for them so the demo drives itself.
   const handleNext = () => {
+    // Finish on the last step — end the demo and always land the user on a
+    // known-good page so we can never reveal a half-rendered route underneath
+    // the overlay (e.g. an aborted save still on /fleet/add).
+    if (currentStepIndex === totalSteps - 1) {
+      endDemo();
+      navigate('/dashboard');
+      return;
+    }
     if (currentStep.target && currentStep.action === 'click') {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`) as HTMLElement | null;
       if (el) {
