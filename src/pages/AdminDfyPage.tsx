@@ -379,9 +379,9 @@ export default function AdminDfyPage() {
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-500" />
             <p className="text-2xl font-bold text-green-500">
-              {formatCurrency(totalRevenue)}
+              {formatCurrencyCents(totalPendingCents)}
             </p>
-            <p className="text-xs text-muted-foreground">Est. Revenue</p>
+            <p className="text-xs text-muted-foreground">Pending Invoice</p>
           </CardContent>
         </Card>
       </div>
