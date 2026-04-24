@@ -145,25 +145,30 @@ export default function DemoOverlay() {
       transition: 'top 250ms ease, left 250ms ease, right 250ms ease, bottom 250ms ease',
     };
 
-    const clampX = (cx: number) => Math.max(8, Math.min(cx, window.innerWidth - tooltipWidth - 8));
-    const clampY = (cy: number) => Math.max(8, Math.min(cy, window.innerHeight - tooltipHeight - 8));
+    const minEdge = 12;
+    const clampX = (cx: number) => Math.max(minEdge, Math.min(cx, window.innerWidth - tooltipWidth - minEdge));
+    const clampY = (cy: number) => Math.max(minEdge, Math.min(cy, window.innerHeight - tooltipHeight - minEdge));
+    // Clamp a `bottom` offset so the tooltip stays fully on-screen vertically.
+    const clampBottom = (cb: number) => Math.max(minEdge, Math.min(cb, window.innerHeight - tooltipHeight - minEdge));
+    // Clamp a `right` offset so the tooltip stays fully on-screen horizontally.
+    const clampRight = (cr: number) => Math.max(minEdge, Math.min(cr, window.innerWidth - tooltipWidth - minEdge));
 
     switch (placement) {
       case 'bottom':
-        base.top = targetRect.bottom + gap;
+        base.top = clampY(targetRect.bottom + gap);
         base.left = clampX(targetRect.left + targetRect.width / 2 - tooltipWidth / 2);
         break;
       case 'top':
-        base.bottom = window.innerHeight - targetRect.top + gap;
+        base.bottom = clampBottom(window.innerHeight - targetRect.top + gap);
         base.left = clampX(targetRect.left + targetRect.width / 2 - tooltipWidth / 2);
         break;
       case 'right':
         base.top = clampY(targetRect.top + targetRect.height / 2 - tooltipHeight / 2);
-        base.left = targetRect.right + gap;
+        base.left = clampX(targetRect.right + gap);
         break;
       case 'left':
         base.top = clampY(targetRect.top + targetRect.height / 2 - tooltipHeight / 2);
-        base.right = window.innerWidth - targetRect.left + gap;
+        base.right = clampRight(window.innerWidth - targetRect.left + gap);
         break;
     }
 
