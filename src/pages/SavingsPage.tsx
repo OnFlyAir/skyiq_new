@@ -72,13 +72,13 @@ export default function SavingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
+      <div className="flex items-start gap-2 sm:gap-3">
+        <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Potential Savings Earned</h1>
-          <p className="text-xs text-muted-foreground">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold leading-tight">Potential Savings Earned</h1>
+          <p className="text-xs text-muted-foreground mt-1">
             Savings represent 50% of the difference between worst-case and optimized fuel costs.
           </p>
         </div>
