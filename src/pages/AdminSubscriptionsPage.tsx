@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield, CheckCircle2, XCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrencyCents } from '@/lib/format';
@@ -25,6 +25,27 @@ interface SubRow {
   current_period_end: string | null;
   is_billing_manager: boolean;
   role_name: string;
+  is_enabled: boolean;
+}
+
+// Statuses that automatically disable the user's account access (per billing logic).
+const AUTO_DISABLE_STATUSES = new Set(['canceled', 'past_due', 'expired', 'unpaid']);
+
+function accountBadge(isEnabled: boolean, status: string) {
+  if (isEnabled) {
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+        <CheckCircle2 className="h-3 w-3" /> Enabled
+      </Badge>
+    );
+  }
+  const auto = AUTO_DISABLE_STATUSES.has(status);
+  return (
+    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 gap-1">
+      <XCircle className="h-3 w-3" />
+      {auto ? 'Auto-disabled' : 'Disabled'}
+    </Badge>
+  );
 }
 
 function statusBadge(status: string) {
@@ -59,7 +80,7 @@ export default function AdminSubscriptionsPage() {
       const { data: subs } = await supabase.from('subscriptions').select('*');
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, company, email, role_name, is_billing_manager');
+        .select('id, first_name, last_name, company, email, role_name, is_billing_manager, is_enabled');
 
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
@@ -79,6 +100,7 @@ export default function AdminSubscriptionsPage() {
           current_period_end: s.current_period_end,
           is_billing_manager: !!p?.is_billing_manager,
           role_name: p?.role_name || 'User',
+          is_enabled: p?.is_enabled !== false,
         };
       });
 
@@ -141,6 +163,21 @@ export default function AdminSubscriptionsPage() {
       toast({ title: 'Cycle updated' });
     }
   }
+
+  async function toggleAccountEnabled(userId: string, current: boolean) {
+    const next = !current;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_enabled: next } as any)
+      .eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_enabled: next } : r));
+      toast({ title: next ? 'Account enabled' : 'Account disabled' });
+    }
+  }
+
   if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto text-center p-8">
@@ -160,6 +197,7 @@ export default function AdminSubscriptionsPage() {
   const totalMRR = rows.filter(r => r.status === 'active').reduce((s, r) => s + r.monthly_amount_cents, 0);
   const trialCount = rows.filter(r => r.status === 'trial').length;
   const pastDueCount = rows.filter(r => r.status === 'past_due').length;
+  const autoDisabledCount = rows.filter(r => !r.is_enabled && AUTO_DISABLE_STATUSES.has(r.status)).length;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -171,7 +209,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-600" />
@@ -191,6 +229,13 @@ export default function AdminSubscriptionsPage() {
             <AlertTriangle className="h-5 w-5 mx-auto mb-1 text-red-500" />
             <p className="text-2xl font-bold text-red-500">{pastDueCount}</p>
             <p className="text-xs text-muted-foreground">Past Due</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <XCircle className="h-5 w-5 mx-auto mb-1 text-red-500" />
+            <p className="text-2xl font-bold text-red-500">{autoDisabledCount}</p>
+            <p className="text-xs text-muted-foreground">Auto-disabled</p>
           </CardContent>
         </Card>
       </div>
@@ -214,6 +259,7 @@ export default function AdminSubscriptionsPage() {
                 <th className="text-left px-4 py-2.5 font-medium">Company</th>
                 <th className="text-left px-4 py-2.5 font-medium">Contact</th>
                 <th className="text-center px-4 py-2.5 font-medium">Status</th>
+                <th className="text-center px-4 py-2.5 font-medium">Account</th>
                 <th className="text-center px-4 py-2.5 font-medium">Aircraft</th>
                 <th className="text-center px-4 py-2.5 font-medium">Cycle</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
@@ -233,6 +279,22 @@ export default function AdminSubscriptionsPage() {
                     <div className="text-xs">{r.email}</div>
                   </td>
                   <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
+                  <td className="px-4 py-2.5 text-center">
+                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
+                      <Badge variant="outline" className="bg-secondary text-muted-foreground gap-1">
+                        <Shield className="h-3 w-3" /> Exempt
+                      </Badge>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => toggleAccountEnabled(r.userId, r.is_enabled)}
+                        title={r.is_enabled ? 'Click to disable account' : 'Click to enable account'}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        {accountBadge(r.is_enabled, r.status)}
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-center">{r.aircraft_count}</td>
                   <td className="px-4 py-2.5 text-center text-xs">
                     <select
@@ -275,7 +337,7 @@ export default function AdminSubscriptionsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
               )}
             </tbody>
           </table>
