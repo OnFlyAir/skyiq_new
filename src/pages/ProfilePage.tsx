@@ -5,7 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Plane, Database, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Shield, Users, Plane, Database, CreditCard, Mail, AlertTriangle, RefreshCw, Bell } from 'lucide-react';
+
+type EmailPref = 'all' | 'critical' | 'changes' | 'none';
+
+const EMAIL_PREF_OPTIONS: { value: EmailPref; label: string; description: string; icon: typeof Mail }[] = [
+  { value: 'all', label: 'All billing emails', description: 'Trial updates, payment failures, cancellations, and plan changes.', icon: Bell },
+  { value: 'changes', label: 'Critical + plan changes', description: 'Payment failures, cancellations, and any plan updates. No trial reminders.', icon: RefreshCw },
+  { value: 'critical', label: 'Critical only', description: 'Just payment failures and subscription cancellations.', icon: AlertTriangle },
+  { value: 'none', label: 'None', description: 'Mute all billing emails. You may miss important account notices.', icon: Mail },
+];
 
 type AdminStats = {
   totalUsers: number;
