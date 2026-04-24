@@ -116,6 +116,31 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
+  async function toggleBillingManager(userId: string, current: boolean) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_billing_manager: !current } as any)
+      .eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_billing_manager: !current } : r));
+      toast({ title: !current ? 'Billing access granted' : 'Billing access revoked' });
+    }
+  }
+
+  async function setCycle(subId: string, cycle: 'four_weekly' | 'annual') {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ billing_cycle: cycle as any } as any)
+      .eq('id', subId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.id === subId ? { ...r, billing_cycle: cycle } : r));
+      toast({ title: 'Cycle updated' });
+    }
+  }
   if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto text-center p-8">
