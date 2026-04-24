@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useDemo } from '@/contexts/DemoContext';
-import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
 
@@ -302,9 +302,23 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <p className="mt-8 text-sm text-center text-muted-foreground">
-        Don't have an account?{' '}
-        <Link to="/signup" className="text-primary font-medium hover:underline">Create one</Link>
+      {/* Sign up today for $1 — primary conversion CTA */}
+      <div className="mt-4">
+        <Link
+          to="/signup?tour=1"
+          className="w-full py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-lg hover:opacity-95 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+        >
+          <Sparkles className="w-4 h-4" />
+          Sign up today for $1
+        </Link>
+        <p className="mt-2 text-xs text-center text-muted-foreground">
+          $1 today · 30 days free · cancel anytime
+        </p>
+      </div>
+
+      <p className="mt-6 text-sm text-center text-muted-foreground">
+        Already have an account?{' '}
+        <Link to="/login" className="text-primary font-medium hover:underline">Sign in above</Link>
       </p>
     </>
   );
