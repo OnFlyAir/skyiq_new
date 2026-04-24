@@ -97,9 +97,11 @@ export default function DemoOverlay() {
 
   // Wait steps still need to gate Next.
   const isWaitStep = currentStep.action === 'wait';
-  // Hide Next while we're waiting for a target to appear, except for center steps.
+  // Note: we no longer hide Next while waiting for a target. If the highlighted
+  // element doesn't render in time we still want users to be able to advance —
+  // hiding Next was stranding the public demo when a step's target was offscreen.
   const waitingForTarget = !!currentStep.target && !targetRect && currentStep.placement !== 'center';
-  const showNextButton = !currentStep.requireAction && !waitingForTarget && !isWaitStep;
+  const showNextButton = !currentStep.requireAction && !isWaitStep;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
 
