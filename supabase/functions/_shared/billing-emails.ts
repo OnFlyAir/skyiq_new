@@ -15,6 +15,7 @@ interface SendArgs {
   to: string;
   type: BillingEmailType;
   data?: Record<string, any>;
+  userId?: string;
 }
 
 const baseStyle = `
