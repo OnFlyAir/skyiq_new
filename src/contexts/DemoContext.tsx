@@ -75,10 +75,10 @@ export const FLEET_DEMO_STEPS: DemoStep[] = [
   {
     id: 'review-performance',
     page: '/fleet/add',
-    target: 'performance-defaults-toggle',
+    target: 'performance-defaults-section',
     title: 'Performance & Defaults',
-    description: 'Open this to review or tweak MTOW, fuel capacity, cruise burn, reserves, and crew/pax defaults.',
-    placement: 'bottom',
+    description: 'MTOW, fuel capacity, cruise burn, reserves, and crew/pax defaults — all auto-filled from the aircraft model. Tweak any value if needed.',
+    placement: 'top',
   },
   {
     id: 'click-save',
