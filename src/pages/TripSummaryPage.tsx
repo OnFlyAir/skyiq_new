@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useDemo } from "@/contexts/DemoContext";
 import {
   ArrowLeft, Loader2, Mail, Edit,
   ToggleLeft, ToggleRight, Lightbulb, ChevronDown, ChevronUp, FileText,
@@ -171,6 +172,7 @@ export default function TripSummaryPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { active: demoActive } = useDemo();
 
   const [summary, setSummary] = useState<TripSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,6 +181,18 @@ export default function TripSummaryPage() {
   useEffect(() => {
     async function loadSummary() {
       if (!tripId) return;
+
+      const cachedDemoSummary = demoActive
+        ? sessionStorage.getItem(`skyiq_demo_summary_${tripId}`)
+        : null;
+
+      if (cachedDemoSummary) {
+        const details = JSON.parse(cachedDemoSummary) as TripSummary;
+        setSummary(details);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("trips")
         .select("*")
@@ -216,7 +230,7 @@ export default function TripSummaryPage() {
       setLoading(false);
     }
     loadSummary();
-  }, [tripId]);
+  }, [tripId, demoActive]);
 
   if (loading) {
     return (
