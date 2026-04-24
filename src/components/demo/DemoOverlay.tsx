@@ -71,7 +71,10 @@ export default function DemoOverlay() {
     }
     if (currentStep.target && currentStep.action === 'click') {
       const el = document.querySelector(`[data-demo="${currentStep.target}"]`) as HTMLElement | null;
-      if (el) {
+      const isDisabled = el instanceof HTMLButtonElement || el instanceof HTMLInputElement
+        ? el.disabled
+        : el?.getAttribute('aria-disabled') === 'true';
+      if (el && !isDisabled) {
         el.click();
         // auto-advance hook fires nextStep on the click; don't double-advance.
         return;
@@ -79,7 +82,10 @@ export default function DemoOverlay() {
     }
     if (currentStep.clickOnNext) {
       const el = document.querySelector(`[data-demo="${currentStep.clickOnNext}"]`) as HTMLElement | null;
-      if (el) {
+      const isDisabled = el instanceof HTMLButtonElement || el instanceof HTMLInputElement
+        ? el.disabled
+        : el?.getAttribute('aria-disabled') === 'true';
+      if (el && !isDisabled) {
         setPendingRouteAdvanceFrom(location.pathname);
         el.click();
         return;
