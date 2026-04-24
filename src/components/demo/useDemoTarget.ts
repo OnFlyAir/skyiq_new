@@ -61,7 +61,27 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
       ) {
         return;
       }
+
+      // If a previous commit's CSS transition is still animating the overlay,
+      // queue this update and apply it once the transition window ends. This
+      // guarantees the spotlight/tooltip never jumps mid-animation.
+      const now = Date.now();
+      if (now < transitionUntil) {
+        pendingRect = rect;
+        if (!pendingTimer) {
+          const wait = Math.max(0, transitionUntil - now);
+          pendingTimer = setTimeout(() => {
+            pendingTimer = null;
+            const next = pendingRect;
+            pendingRect = null;
+            if (next) commitRect(next);
+          }, wait);
+        }
+        return;
+      }
+
       lastCommittedRect = rect;
+      transitionUntil = now + TRANSITION_MS;
       setTargetRect(rect);
     };
 
