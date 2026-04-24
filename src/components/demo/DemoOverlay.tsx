@@ -4,6 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
+import { supabase } from '@/integrations/supabase/client';
+
+export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 
 type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
@@ -40,15 +43,22 @@ export default function DemoOverlay() {
   // ---------- Safe to early-return below this line ----------
   if (!active || !currentStep) return null;
 
-  // When the user clicks Next on a step that has a click-action target, fire
-  // the underlying click for them so the demo drives itself.
+  // End-of-demo handler: sign out the demo account, drop user back on the
+  // login page, and flag the signup-for-$1 CTA so it pulses to grab attention.
+  const finishAndReturnToLogin = async () => {
+    endDemo();
+    sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* noop — even if sign out fails we still want to land on /login */
+    }
+    navigate('/login', { replace: true });
+  };
+
   const handleNext = () => {
-    // Finish on the last step — end the demo and always land the user on a
-    // known-good page so we can never reveal a half-rendered route underneath
-    // the overlay (e.g. an aborted save still on /fleet/add).
     if (currentStepIndex === totalSteps - 1) {
-      endDemo();
-      navigate('/dashboard');
+      void finishAndReturnToLogin();
       return;
     }
     if (currentStep.target && currentStep.action === 'click') {
@@ -60,6 +70,10 @@ export default function DemoOverlay() {
       }
     }
     nextStep();
+  };
+
+  const handleSkip = () => {
+    void finishAndReturnToLogin();
   };
 
   const hasTarget = !!targetRect;
@@ -241,9 +255,12 @@ export default function DemoOverlay() {
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            top: 24,
+            top: 'max(24px, env(safe-area-inset-top, 0px))',
             width: 'min(720px, calc(100vw - 24px))',
-            height: 'min(60vh, calc(100vh - 280px))',
+            // Reserve ~280px for the tooltip dock below; otherwise fill the screen
+            // so the user can scroll through every page of the sample itinerary.
+            height: 'calc(100vh - 320px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100vh - 280px)',
           }}
         >
           <iframe
@@ -265,7 +282,7 @@ export default function DemoOverlay() {
         isInteractiveStep={isWaitStep}
         onNext={handleNext}
         onPrev={prevStep}
-        onSkip={endDemo}
+        onSkip={handleSkip}
       />
     </div>
   );

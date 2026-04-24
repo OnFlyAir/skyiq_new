@@ -50,6 +50,14 @@ export default function TripEmailPage() {
         setTripDisplayNum(tripData.itinerary_num || `Trip #${tripId}`);
       }
 
+      // In demo mode we never reveal the dev account's saved recipient list.
+      // Show a clear placeholder so prospects see where their email would go.
+      if (demoActive) {
+        setEmails([{ email: "your.email@example.com", isChecked: true }]);
+        setLoading(false);
+        return;
+      }
+
       // Load user's saved email list
       const { data: emailList } = await supabase
         .from("email_lists")
@@ -69,7 +77,7 @@ export default function TripEmailPage() {
       setLoading(false);
     }
     load();
-  }, [user, tripId]);
+  }, [user, tripId, demoActive]);
 
   const updateEmail = (index: number, field: keyof EmailEntry, value: string | boolean) => {
     setEmails((prev) => {

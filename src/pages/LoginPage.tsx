@@ -1,7 +1,8 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useDemo } from '@/contexts/DemoContext';
+import { POST_DEMO_HIGHLIGHT_KEY } from '@/components/demo/DemoOverlay';
 import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
@@ -24,6 +25,24 @@ export default function LoginPage() {
   const { user, profile, loading: authLoading, signIn, signUp } = useAuthContext();
   const { startDemo } = useDemo();
   const navigate = useNavigate();
+  const signupCtaRef = useRef<HTMLAnchorElement>(null);
+  const [postDemoHighlight, setPostDemoHighlight] = useState(false);
+
+  // After the public demo ends we land back here. Pulse the $1 CTA so the
+  // user sees the obvious next step.
+  useEffect(() => {
+    if (sessionStorage.getItem(POST_DEMO_HIGHLIGHT_KEY) === '1') {
+      sessionStorage.removeItem(POST_DEMO_HIGHLIGHT_KEY);
+      setPostDemoHighlight(true);
+      // Wait a tick for the layout, then scroll the CTA into view.
+      setTimeout(() => {
+        signupCtaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+      // Auto-stop the pulse after a few seconds so it doesn't loop forever.
+      const t = setTimeout(() => setPostDemoHighlight(false), 8000);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user && profile) {
@@ -303,8 +322,9 @@ export default function LoginPage() {
       </div>
 
       {/* Sign up today for $1 — primary conversion CTA */}
-      <div className="mt-4">
+      <div className={`mt-4 ${postDemoHighlight ? 'rounded-lg ring-4 ring-primary/60 ring-offset-2 ring-offset-background animate-pulse' : ''}`}>
         <Link
+          ref={signupCtaRef}
           to="/signup?tour=1"
           className="w-full py-3 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-lg hover:opacity-95 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2 shadow-md shadow-primary/20"
         >
@@ -312,7 +332,7 @@ export default function LoginPage() {
           Sign up today for $1
         </Link>
         <p className="mt-2 text-xs text-center text-muted-foreground">
-          $1 today · 4 weeks of access · cancel anytime
+          {postDemoHighlight ? '👆 Loved the demo? Get 4 weeks of access for $1 — cancel anytime.' : '$1 today · 4 weeks of access · cancel anytime'}
         </p>
       </div>
 
