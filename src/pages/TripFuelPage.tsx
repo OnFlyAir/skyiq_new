@@ -192,6 +192,19 @@ export default function TripFuelPage() {
 
   const hasErrors = validations.some((v) => v.errors.length > 0);
 
+  // Demo: skip the fuel-burns page entirely. Burns are pre-filled, so auto-run
+  // the optimizer the moment we land here and validation passes.
+  const autoOptimizedRef = useRef(false);
+  useEffect(() => {
+    if (!demoActive || autoOptimizedRef.current) return;
+    if (loading || optimizing) return;
+    if (!tripForm || fuelBurns.length === 0) return;
+    if (fuelBurns.some((b) => b <= 0) || hasErrors) return;
+    autoOptimizedRef.current = true;
+    handleOptimize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoActive, loading, optimizing, tripForm, fuelBurns, hasErrors]);
+
   const handleFuelBurnChange = (index: number, value: number) => {
     setFuelBurns((prev) => {
       const next = [...prev];
