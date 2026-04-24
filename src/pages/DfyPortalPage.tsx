@@ -65,6 +65,7 @@ export default function DfyPortalPage() {
   const [fuelBurns, setFuelBurns] = useState<FuelBurnEntry[]>([
     { leg: 1, departure: "", destination: "", fuel_burn_lbs: 0 },
   ]);
+  const [fuelOnBoard, setFuelOnBoard] = useState<number | "">("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
