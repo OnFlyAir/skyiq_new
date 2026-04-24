@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDemo, DEMO_PDF_PATH } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
+
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
 export default function DemoOverlay() {
   const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
@@ -49,6 +51,17 @@ export default function DemoOverlay() {
   const showNextButton = !currentStep.requireAction && !waitingForTarget && !isWaitStep;
   const isLastStep = currentStepIndex === totalSteps - 1;
 
+  // Lock the chosen placement & mobile dock side per-step so smooth scroll
+  // movement doesn't cause the tooltip to flip mid-animation.
+  const [lockedPlacement, setLockedPlacement] = useState<Placement | null>(null);
+  const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
+
+  // Reset locks whenever the step changes.
+  useEffect(() => {
+    setLockedPlacement(null);
+    setLockedMobileDock(null);
+  }, [currentStep?.id]);
+
   // Calculate tooltip position with smart auto-placement to avoid overlapping the target
   const getTooltipStyle = (): React.CSSProperties => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -68,13 +81,18 @@ export default function DemoOverlay() {
       return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
-    // On mobile: dock to bottom or top of screen depending on where the target is.
+    // Mobile: dock to top or bottom — but lock the choice once made so smooth
+    // scroll doesn't cause the tooltip to flip across the screen.
     if (isMobile) {
-      const targetMid = targetRect.top + targetRect.height / 2;
-      const dockTop = targetMid > window.innerHeight / 2;
-      return dockTop
-        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto' }
-        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto' };
+      let dock = lockedMobileDock;
+      if (!dock) {
+        const targetMid = targetRect.top + targetRect.height / 2;
+        dock = targetMid > window.innerHeight / 2 ? 'top' : 'bottom';
+        setTimeout(() => setLockedMobileDock(dock!), 0);
+      }
+      return dock === 'top'
+        ? { position: 'fixed', top: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' }
+        : { position: 'fixed', bottom: 16, left: 12, right: 12, width: 'auto', transition: 'top 250ms ease, bottom 250ms ease' };
     }
 
     const tooltipHeight = 200;
@@ -94,14 +112,25 @@ export default function DemoOverlay() {
       left: spaceLeft >= tooltipWidth,
     };
 
-    const placement = fits[preferred] ? preferred
-      : fits.bottom ? 'bottom'
-      : fits.right ? 'right'
-      : fits.top ? 'top'
-      : fits.left ? 'left'
-      : 'bottom';
+    let placement: Placement;
+    if (lockedPlacement) {
+      placement = lockedPlacement;
+    } else {
+      placement = (fits[preferred] ? preferred
+        : fits.bottom ? 'bottom'
+        : fits.right ? 'right'
+        : fits.top ? 'top'
+        : fits.left ? 'left'
+        : 'bottom') as Placement;
+      // Lock the chosen placement so it doesn't flip while we scroll into view.
+      setTimeout(() => setLockedPlacement(placement), 0);
+    }
 
-    const base: React.CSSProperties = { position: 'fixed' };
+    // Smooth positional transitions kill the "snap" feeling.
+    const base: React.CSSProperties = {
+      position: 'fixed',
+      transition: 'top 250ms ease, left 250ms ease, right 250ms ease, bottom 250ms ease',
+    };
 
     const clampX = (cx: number) => Math.max(8, Math.min(cx, window.innerWidth - tooltipWidth - 8));
     const clampY = (cy: number) => Math.max(8, Math.min(cy, window.innerHeight - tooltipHeight - 8));
@@ -145,12 +174,13 @@ export default function DemoOverlay() {
     const bottom = top + height;
     const right = left + width;
 
+    const panelTransition = 'top 250ms ease, left 250ms ease, width 250ms ease, height 250ms ease, bottom 250ms ease, right 250ms ease';
     return (
       <>
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top) }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0 }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height }} />
-        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: 0, left: 0, right: 0, height: Math.max(0, top), transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top: bottom, left: 0, right: 0, bottom: 0, transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: 0, width: Math.max(0, left), height, transition: panelTransition }} />
+        <div className={`fixed ${overlayPointerClass} bg-black/60`} style={{ top, left: right, right: 0, height, transition: panelTransition }} />
       </>
     );
   };
@@ -165,15 +195,17 @@ export default function DemoOverlay() {
     <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
 
-      {/* Spotlight ring */}
+      {/* Spotlight ring — smooth transition + soft glow instead of pulse to avoid wobble */}
       {hasTarget && (
         <div
-          className="absolute border-2 border-primary rounded-lg pointer-events-none animate-pulse"
+          className="absolute border-2 border-primary rounded-lg pointer-events-none"
           style={{
             top: targetRect!.top - padding,
             left: targetRect!.left - padding,
             width: targetRect!.width + padding * 2,
             height: targetRect!.height + padding * 2,
+            transition: 'top 250ms ease, left 250ms ease, width 250ms ease, height 250ms ease',
+            boxShadow: '0 0 24px hsl(var(--primary) / 0.45)',
           }}
         />
       )}
