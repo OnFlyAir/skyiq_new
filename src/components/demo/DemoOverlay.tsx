@@ -4,6 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
+import { supabase } from '@/integrations/supabase/client';
+
+export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 
 type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
