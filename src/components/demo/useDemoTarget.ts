@@ -31,6 +31,9 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     let transitionUntil = 0;
     let pendingRect: DOMRect | null = null;
     let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+    // Track every scroller we've issued a smooth-scroll on so we can cancel
+    // them on cleanup (i.e. when the user advances to the next step).
+    const activeScrollers = new Set<Element>();
 
     const findScrollParent = (el: Element): Element => {
       if (forceWindowScroll) {
