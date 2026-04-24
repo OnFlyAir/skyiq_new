@@ -24,6 +24,13 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     let lastTargetTop: number | null = null;
     let forceWindowScroll = false;
     let scrollLockUntil = 0;
+    // While a CSS transition is in flight on the overlay (spotlight + tooltip),
+    // suppress further rect commits so the visuals never update mid-animation.
+    // Matches the 250ms CSS transition in DemoOverlay with a small buffer.
+    const TRANSITION_MS = 260;
+    let transitionUntil = 0;
+    let pendingRect: DOMRect | null = null;
+    let pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
     const findScrollParent = (el: Element): Element => {
       if (forceWindowScroll) {
@@ -54,7 +61,27 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
       ) {
         return;
       }
+
+      // If a previous commit's CSS transition is still animating the overlay,
+      // queue this update and apply it once the transition window ends. This
+      // guarantees the spotlight/tooltip never jumps mid-animation.
+      const now = Date.now();
+      if (now < transitionUntil) {
+        pendingRect = rect;
+        if (!pendingTimer) {
+          const wait = Math.max(0, transitionUntil - now);
+          pendingTimer = setTimeout(() => {
+            pendingTimer = null;
+            const next = pendingRect;
+            pendingRect = null;
+            if (next) commitRect(next);
+          }, wait);
+        }
+        return;
+      }
+
       lastCommittedRect = rect;
+      transitionUntil = now + TRANSITION_MS;
       setTargetRect(rect);
     };
 
@@ -152,7 +179,10 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     // First pass immediately, then poll less aggressively to reduce churn.
     findTarget();
     const interval = setInterval(findTarget, 250);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (pendingTimer) clearTimeout(pendingTimer);
+    };
   }, [active, currentStep]);
 
   return targetRect;
