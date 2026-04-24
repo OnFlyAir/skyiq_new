@@ -10,8 +10,6 @@ export default function SignUpPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [wantsDfy, setWantsDfy] = useState(false);
-  const [companyName, setCompanyName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuthContext();
@@ -22,20 +20,10 @@ export default function SignUpPage() {
     setError('');
     if (password !== confirmPassword) { setError('Passwords do not match'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
-    if (wantsDfy && !companyName.trim()) { setError('Company name is required for DFY service'); return; }
     setLoading(true);
 
-    const { data, error: signUpError } = await signUp(email, password, firstName, lastName);
+    const { error: signUpError } = await signUp(email, password, firstName, lastName);
     if (signUpError) { setError(signUpError.message); setLoading(false); return; }
-
-    // If DFY selected, store preference for onboarding to pick up
-    if (wantsDfy && data?.user) {
-      localStorage.setItem('skyiq_dfy_signup', JSON.stringify({
-        company_name: companyName.trim(),
-        contact_name: `${firstName} ${lastName}`.trim(),
-        contact_email: email,
-      }));
-    }
 
     // Auto-confirm is enabled, so user is immediately signed in — redirect to onboarding
     navigate('/onboarding');
@@ -117,34 +105,8 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        {/* DFY Service Add-on */}
-        <div className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${wantsDfy ? 'border-primary bg-primary/5' : 'border-border bg-secondary/30'}`} onClick={() => setWantsDfy(!wantsDfy)}>
-          <div className="flex items-center gap-3">
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${wantsDfy ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
-              {wantsDfy && <span className="text-primary-foreground text-xs font-bold">✓</span>}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <Plane className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Done-For-You Fuel Planning</span>
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">+$25/trip</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Upload your trip sheets and our team optimizes your fuel plan for you
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {wantsDfy && (
-          <div>
-            <label htmlFor="company-name" className="block text-sm font-medium text-foreground/80 mb-1.5">Company name</label>
-            <div className="relative">
-              <Plane className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input id="company-name" type="text" placeholder="Your aviation company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required className={inputCls} />
-            </div>
-          </div>
-        )}
+        {/* DFY add-on intentionally removed from initial signup —
+            users can opt in later from the DFY tab inside the app. */}
 
         <button type="submit" disabled={loading} className="w-full py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-[0.98] mt-1">
           {loading ? (
