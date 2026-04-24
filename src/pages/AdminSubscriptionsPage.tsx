@@ -177,6 +177,8 @@ export default function AdminSubscriptionsPage() {
       toast({ title: next ? 'Account enabled' : 'Account disabled' });
     }
   }
+
+  if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto text-center p-8">
         <h1 className="text-xl font-bold mb-2">Access Denied</h1>
