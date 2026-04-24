@@ -179,7 +179,10 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
     // First pass immediately, then poll less aggressively to reduce churn.
     findTarget();
     const interval = setInterval(findTarget, 250);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (pendingTimer) clearTimeout(pendingTimer);
+    };
   }, [active, currentStep]);
 
   return targetRect;
