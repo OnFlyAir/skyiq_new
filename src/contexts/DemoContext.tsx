@@ -14,6 +14,8 @@ export interface DemoStep {
   inputValue?: string;
   highlightOnly?: boolean;
   requireAction?: boolean;
+  /** When user clicks Next on the tooltip, also click this data-demo target (e.g. to advance the page). */
+  clickOnNext?: string;
 }
 
 interface DemoContextType {
