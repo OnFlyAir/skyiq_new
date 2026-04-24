@@ -619,7 +619,10 @@ export default function AdminDfyPage() {
         <TabsContent value="billing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">This Month's Billing Summary</CardTitle>
+              <CardTitle className="text-lg">Usage charges (next invoice)</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Pending charges roll up onto each user's next subscription invoice. Voided / refunded rows are excluded.
+              </p>
             </CardHeader>
             <CardContent>
               {billingByClient.length === 0 ? (
@@ -630,29 +633,34 @@ export default function AdminDfyPage() {
                     <thead className="bg-secondary">
                       <tr>
                         <th className="text-left px-4 py-2 font-medium">Client</th>
-                        <th className="text-center px-4 py-2 font-medium">Tier</th>
-                        <th className="text-center px-4 py-2 font-medium">Trips</th>
-                        <th className="text-right px-4 py-2 font-medium">Revenue</th>
+                        <th className="text-center px-4 py-2 font-medium">Pending</th>
+                        <th className="text-right px-4 py-2 font-medium">To bill</th>
+                        <th className="text-right px-4 py-2 font-medium">Invoiced</th>
+                        <th className="text-right px-4 py-2 font-medium">Refunded</th>
                       </tr>
                     </thead>
                     <tbody>
                       {billingByClient.map((b) => (
                         <tr key={b.client.id} className="border-t">
                           <td className="px-4 py-2 font-medium">{b.client.company_name}</td>
-                          <td className="px-4 py-2 text-center">
-                            {b.client.pricing_tier === "per_trip" ? `${formatCurrencyCents(b.client.per_trip_rate_cents)}/trip` : `${formatCurrencyCents(b.client.monthly_rate_cents)}/mo`}
-                          </td>
-                          <td className="px-4 py-2 text-center">{b.tripsThisMonth}</td>
+                          <td className="px-4 py-2 text-center">{b.pendingCount}</td>
                           <td className="px-4 py-2 text-right text-green-500 font-medium">
-                            {formatCurrency(b.revenue)}
+                            {formatCurrencyCents(b.pendingCents)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-muted-foreground">
+                            {formatCurrencyCents(b.invoicedCents)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-destructive">
+                            {formatCurrencyCents(b.refundedCents)}
                           </td>
                         </tr>
                       ))}
                       <tr className="border-t bg-secondary/50 font-bold">
-                        <td className="px-4 py-2" colSpan={3}>Total</td>
+                        <td className="px-4 py-2" colSpan={2}>Total pending</td>
                         <td className="px-4 py-2 text-right text-green-500">
-                          {formatCurrency(totalRevenue)}
+                          {formatCurrencyCents(totalPendingCents)}
                         </td>
+                        <td colSpan={2}></td>
                       </tr>
                     </tbody>
                   </table>
