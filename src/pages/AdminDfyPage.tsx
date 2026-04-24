@@ -104,7 +104,10 @@ export default function AdminDfyPage() {
   async function loadData() {
     const [clientsRes, requestsRes, profilesRes] = await Promise.all([
       supabase.from("dfy_clients" as any).select("*").order("created_at", { ascending: false }),
-      supabase.from("dfy_requests" as any).select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("dfy_requests" as any)
+        .select("id, client_id, status, pdf_storage_path, admin_notes, created_at, reviewed_at, sent_at, fuel_burns, fuel_on_board_lbs, parsed_result")
+        .order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, email, company"),
     ]);
 
