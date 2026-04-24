@@ -265,6 +265,14 @@ export default function SubscriptionPage() {
             </div>
           )}
 
+          {pendingAddons.count > 0 && (
+            <div className="text-sm p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900">
+              <span className="font-medium">Add-ons this period:</span> Fuel Planning (DFY) ×{' '}
+              {pendingAddons.count} = <strong>{formatCurrencyCents(pendingAddons.cents)}</strong>
+              <span className="text-emerald-700"> — added to your next invoice on {formatDate(sub?.current_period_end ?? null)}.</span>
+            </div>
+          )}
+
           {sub?.pending_billing_cycle && sub.pending_billing_cycle !== sub.billing_cycle && (
             <div className="text-xs p-3 rounded-md bg-blue-50 border border-blue-200 text-blue-900">
               <span className="font-medium">Scheduled change:</span> switching to{' '}
