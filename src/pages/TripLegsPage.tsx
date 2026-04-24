@@ -600,10 +600,12 @@ export default function TripLegsPage() {
     }
   }, [parsing, demoActive, currentStep, nextStep]);
 
-  // Demo: auto-confirm all legs when reaching the "click-fuel-burns" step so the
-  // user can actually click the (otherwise-disabled) Next: Fuel Burns button.
+  // Demo: auto-confirm all legs when reaching a step that needs the (otherwise
+  // disabled) "Next: Fuel Burns" button to be clickable.
   useEffect(() => {
-    if (!demoActive || currentStep?.id !== 'click-fuel-burns') return;
+    if (!demoActive) return;
+    const stepId = currentStep?.id;
+    if (stepId !== 'click-fuel-burns' && stepId !== 'public-data-pulled') return;
     setTripForm((prev) => {
       if (!prev) return prev;
       if (prev.legs.every((l) => l.isConfirmed)) return prev;
