@@ -9,6 +9,7 @@ import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { getStripeEnvironment } from '@/lib/stripe';
+import { track } from '@/lib/analytics';
 
 interface Subscription {
   id: string;
