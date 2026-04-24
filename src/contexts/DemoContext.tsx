@@ -198,7 +198,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
   {
     id: 'review-fuel-burns',
     page: '',
-    target: 'fuel-burn-inputs',
+    target: 'fuel-burn-leg-1',
     title: 'Fuel Burns',
     description: "Fuel burns come straight from your flight plan for each leg. We've entered them here for the demo so you can keep clicking Next.",
     placement: 'top',
@@ -206,10 +206,10 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
   {
     id: 'expand-weights',
     page: '',
-    target: 'weight-limits-details',
+    target: 'weight-limits-toggle',
     title: 'Weight Limits',
-    description: 'Each leg has weight limits. SkyIQ keeps your fuel plan within MTOW, MLW, and ramp limits automatically.',
-    placement: 'bottom',
+    description: 'Tap here to expand each leg’s weight limits. SkyIQ keeps your fuel plan within MTOW, MLW, and ramp limits automatically.',
+    placement: 'top',
   },
   {
     id: 'click-confirm',
