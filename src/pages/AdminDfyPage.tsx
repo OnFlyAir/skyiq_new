@@ -357,13 +357,19 @@ export default function AdminDfyPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {requests.map((req) => (
+              {requests.map((req) => {
+                const parsed = req.parsed_result || {};
+                const burns = req.fuel_burns || [];
+                const itineraryNum = parsed.itinerary_num;
+                const aircraft = parsed.aircraft;
+                return (
                 <Card key={req.id}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between">
-                      <div>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
                         <p className="font-medium">{req.client?.company_name || "Unknown Client"}</p>
                         <p className="text-xs text-muted-foreground">
+                          {req.client?.contact_email || "—"} ·{" "}
                           {new Date(req.created_at).toLocaleDateString("en-US", {
                             month: "short", day: "numeric", year: "numeric",
                             hour: "numeric", minute: "2-digit",
@@ -373,10 +379,15 @@ export default function AdminDfyPage() {
                           <p className="text-xs text-muted-foreground mt-1">Notes: {req.admin_notes}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
                         <Badge variant={statusColors[req.status] || "secondary"}>
                           {req.status}
                         </Badge>
+                        {(req.status === "pending" || req.status === "processing") && (
+                          <Button size="sm" variant="default" onClick={() => runStandardFlow(req)}>
+                            <FileText className="h-3 w-3 mr-1" /> Run Standard Flow
+                          </Button>
+                        )}
                         {req.status === "pending" && (
                           <Button size="sm" variant="outline" onClick={() => updateRequestStatus(req.id, "processing")}>
                             Start Processing
@@ -389,7 +400,7 @@ export default function AdminDfyPage() {
                         )}
                         {req.status === "approved" && (
                           <Button size="sm" onClick={() => updateRequestStatus(req.id, "sent")}>
-                            <Send className="h-3 w-3 mr-1" /> Mark Sent
+                            <Send className="h-3 w-3 mr-1" /> Mark Sent &amp; Email Client
                           </Button>
                         )}
                         {(req.status === "pending" || req.status === "processing") && (
@@ -399,9 +410,40 @@ export default function AdminDfyPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Parsed itinerary + fuel data preview for the admin */}
+                    <div className="rounded-md border bg-secondary/40 p-3 text-xs space-y-2">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <span><span className="text-muted-foreground">Itinerary #:</span>{" "}
+                          <span className="font-medium">{itineraryNum || "—"}</span></span>
+                        <span><span className="text-muted-foreground">Aircraft:</span>{" "}
+                          <span className="font-medium">{aircraft || "—"}</span></span>
+                        <span><span className="text-muted-foreground">Fuel on board:</span>{" "}
+                          <span className="font-medium">
+                            {req.fuel_on_board_lbs != null ? `${req.fuel_on_board_lbs} lbs` : "—"}
+                          </span></span>
+                        {req.pdf_storage_path && (
+                          <span className="text-muted-foreground truncate max-w-[260px]">
+                            PDF: {req.pdf_storage_path.split("/").pop()}
+                          </span>
+                        )}
+                      </div>
+                      {burns.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {burns.map((b, i) => (
+                            <span key={i} className="bg-background border rounded px-2 py-0.5">
+                              L{b.leg} {b.departure}→{b.destination}: <strong>{b.fuel_burn_lbs}</strong> lbs
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No fuel burns provided.</p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
