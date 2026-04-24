@@ -1,44 +1,50 @@
-// Stripe webhook handler — receives subscription lifecycle events from
-// Lovable's built-in payments and syncs them into the `subscriptions` table.
-// Webhook URL: /functions/v1/payments-webhook?env=sandbox|live
+// Stripe webhook handler — receives subscription lifecycle events from the
+// Lovable-connected Stripe account and syncs them into the `subscriptions` table.
+// URL: /functions/v1/payments-webhook?env=sandbox|live
 //
-// Side effects beyond the subscriptions table:
-//   - Sends transactional billing emails via Resend (trial start, payment
-//     failed, canceled, plan changed).
-//   - Auto-disables user (profiles.is_enabled = false) immediately on
-//     canceled or past_due. Auto-re-enables on active/trialing.
-//   - Admin/Dev users are NEVER auto-disabled (billing-exempt).
+// Security: verifies HMAC-SHA256 signature using PAYMENTS_{SANDBOX|LIVE}_WEBHOOK_SECRET.
+//
+// Side effects:
+//   - Toggles profiles.is_enabled on past_due / canceled / active transitions.
+//     Admin / Dev never get disabled (billing-exempt).
+//   - Sends transactional billing emails (trial start, payment failed, canceled, plan changed).
+//   - On invoice.paid (renewal), applies subscriptions.pending_billing_cycle if set, by
+//     updating the Stripe subscription to the new cycle.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { sendBillingEmail, type BillingEmailType } from '../_shared/billing-emails.ts';
+import {
+  verifyAndParseWebhook,
+  stripeFetch,
+  form,
+  calcPriceCents,
+  type StripeEnv,
+} from '../_shared/stripe-gateway.ts';
 
 const EXEMPT_ROLES = ['Admin', 'Dev'];
 
+type AnyClient = ReturnType<typeof createClient>;
+
 async function setUserEnabled(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnyClient,
   userId: string,
   enabled: boolean,
-): Promise<{ profile: any | null }> {
+): Promise<void> {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, first_name, role_name, is_enabled')
+    .select('role_name, is_enabled')
     .eq('id', userId)
     .maybeSingle();
-
-  if (!profile) return { profile: null };
-  // Never disable Admin / Dev — they're billing-exempt.
-  if (!enabled && EXEMPT_ROLES.includes((profile as any).role_name)) {
-    return { profile };
-  }
+  if (!profile) return;
+  if (!enabled && EXEMPT_ROLES.includes((profile as any).role_name)) return;
   if ((profile as any).is_enabled !== enabled) {
     await supabase.from('profiles').update({ is_enabled: enabled } as any).eq('id', userId);
   }
-  return { profile };
 }
 
 async function safeSendEmail(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnyClient,
   userId: string,
   type: BillingEmailType,
   extraData: Record<string, any> = {},
@@ -49,7 +55,6 @@ async function safeSendEmail(
     .eq('id', userId)
     .maybeSingle();
   if (!profile || !(profile as any).email) return;
-  // Skip emails for billing-exempt roles — they're not paying.
   if (EXEMPT_ROLES.includes((profile as any).role_name)) return;
   await sendBillingEmail({
     to: (profile as any).email,
@@ -59,31 +64,85 @@ async function safeSendEmail(
   });
 }
 
+function mapStatus(s: string): string {
+  switch (s) {
+    case 'trialing': return 'trial';
+    case 'active': return 'active';
+    case 'past_due':
+    case 'unpaid': return 'past_due';
+    case 'canceled': return 'canceled';
+    case 'incomplete_expired':
+    case 'expired': return 'expired';
+    default: return s || 'trial';
+  }
+}
+
+// If the user has a pending_billing_cycle different from the current one, push
+// it to Stripe now (at the start of a new billing period, i.e. invoice.paid).
+async function maybeApplyPendingCycle(
+  supabase: AnyClient,
+  env: StripeEnv,
+  userId: string,
+  stripeSubscriptionId: string,
+) {
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('pending_billing_cycle, billing_cycle, aircraft_count')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!sub) return;
+  const pending = (sub as any).pending_billing_cycle as 'four_weekly' | 'annual' | null;
+  const current = (sub as any).billing_cycle as 'four_weekly' | 'annual';
+  if (!pending || pending === current) return;
+
+  const count = (sub as any).aircraft_count ?? 0;
+  const newAmount = calcPriceCents(count, pending);
+
+  // Retrieve current subscription to find the single item id we need to replace.
+  const current_sub = await stripeFetch(`/v1/subscriptions/${stripeSubscriptionId}`, { method: 'GET' }, env);
+  const itemId = current_sub.items?.data?.[0]?.id;
+  if (!itemId) return;
+
+  // Replace the line item with new price_data for the new cycle.
+  const intervalParams = pending === 'annual'
+    ? { 'items[0][price_data][recurring][interval]': 'year',
+        'items[0][price_data][recurring][interval_count]': 1 }
+    : { 'items[0][price_data][recurring][interval]': 'day',
+        'items[0][price_data][recurring][interval_count]': 28 };
+
+  await stripeFetch(`/v1/subscriptions/${stripeSubscriptionId}`, {
+    method: 'POST',
+    body: form({
+      'items[0][id]': itemId,
+      'items[0][price_data][currency]': 'usd',
+      'items[0][price_data][product_data][name]':
+        pending === 'annual' ? 'SkyIQ — Annual' : 'SkyIQ — 4-Week',
+      'items[0][price_data][unit_amount]': newAmount,
+      ...intervalParams,
+      proration_behavior: 'none',
+      'metadata[cycle]': pending,
+    }),
+  }, env);
+
+  await supabase.from('subscriptions').update({
+    billing_cycle: pending,
+    pending_billing_cycle: null,
+    monthly_amount_cents: newAmount,
+  } as any).eq('user_id', userId);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
     const url = new URL(req.url);
-    const env = url.searchParams.get('env') ?? 'sandbox';
-    const secretName = env === 'live'
-      ? 'PAYMENTS_LIVE_WEBHOOK_SECRET'
-      : 'PAYMENTS_SANDBOX_WEBHOOK_SECRET';
-    const webhookSecret = Deno.env.get(secretName);
-    if (!webhookSecret) {
-      console.warn(`Webhook secret missing for env=${env}`);
-    }
+    const env: StripeEnv = url.searchParams.get('env') === 'live' ? 'live' : 'sandbox';
 
-    const rawBody = await req.text();
-    let event: any;
-    try {
-      event = JSON.parse(rawBody);
-    } catch {
-      return new Response('invalid json', { status: 400, headers: corsHeaders });
-    }
+    const { event } = await verifyAndParseWebhook(req, env);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
     const type: string = event.type ?? '';
@@ -103,8 +162,8 @@ Deno.serve(async (req) => {
         const amount = obj.items?.data?.[0]?.price?.unit_amount ?? 0;
         const periodEndIso = obj.current_period_end
           ? new Date(obj.current_period_end * 1000).toISOString() : null;
+        const cancelAtPeriodEnd = !!obj.cancel_at_period_end;
 
-        // Read prior state to detect transitions.
         const { data: prior } = await supabase
           .from('subscriptions')
           .select('status, billing_cycle, aircraft_count, monthly_amount_cents')
@@ -115,7 +174,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           stripe_subscription_id: obj.id,
           stripe_customer_id: obj.customer,
-          status: newStatus,
+          status: cancelAtPeriodEnd ? 'canceled' : newStatus,
           billing_cycle: cycle,
           monthly_amount_cents: amount,
           current_period_start: obj.current_period_start
@@ -125,13 +184,10 @@ Deno.serve(async (req) => {
             ? new Date(obj.canceled_at * 1000).toISOString() : null,
         } as any, { onConflict: 'user_id' });
 
-        // Side effects driven by status transitions
         if (newStatus === 'past_due') {
           await setUserEnabled(supabase, userId, false);
-          // payment_failed event also fires below; don't double-send here.
         } else if (newStatus === 'active' || newStatus === 'trial') {
-          // Recovery — re-enable user
-          await setUserEnabled(supabase, userId, true);
+          if (!cancelAtPeriodEnd) await setUserEnabled(supabase, userId, true);
           if (type.endsWith('.created') && newStatus === 'trial') {
             await safeSendEmail(supabase, userId, 'trial_started', {
               trialEndsAt: periodEndIso ? new Date(periodEndIso).toLocaleDateString() : undefined,
@@ -139,7 +195,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Detect plan change (cycle or amount changed) — send confirmation
         if (
           prior &&
           (prior as any).status !== 'trial' &&
@@ -148,11 +203,28 @@ Deno.serve(async (req) => {
           await safeSendEmail(supabase, userId, 'plan_changed', {
             billingCycle: cycle,
             amount,
+            aircraftCount: (prior as any).aircraft_count,
             nextRenewal: periodEndIso ? new Date(periodEndIso).toLocaleDateString() : undefined,
           });
         }
         break;
       }
+
+      case 'invoice.paid':
+      case 'invoice.payment_succeeded': {
+        // Renewal: apply pending cycle switch if any.
+        const userId = obj.metadata?.user_id ?? obj.subscription_details?.metadata?.user_id;
+        const stripeSubId = obj.subscription ?? obj.subscription_id;
+        if (userId && stripeSubId) {
+          try {
+            await maybeApplyPendingCycle(supabase, env, userId, stripeSubId);
+          } catch (e) {
+            console.error('[webhook] maybeApplyPendingCycle failed', e);
+          }
+        }
+        break;
+      }
+
       case 'customer.subscription.deleted':
       case 'subscription.canceled': {
         const userId = obj.metadata?.user_id;
@@ -168,6 +240,7 @@ Deno.serve(async (req) => {
         await safeSendEmail(supabase, userId, 'subscription_canceled');
         break;
       }
+
       case 'invoice.payment_failed':
       case 'transaction.payment_failed': {
         const userId = obj.metadata?.user_id ?? obj.subscription_details?.metadata?.user_id;
@@ -181,6 +254,7 @@ Deno.serve(async (req) => {
         await safeSendEmail(supabase, userId, 'payment_failed', { amount });
         break;
       }
+
       default:
         break;
     }
@@ -192,20 +266,11 @@ Deno.serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown';
     console.error('webhook error:', message);
+    // 400 on signature failures so Stripe retries correctly.
+    const status = message.includes('signature') || message.includes('timestamp') ? 400 : 500;
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-function mapStatus(s: string): string {
-  switch (s) {
-    case 'trialing': return 'trial';
-    case 'active': return 'active';
-    case 'past_due': case 'unpaid': return 'past_due';
-    case 'canceled': return 'canceled';
-    case 'incomplete_expired': case 'expired': return 'expired';
-    default: return s || 'trial';
-  }
-}
