@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   children: React.ReactNode;
@@ -8,11 +10,35 @@ interface Props {
 
 // Routes that stay accessible even when the user's account is disabled,
 // so they can always get back to resubscribing or updating billing.
-const ALWAYS_ALLOWED = ['/subscription', '/profile', '/login', '/signup', '/reset-password'];
+const ALWAYS_ALLOWED = ['/subscription', '/profile', '/login', '/signup', '/reset-password', '/onboarding'];
+
+// Subscription statuses that grant app access.
+const ACTIVE_STATUSES = new Set(['active', 'trial', 'trialing', 'past_due']);
 
 export default function ProtectedRoute({ children, requireRole }: Props) {
   const { user, profile, loading } = useAuthContext();
   const location = useLocation();
+  const [subStatus, setSubStatus] = useState<string | null | undefined>(undefined);
+
+  const exempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
+
+  // Fetch the user's subscription status once the profile is loaded.
+  useEffect(() => {
+    if (!profile || exempt) {
+      setSubStatus(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+      if (!cancelled) setSubStatus(data?.status ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.id, exempt]);
 
   if (loading) {
     return (
@@ -31,10 +57,30 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   }
 
   // Billing enforcement: auto-disabled accounts can only access billing/profile.
-  // Admin / Dev are always allowed.
-  const exempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
   const disabled = profile && profile.is_enabled === false;
   if (disabled && !exempt && !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))) {
+    return <Navigate to="/subscription?blocked=1" replace />;
+  }
+
+  // Paywall for brand-new users: no subscription yet → force onboarding.
+  // Waits for subStatus to resolve (undefined = still loading).
+  if (
+    !exempt &&
+    profile &&
+    subStatus === null &&
+    !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))
+  ) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // Also gate users whose sub exists but isn't in an access-granting state.
+  if (
+    !exempt &&
+    profile &&
+    typeof subStatus === 'string' &&
+    !ACTIVE_STATUSES.has(subStatus) &&
+    !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))
+  ) {
     return <Navigate to="/subscription?blocked=1" replace />;
   }
 
