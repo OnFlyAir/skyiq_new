@@ -150,7 +150,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     page: '',
     target: 'leg-1-fuel-price',
     title: 'How Price Is Calculated',
-    description: "We pull live fuel prices ($/gal) at each stop, multiply by gallons uplifted, and add ramp/handling fees minus any waivers. That total is what the optimizer minimizes across the whole trip.",
+    description: "Fuel prices ($/gal) are parsed directly from your trip sheet at each stop, multiplied by gallons uplifted, plus ramp/handling fees minus any waivers. That total is what the optimizer minimizes across the whole trip.",
     placement: 'top',
   },
   {
