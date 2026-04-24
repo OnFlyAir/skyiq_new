@@ -259,6 +259,7 @@ export default function AdminSubscriptionsPage() {
                 <th className="text-left px-4 py-2.5 font-medium">Company</th>
                 <th className="text-left px-4 py-2.5 font-medium">Contact</th>
                 <th className="text-center px-4 py-2.5 font-medium">Status</th>
+                <th className="text-center px-4 py-2.5 font-medium">Account</th>
                 <th className="text-center px-4 py-2.5 font-medium">Aircraft</th>
                 <th className="text-center px-4 py-2.5 font-medium">Cycle</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
