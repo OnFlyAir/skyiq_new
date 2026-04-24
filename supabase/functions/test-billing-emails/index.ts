@@ -42,9 +42,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    let body: { to?: string } = {};
+    let body: { to?: string; types?: BillingEmailType[] } = {};
     try { body = await req.json(); } catch { /* ignore */ }
     const to = (body.to || userData.user.email || '').trim();
+    const filterTypes = Array.isArray(body.types) && body.types.length > 0 ? new Set(body.types) : null;
     if (!to || !/.+@.+\..+/.test(to)) {
       return new Response(JSON.stringify({ error: 'invalid recipient' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
