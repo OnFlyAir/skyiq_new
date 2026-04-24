@@ -231,6 +231,10 @@ export default function TripFuelPage() {
       legs: tripForm.legs.map((leg, i) => ({
         ...leg,
         fuelBurn: fuelBurns[i] ?? 0,
+        isConfirmed:
+          demoActive && leg.legNum > 0 && !!(leg.departure || leg.destination)
+            ? true
+            : leg.isConfirmed,
       })),
     };
 
