@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDemo, DEMO_PDF_PATH } from '@/contexts/DemoContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
+
+type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
 export default function DemoOverlay() {
   const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
