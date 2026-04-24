@@ -32,6 +32,7 @@ interface DfyRequest {
   admin_notes: string;
   pdf_storage_path: string | null;
   fuel_burns: FuelBurnEntry[];
+  fuel_on_board_lbs: number | null;
   parsed_result: Record<string, unknown>;
 }
 
