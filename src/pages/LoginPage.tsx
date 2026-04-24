@@ -320,18 +320,6 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Dev auto-login */}
-      <div className="mt-3">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleDevLogin}
-          className="w-full py-2.5 bg-secondary text-secondary-foreground font-medium rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-all text-sm active:scale-[0.98]"
-        >
-          {loading ? 'Signing in...' : 'Dev Auto-Login'}
-        </button>
-      </div>
-
       <p className="mt-8 text-sm text-center text-muted-foreground">
         Don't have an account?{' '}
         <Link to="/signup" className="text-primary font-medium hover:underline">Create one</Link>
