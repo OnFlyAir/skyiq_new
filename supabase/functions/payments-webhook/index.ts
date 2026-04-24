@@ -152,6 +152,37 @@ Deno.serve(async (req) => {
     const obj = event.data?.object ?? {};
     console.log(`[payments-webhook] ${type}`);
 
+    // Log every incoming event up front. We'll update status after processing.
+    const logUserId =
+      obj.metadata?.user_id ?? obj.subscription_details?.metadata?.user_id ?? null;
+    const logCustomer = obj.customer ?? obj.customer_id ?? null;
+    const logSubId = obj.id?.startsWith?.('sub_')
+      ? obj.id
+      : (obj.subscription ?? obj.subscription_id ?? null);
+    const logAmount =
+      obj.amount_due ?? obj.amount_paid ?? obj.amount ??
+      obj.items?.data?.[0]?.price?.unit_amount ?? null;
+
+    const { data: logRow } = await supabase
+      .from('stripe_webhook_events')
+      .insert({
+        stripe_event_id: event.id ?? null,
+        event_type: type,
+        environment: env,
+        status: 'received',
+        user_id: logUserId,
+        stripe_customer_id: logCustomer,
+        stripe_subscription_id: logSubId,
+        amount_cents: typeof logAmount === 'number' ? logAmount : null,
+        payload: event,
+      } as any)
+      .select('id')
+      .maybeSingle();
+    const logId = (logRow as any)?.id as string | undefined;
+
+    let processError: string | null = null;
+    try {
+
     switch (type) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
