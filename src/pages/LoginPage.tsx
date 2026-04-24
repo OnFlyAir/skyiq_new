@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { useDemo } from '@/contexts/DemoContext';
+import { useDemo, PUBLIC_DEMO_SESSION_KEY } from '@/contexts/DemoContext';
 import { POST_DEMO_HIGHLIGHT_KEY } from '@/components/demo/DemoOverlay';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
@@ -49,22 +49,30 @@ export default function LoginPage() {
     if (!authLoading && user && profile) {
       const isDev = profile.email === DEV_EMAIL;
       const demoPending = localStorage.getItem(DEMO_PENDING_KEY) === 'true';
+      const publicDemoSession = sessionStorage.getItem(PUBLIC_DEMO_SESSION_KEY) === '1';
 
       // Dev/demo user is sandbox-only — never let it into the real app.
       // The only valid path is: click "Try the Demo" → demoPending flag set
-      // → start the guided tour. Anything else means a stale/cached session,
-      // so sign it out and stay on the login page.
-      if (isDev && !demoPending) {
+      // → start the guided tour. Once the public demo is active we keep a
+      // sessionStorage flag so refreshes during the demo still work. Any other
+      // path means a stale/cached session, so sign it out and stay on login.
+      if (isDev && !demoPending && !publicDemoSession) {
         supabase.auth.signOut();
         return;
       }
 
-      if (demoPending) {
+      if (isDev && demoPending) {
         localStorage.removeItem(DEMO_PENDING_KEY);
         startDemo('public');
         navigate('/trips/new', { replace: true });
         return;
       }
+
+      if (isDev) {
+        navigate('/trips/new', { replace: true });
+        return;
+      }
+
       if (profile.role_name === 'Admin') {
         navigate('/admin', { replace: true });
       } else {

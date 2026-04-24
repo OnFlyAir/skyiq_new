@@ -36,6 +36,7 @@ const DemoContext = createContext<DemoContextType | undefined>(undefined);
 const DEMO_STORAGE_KEY = 'skyiq_demo_active';
 const DEMO_STEP_KEY = 'skyiq_demo_step';
 const DEMO_FLOW_KEY = 'skyiq_demo_flow';
+export const PUBLIC_DEMO_SESSION_KEY = 'skyiq_public_demo_session';
 export const DEMO_PDF_PATH = '/demo/sample-itinerary.pdf';
 
 // ============================================================
@@ -344,7 +345,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(() => localStorage.getItem(DEMO_STORAGE_KEY) === 'true');
   const [flow, setFlow] = useState<DemoFlow | null>(() => {
     const saved = localStorage.getItem(DEMO_FLOW_KEY);
-    return saved === 'fleet' || saved === 'trip' ? saved : null;
+    return saved === 'fleet' || saved === 'trip' || saved === 'public' ? saved : null;
   });
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
     const saved = localStorage.getItem(DEMO_STEP_KEY);
@@ -361,6 +362,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(DEMO_STORAGE_KEY, 'true');
     localStorage.setItem(DEMO_FLOW_KEY, nextFlow);
     localStorage.setItem(DEMO_STEP_KEY, '0');
+    if (nextFlow === 'public') {
+      sessionStorage.setItem(PUBLIC_DEMO_SESSION_KEY, '1');
+    }
   }, []);
 
   const endDemo = useCallback(() => {
@@ -369,6 +373,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(DEMO_STORAGE_KEY);
     localStorage.removeItem(DEMO_STEP_KEY);
     localStorage.removeItem(DEMO_FLOW_KEY);
+    sessionStorage.removeItem(PUBLIC_DEMO_SESSION_KEY);
     localStorage.setItem('skyiq_walkthrough_completed', 'true');
   }, []);
 
