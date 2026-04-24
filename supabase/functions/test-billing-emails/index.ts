@@ -55,19 +55,19 @@ Deno.serve(async (req) => {
     const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString();
     const nextRenewal = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString();
 
-    const tests: Array<{ type: BillingEmailType; data: Record<string, any> }> = [
+    const allTests: Array<{ type: BillingEmailType; data: Record<string, any> }> = [
       { type: 'trial_started', data: { firstName: 'Test', trialEndsAt } },
       { type: 'trial_ending', data: { firstName: 'Test', trialEndsAt, amount: 5000 } },
       { type: 'payment_failed', data: { amount: 5000 } },
       { type: 'subscription_canceled', data: {} },
       { type: 'plan_changed', data: { aircraftCount: 3, billingCycle: 'annual', amount: 144000, nextRenewal } },
     ];
+    const tests = filterTypes ? allTests.filter((t) => filterTypes.has(t.type)) : allTests;
 
     const results: Array<{ type: string; ok: boolean; error?: string }> = [];
     for (const t of tests) {
       const r = await sendBillingEmail({ to, type: t.type, data: t.data, userId: userData.user.id });
       results.push({ type: t.type, ok: r.ok, error: r.error });
-      // small delay to avoid burst rate limiting
       await new Promise((res) => setTimeout(res, 400));
     }
 
