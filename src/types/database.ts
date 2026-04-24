@@ -6,6 +6,7 @@ export interface Profile {
   company: string;
   role_name: string;
   is_enabled: boolean;
+  is_billing_manager?: boolean;
   created_on: string;
 }
 

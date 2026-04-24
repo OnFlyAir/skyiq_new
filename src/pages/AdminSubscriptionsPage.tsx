@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrencyCents } from '@/lib/format';
 
@@ -22,6 +23,8 @@ interface SubRow {
   monthly_amount_cents: number;
   trial_ends_at: string;
   current_period_end: string | null;
+  is_billing_manager: boolean;
+  role_name: string;
 }
 
 function statusBadge(status: string) {
@@ -54,12 +57,14 @@ export default function AdminSubscriptionsPage() {
     if (!isAdmin) return;
     async function load() {
       const { data: subs } = await supabase.from('subscriptions').select('*');
-      const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, company, email');
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, company, email, role_name, is_billing_manager');
 
-      const profileMap = new Map((profiles ?? []).map(p => [p.id, p]));
+      const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
       const mapped: SubRow[] = (subs ?? []).map((s: any) => {
-        const p = profileMap.get(s.user_id);
+        const p: any = profileMap.get(s.user_id);
         return {
           id: s.id,
           userId: s.user_id,
@@ -72,6 +77,8 @@ export default function AdminSubscriptionsPage() {
           monthly_amount_cents: s.monthly_amount_cents,
           trial_ends_at: s.trial_ends_at,
           current_period_end: s.current_period_end,
+          is_billing_manager: !!p?.is_billing_manager,
+          role_name: p?.role_name || 'User',
         };
       });
 
@@ -109,6 +116,31 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
+  async function toggleBillingManager(userId: string, current: boolean) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_billing_manager: !current } as any)
+      .eq('id', userId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_billing_manager: !current } : r));
+      toast({ title: !current ? 'Billing access granted' : 'Billing access revoked' });
+    }
+  }
+
+  async function setCycle(subId: string, cycle: 'four_weekly' | 'annual') {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ billing_cycle: cycle as any } as any)
+      .eq('id', subId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setRows(prev => prev.map(r => r.id === subId ? { ...r, billing_cycle: cycle } : r));
+      toast({ title: 'Cycle updated' });
+    }
+  }
   if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto text-center p-8">
@@ -186,6 +218,9 @@ export default function AdminSubscriptionsPage() {
                 <th className="text-center px-4 py-2.5 font-medium">Cycle</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
                 <th className="text-center px-4 py-2.5 font-medium">Ends</th>
+                <th className="text-center px-4 py-2.5 font-medium">
+                  <span className="inline-flex items-center gap-1"><Shield className="h-3 w-3" />Billing Mgr</span>
+                </th>
                 <th className="text-center px-4 py-2.5 font-medium">Actions</th>
               </tr>
             </thead>
@@ -194,19 +229,36 @@ export default function AdminSubscriptionsPage() {
                 <tr key={r.id} className="border-t hover:bg-secondary/30 transition-colors">
                   <td className="px-4 py-2.5 font-medium">{r.company}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">
-                    <div>{r.name}</div>
+                    <div>{r.name} <span className="text-[10px] uppercase tracking-wide text-muted-foreground">({r.role_name})</span></div>
                     <div className="text-xs">{r.email}</div>
                   </td>
                   <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
                   <td className="px-4 py-2.5 text-center">{r.aircraft_count}</td>
                   <td className="px-4 py-2.5 text-center text-xs">
-                    {r.billing_cycle === 'annual' ? 'Annual' : '4-week'}
+                    <select
+                      value={r.billing_cycle}
+                      onChange={(e) => setCycle(r.id, e.target.value as 'four_weekly' | 'annual')}
+                      className="bg-background border border-border rounded px-1.5 py-0.5 text-xs"
+                    >
+                      <option value="four_weekly">4-week</option>
+                      <option value="annual">Annual</option>
+                    </select>
                   </td>
                   <td className="px-4 py-2.5 text-right font-medium">
                     {formatCurrencyCents(r.monthly_amount_cents)}
                   </td>
                   <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">
                     {r.status === 'trial' ? formatDate(r.trial_ends_at) : formatDate(r.current_period_end)}
+                  </td>
+                  <td className="px-4 py-2.5 text-center">
+                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
+                      <span className="text-[10px] text-muted-foreground">auto</span>
+                    ) : (
+                      <Switch
+                        checked={r.is_billing_manager}
+                        onCheckedChange={() => toggleBillingManager(r.userId, r.is_billing_manager)}
+                      />
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {(r.status === 'active' || r.status === 'trial') && (
@@ -223,7 +275,7 @@ export default function AdminSubscriptionsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
               )}
             </tbody>
           </table>

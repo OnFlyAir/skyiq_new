@@ -303,6 +303,7 @@ export type Database = {
           email: string
           first_name: string
           id: string
+          is_billing_manager: boolean
           is_enabled: boolean | null
           last_name: string
           role_name: string | null
@@ -313,6 +314,7 @@ export type Database = {
           email: string
           first_name?: string
           id: string
+          is_billing_manager?: boolean
           is_enabled?: boolean | null
           last_name?: string
           role_name?: string | null
@@ -323,6 +325,7 @@ export type Database = {
           email?: string
           first_name?: string
           id?: string
+          is_billing_manager?: boolean
           is_enabled?: boolean | null
           last_name?: string
           role_name?: string | null
@@ -339,10 +342,14 @@ export type Database = {
           current_period_start: string | null
           id: string
           monthly_amount_cents: number
+          pending_billing_cycle:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
           quickbooks_customer_id: string | null
           quickbooks_invoice_id: string | null
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
           trial_ends_at: string
           trial_reminder_sent: boolean
@@ -359,10 +366,14 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           monthly_amount_cents?: number
+          pending_billing_cycle?:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
           quickbooks_customer_id?: string | null
           quickbooks_invoice_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string
           trial_reminder_sent?: boolean
@@ -379,10 +390,14 @@ export type Database = {
           current_period_start?: string | null
           id?: string
           monthly_amount_cents?: number
+          pending_billing_cycle?:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
           quickbooks_customer_id?: string | null
           quickbooks_invoice_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string
           trial_reminder_sent?: boolean
@@ -447,7 +462,9 @@ export type Database = {
         Args: { plane_count: number }
         Returns: number
       }
+      can_manage_billing: { Args: { _user_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_billing_exempt: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       billing_cycle: "four_weekly" | "annual"
