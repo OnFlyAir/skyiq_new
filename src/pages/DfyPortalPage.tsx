@@ -419,10 +419,13 @@ export default function DfyPortalPage() {
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Submit Request · {formatCurrencyCents(client.per_trip_rate_cents)}
+                Submit Request · {formatCurrencyCents(client.per_trip_rate_cents)} added to monthly invoice
               </>
             )}
           </Button>
+          <p className="text-xs text-muted-foreground text-center -mt-2">
+            No charge today — {formatCurrencyCents(client.per_trip_rate_cents)} per request will appear on your end-of-month invoice.
+          </p>
         </CardContent>
       </Card>
 
