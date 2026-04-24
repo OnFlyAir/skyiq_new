@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { POST_DEMO_HIGHLIGHT_KEY } from '@/components/demo/DemoOverlay';
+import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
