@@ -55,6 +55,19 @@ export default function OnboardingPage() {
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
   const [activating, setActivating] = useState(false);
 
+  // Interactive calculator — preview the real-time monthly cost.
+  const [planeCount, setPlaneCount] = useState<number>(3);
+  const [dfyPlans, setDfyPlans] = useState<number>(0);
+
+  const fourWeeklyTotal = useMemo(() => calc4WeeklyTotal(planeCount), [planeCount]);
+  const annualTotal = useMemo(
+    () => Math.round(fourWeeklyTotal * 13 * (1 - ANNUAL_DISCOUNT)),
+    [fourWeeklyTotal],
+  );
+  const perPlane = useMemo(() => effectivePerPlane(planeCount), [planeCount]);
+  const currentTierIdx = activeTierIndex(planeCount);
+  const dfyMonthlyAddon = dfyPlans * DFY_RATE;
+
   const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
 
   // Create DFY client record if user signed up with DFY option
