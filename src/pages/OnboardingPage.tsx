@@ -2,45 +2,42 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plane, Check, TrendingDown, Sparkles, Loader2, Minus, Plus, Wrench } from 'lucide-react';
+import {
+  Plane,
+  Check,
+  Sparkles,
+  Loader2,
+  Minus,
+  Plus,
+  Wrench,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  TrendingDown,
+} from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
-import PricingTour from '@/components/onboarding/PricingTour';
 
 // Tiered per-plane pricing (mirrors public.calculate_subscription_price).
-// Billed every 4 weeks. Tiers apply marginally — first 4 at $200,
-// next 5 at $150, everything above 9 at $100.
 const PRICING_TIERS = [
   { range: '1–4 aircraft', min: 1, max: 4, perPlane: 200, note: 'Starter' },
   { range: '5–9 aircraft', min: 5, max: 9, perPlane: 150, note: 'Growing fleet' },
   { range: '10+ aircraft', min: 10, max: Infinity, perPlane: 100, note: 'Enterprise' },
 ];
 
-const DFY_RATE = 25;
-const ANNUAL_DISCOUNT = 0.2; // 20%
+const ANNUAL_DISCOUNT = 0.2;
 
 function calc4WeeklyTotal(count: number): number {
   if (count <= 0) return 0;
   let total = 0;
-  const first = Math.min(count, 4);
-  total += first * 200;
-  if (count > 4) {
-    const second = Math.min(count - 4, 5);
-    total += second * 150;
-  }
-  if (count > 9) {
-    total += (count - 9) * 100;
-  }
+  total += Math.min(count, 4) * 200;
+  if (count > 4) total += Math.min(count - 4, 5) * 150;
+  if (count > 9) total += (count - 9) * 100;
   return total;
-}
-
-function effectivePerPlane(count: number): number {
-  if (count <= 0) return 0;
-  return calc4WeeklyTotal(count) / count;
 }
 
 function activeTierIndex(count: number): number {
@@ -49,44 +46,32 @@ function activeTierIndex(count: number): number {
   return 2;
 }
 
+const TOTAL_STEPS = 4;
+
 export default function OnboardingPage() {
   const { profile, user } = useAuthContext();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
-  const [activating, setActivating] = useState(false);
-  // Show the guided pricing walkthrough unless the user has already finished/skipped it.
-  const [showTour, setShowTour] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem('skyiq_pricing_tour_done') !== 'true';
-  });
 
-  const finishTour = () => {
-    localStorage.setItem('skyiq_pricing_tour_done', 'true');
-    setShowTour(false);
-  };
-
-  // Interactive calculator — preview the real-time monthly cost.
+  const [step, setStep] = useState(1);
   const [planeCount, setPlaneCount] = useState<number>(3);
-  const [dfyPlans, setDfyPlans] = useState<number>(0);
+  const [cycle, setCycle] = useState<'four_weekly' | 'annual'>('four_weekly');
+  const [activating, setActivating] = useState(false);
 
   const fourWeeklyTotal = useMemo(() => calc4WeeklyTotal(planeCount), [planeCount]);
   const annualTotal = useMemo(
     () => Math.round(fourWeeklyTotal * 13 * (1 - ANNUAL_DISCOUNT)),
     [fourWeeklyTotal],
   );
-  const perPlane = useMemo(() => effectivePerPlane(planeCount), [planeCount]);
   const currentTierIdx = activeTierIndex(planeCount);
-  const dfyMonthlyAddon = dfyPlans * DFY_RATE;
 
   const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
 
-  // Create DFY client record if user signed up with DFY option
+  // DFY signup carry-over from sign-up form
   useEffect(() => {
     if (!user) return;
     const dfyData = localStorage.getItem('skyiq_dfy_signup');
     if (!dfyData) return;
-
     (async () => {
       try {
         const parsed = JSON.parse(dfyData);
@@ -95,7 +80,6 @@ export default function OnboardingPage() {
           .select('id')
           .eq('user_id', user.id)
           .limit(1);
-
         if (!existing || existing.length === 0) {
           await supabase.from('dfy_clients' as any).insert({
             user_id: user.id,
@@ -112,330 +96,346 @@ export default function OnboardingPage() {
     })();
   }, [user]);
 
-  async function startTrial(cycle: 'four_weekly' | 'annual') {
-    if (isExempt) {
-      setActivating(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { cycle, return_url: `${window.location.origin}/dashboard` },
-        });
-        if (error) throw error;
-        if (data?.bypassed) {
-          toast({ title: 'Account activated', description: 'Your role is billing-exempt.' });
-          navigate('/dashboard');
-        }
-      } catch (e) {
-        toast({
-          title: 'Error',
-          description: e instanceof Error ? e.message : 'Failed',
-          variant: 'destructive',
-        });
-      } finally {
-        setActivating(false);
+  async function handleExemptActivate() {
+    setActivating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { cycle, return_url: `${window.location.origin}/dashboard` },
+      });
+      if (error) throw error;
+      if (data?.bypassed) {
+        toast({ title: 'Account activated', description: 'Your role is billing-exempt.' });
+        navigate('/dashboard');
       }
-      return;
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: e instanceof Error ? e.message : 'Failed',
+        variant: 'destructive',
+      });
+    } finally {
+      setActivating(false);
     }
-    setCheckoutCycle(cycle);
   }
 
-  // Checkout overlay
-  if (checkoutCycle) {
-    return (
-      <div className="min-h-screen bg-background py-10 px-4">
-        <div className="max-w-2xl mx-auto space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Start your $1 trial</h1>
-            <Button variant="ghost" onClick={() => setCheckoutCycle(null)}>Back</Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            You'll be charged <strong>$1 today</strong> to verify your card. Your 30-day free
-            trial starts now — you won't be billed the full subscription until it ends.
-          </p>
-          <StripeEmbeddedCheckout
-            cycle={checkoutCycle}
-            onBypass={() => navigate('/dashboard')}
-            onError={(msg) => {
-              toast({ title: 'Checkout error', description: msg, variant: 'destructive' });
-              setCheckoutCycle(null);
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
+  const next = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+  const prev = () => setStep((s) => Math.max(1, s - 1));
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center space-y-3">
-          <img src={skyiqLogo} alt="SkyIQ" className="w-16 h-16 object-contain mx-auto" />
-          <h1 className="text-3xl font-bold text-foreground">
-            Welcome{profile?.first_name ? `, ${profile.first_name}` : ''} 👋
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            To activate your account, please start your <strong>$1 trial</strong>. Your card is
-            verified with a one-time $1 charge, and you get <strong>30 days free</strong> before
-            your subscription begins.
+        <div className="text-center space-y-2">
+          <img src={skyiqLogo} alt="SkyIQ" className="w-14 h-14 object-contain mx-auto" />
+          <h1 className="text-2xl font-bold text-foreground">Activate your account</h1>
+          <p className="text-sm text-muted-foreground">
+            Four quick steps to start flying smarter.
           </p>
         </div>
 
-        {/* Guided pricing walkthrough — one concept at a time */}
-        {showTour && <PricingTour onFinish={finishTour} />}
+        {/* Progress */}
+        <div className="flex items-center justify-center gap-2">
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i + 1 === step
+                  ? 'w-10 bg-primary'
+                  : i + 1 < step
+                    ? 'w-6 bg-primary/60'
+                    : 'w-6 bg-muted'
+              }`}
+            />
+          ))}
+          <span className="ml-3 text-xs text-muted-foreground">
+            Step {step} of {TOTAL_STEPS}
+          </span>
+        </div>
 
-        {/* Real-time pricing calculator */}
         <Card className="border-primary/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <TrendingDown className="h-5 w-5 text-primary" />
-              Estimate your price
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Adjust the sliders to preview your cost. Billing always matches your{' '}
-              <strong>active aircraft count</strong> — enable or disable planes in your fleet
-              anytime and your invoice adjusts automatically.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {/* Aircraft stepper */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Plane className="h-4 w-4 text-primary" />
-                  Active aircraft
-                </label>
-                <span className="text-sm font-semibold text-foreground">{planeCount}</span>
+          <CardContent className="p-6 space-y-5">
+            {/* STEP 1 — $1 trial */}
+            {step === 1 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Try SkyIQ for $1</h2>
+                    <p className="text-xs text-muted-foreground">30 days · cancel anytime</p>
+                  </div>
+                </div>
+                <p className="text-sm text-foreground/90">
+                  We charge <strong>$1 today</strong> just to verify your card. You then get
+                  <strong> 30 full days free</strong> to explore every feature. Your subscription
+                  only starts after the trial ends — cancel any time before and pay nothing more.
+                </p>
+                <ul className="space-y-1.5 text-sm">
+                  {[
+                    '$1 charged today (refundable)',
+                    '30 days of full access — every feature unlocked',
+                    'Cancel before day 30 and pay nothing more',
+                  ].map((it) => (
+                    <li key={it} className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span className="text-foreground">{it}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setPlaneCount((n) => Math.max(1, n - 1))}
-                  disabled={planeCount <= 1}
-                  aria-label="Decrease aircraft"
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <input
-                  type="range"
-                  min={1}
-                  max={25}
-                  value={Math.min(planeCount, 25)}
-                  onChange={(e) => setPlaneCount(Number(e.target.value))}
-                  className="flex-1 accent-primary"
-                  aria-label="Active aircraft count"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setPlaneCount((n) => n + 1)}
-                  aria-label="Increase aircraft"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Drag the slider past 25 using the <strong>+</strong> button for larger fleets.
-              </p>
-            </div>
+            )}
 
-            {/* Tier breakdown */}
-            <div className="space-y-2">
-              {PRICING_TIERS.map((tier, idx) => {
-                const isActive = idx === currentTierIdx;
-                return (
-                  <div
-                    key={tier.range}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                      isActive
-                        ? 'bg-primary/10 border-primary/40'
-                        : 'bg-secondary/50 border-border'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Plane className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <div>
-                        <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                          {tier.range}
-                          {isActive && (
-                            <span className="text-[10px] uppercase tracking-wide font-semibold text-primary bg-primary/15 px-2 py-0.5 rounded-full">
-                              Your tier
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{tier.note}</p>
+            {/* STEP 2 — Billing & estimate */}
+            {step === 2 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                    <TrendingDown className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">How billing works</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Per-aircraft · billed every 4 weeks
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-foreground/90">
+                  After your trial, you only pay for active aircraft. The more planes in your
+                  fleet, the lower the per-plane rate. Enable or disable planes anytime — your
+                  invoice adjusts automatically.
+                </p>
+
+                {/* Tier list */}
+                <div className="space-y-2">
+                  {PRICING_TIERS.map((tier, idx) => {
+                    const isActive = idx === currentTierIdx;
+                    return (
+                      <div
+                        key={tier.range}
+                        className={`flex items-center justify-between p-3 rounded-lg border ${
+                          isActive
+                            ? 'bg-primary/10 border-primary/40'
+                            : 'bg-secondary/40 border-border'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Plane
+                            className={`h-4 w-4 ${
+                              isActive ? 'text-primary' : 'text-muted-foreground'
+                            }`}
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{tier.range}</p>
+                            <p className="text-xs text-muted-foreground">{tier.note}</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatCurrency(tier.perPlane)}/plane
+                        </span>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+
+                {/* Estimate */}
+                <div className="rounded-lg border border-border p-4 space-y-3 bg-secondary/30">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                      <Plane className="h-4 w-4 text-primary" />
+                      Estimate your fleet size
+                    </label>
                     <span className="text-sm font-semibold text-foreground">
-                      {formatCurrency(tier.perPlane)}/plane
+                      {planeCount} {planeCount === 1 ? 'plane' : 'planes'}
                     </span>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* DFY add-on selector */}
-            <div className="p-4 rounded-lg bg-secondary/40 border border-border space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-foreground">
-                    Done-For-You Fuel Planning
-                  </span>
-                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                    $25 / plan
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPlaneCount((n) => Math.max(1, n - 1))}
+                      disabled={planeCount <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <input
+                      type="range"
+                      min={1}
+                      max={25}
+                      value={Math.min(planeCount, 25)}
+                      onChange={(e) => setPlaneCount(Number(e.target.value))}
+                      className="flex-1 accent-primary"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setPlaneCount((n) => n + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-baseline justify-between pt-2 border-t border-border">
+                    <span className="text-sm text-muted-foreground">Every 4 weeks</span>
+                    <span className="text-2xl font-bold text-foreground">
+                      {formatCurrency(fourWeeklyTotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span className="text-muted-foreground">Annual (save 20%)</span>
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(annualTotal)}/yr
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setDfyPlans((n) => Math.max(0, n - 1))}
-                    disabled={dfyPlans <= 0}
-                    aria-label="Fewer DFY plans"
-                  >
-                    <Minus className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="text-sm font-semibold text-foreground w-14 text-center">
-                    {dfyPlans} / mo
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setDfyPlans((n) => n + 1)}
-                    aria-label="More DFY plans"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Prefer us to build your fuel plans? Upload a trip sheet and our team delivers an
-                optimized plan — <strong>$25 per plan</strong>, billed only when you use it. No
-                monthly commitment.
-              </p>
-            </div>
 
-            {/* Totals panel */}
-            <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 p-4 space-y-3">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Subscription · every 4 weeks
-                </span>
-                <span className="text-2xl font-bold text-foreground">
-                  {formatCurrency(fourWeeklyTotal)}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Effective per-plane rate
-                </span>
-                <span className="font-semibold text-foreground">
-                  {formatCurrency(Math.round(perPlane))}/plane
-                </span>
-              </div>
-              {dfyPlans > 0 && (
-                <div className="flex items-baseline justify-between text-sm pt-2 border-t border-primary/20">
-                  <span className="text-muted-foreground">
-                    DFY add-on · {dfyPlans} plan{dfyPlans === 1 ? '' : 's'}/mo
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    + {formatCurrency(dfyMonthlyAddon)}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-baseline justify-between text-sm pt-2 border-t border-primary/20">
-                <span className="text-foreground font-medium">
-                  Annual option (save 20%)
-                </span>
-                <span className="font-semibold text-foreground">
-                  {formatCurrency(annualTotal)}/yr
-                </span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-foreground">
-              <div className="flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <p>
-                  <strong>Dynamic pricing:</strong> your tier updates automatically as you enable
-                  or disable aircraft. Your <strong>first 30 days are free</strong> after the $1
-                  card verification — no full charge until the trial ends.
+                <p className="text-xs text-muted-foreground">
+                  Nothing's charged today beyond the $1 trial verification.
                 </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
 
-        {/* DFY detail card */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Wrench className="h-5 w-5 text-primary" />
-              How Done-For-You works
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <ul className="space-y-1.5 pl-1">
-              {[
-                'Upload any trip itinerary (PDF or document)',
-                'Our team builds a fully optimized fuel plan',
-                'Delivered to your inbox — ready to file',
-                'No commitment — pay only per plan used ($25 each)',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                  <span className="text-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs pt-1">
-              Request DFY plans anytime from the DFY tab once your account is active.
-            </p>
-          </CardContent>
-        </Card>
+            {/* STEP 3 — DFY */}
+            {step === 3 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                    <Wrench className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">
+                      Optional: Done-For-You planning
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      $25 per plan · billed end of month · only when used
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-foreground/90">
+                  Don't have time to build fuel plans yourself? Upload a trip itinerary and our
+                  team delivers a fully optimized plan to your inbox — usually within hours.
+                </p>
+                <ul className="space-y-1.5 text-sm">
+                  {[
+                    'Upload any trip itinerary (PDF or document)',
+                    'Our team builds the optimized fuel plan',
+                    'Delivered ready-to-file, usually within hours',
+                    'No upfront charge — $25 per plan added to your end-of-month invoice',
+                  ].map((it) => (
+                    <li key={it} className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      <span className="text-foreground">{it}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  You can request DFY plans anytime from the DFY tab inside the app — no need to
+                  decide now.
+                </p>
+              </div>
+            )}
 
-        {/* CTA */}
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-6 space-y-4">
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-foreground">
-                {isExempt ? 'Activate your account' : 'Start your $1 trial today'}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {isExempt
-                  ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
-                  : '$1 today · 30 days free · cancel anytime'}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => startTrial('four_weekly')}
-                disabled={activating}
-                className="flex-1"
-                size="lg"
-              >
-                {activating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isExempt ? (
-                  'Activate account'
-                ) : (
-                  'Start $1 Trial · 4-week'
+            {/* STEP 4 — Payment */}
+            {step === 4 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center">
+                    <CreditCard className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">
+                      {isExempt ? 'Activate your account' : 'Add your payment details'}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      {isExempt
+                        ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
+                        : '$1 charged today · 30 days free · cancel anytime'}
+                    </p>
+                  </div>
+                </div>
+
+                {!isExempt && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCycle('four_weekly')}
+                      className={`flex-1 p-3 rounded-lg border text-left text-sm transition-all ${
+                        cycle === 'four_weekly'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-secondary/30 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="font-semibold text-foreground">4-week billing</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Pay-as-you-go flexibility
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCycle('annual')}
+                      className={`flex-1 p-3 rounded-lg border text-left text-sm transition-all ${
+                        cycle === 'annual'
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-secondary/30 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="font-semibold text-foreground flex items-center gap-1.5">
+                        Annual
+                        <span className="text-[10px] uppercase tracking-wide font-semibold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                          Save 20%
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Best value</div>
+                    </button>
+                  </div>
                 )}
+
+                {isExempt ? (
+                  <Button
+                    onClick={handleExemptActivate}
+                    disabled={activating}
+                    size="lg"
+                    className="w-full"
+                  >
+                    {activating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Activate account'
+                    )}
+                  </Button>
+                ) : (
+                  <StripeEmbeddedCheckout
+                    cycle={cycle}
+                    onBypass={() => navigate('/dashboard')}
+                    onError={(msg) =>
+                      toast({
+                        title: 'Checkout error',
+                        description: msg,
+                        variant: 'destructive',
+                      })
+                    }
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Footer nav (hide forward button on step 4 — Stripe checkout handles completion) */}
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={prev}
+                disabled={step === 1}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
               </Button>
-              {!isExempt && (
-                <Button
-                  onClick={() => startTrial('annual')}
-                  disabled={activating}
-                  variant="outline"
-                  className="flex-1"
-                  size="lg"
-                >
-                  Start $1 Trial · Annual (save 20%)
+              {step < TOTAL_STEPS && (
+                <Button onClick={next} size="sm" className="gap-1">
+                  Next
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               )}
             </div>
