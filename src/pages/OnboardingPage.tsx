@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
+import { track } from '@/lib/analytics';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
 // Tiered per-plane pricing (mirrors public.calculate_subscription_price).
@@ -57,6 +58,11 @@ export default function OnboardingPage() {
   const [planeCount, setPlaneCount] = useState<number>(3);
   const [cycle, setCycle] = useState<'four_weekly' | 'annual'>('four_weekly');
   const [activating, setActivating] = useState(false);
+
+  // Track step views (one event per distinct step seen).
+  useEffect(() => {
+    track('onboarding_step_viewed', { step, total_steps: TOTAL_STEPS });
+  }, [step]);
 
   const fourWeeklyTotal = useMemo(() => calc4WeeklyTotal(planeCount), [planeCount]);
   const annualTotal = useMemo(

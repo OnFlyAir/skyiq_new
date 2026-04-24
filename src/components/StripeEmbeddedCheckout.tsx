@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { track } from '@/lib/analytics';
 
 interface Props {
   cycle: 'four_weekly' | 'annual';
@@ -36,6 +37,7 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError }: Pro
       }
       if (!data?.clientSecret) throw new Error('Checkout session could not be created. Please try again.');
       setClientSecret(data.clientSecret as string);
+      track('checkout_started', { cycle });
     } catch (e: any) {
       const msg = e?.message || 'Something went wrong starting checkout.';
       setError(msg);

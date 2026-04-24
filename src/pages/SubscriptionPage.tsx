@@ -9,6 +9,7 @@ import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { getStripeEnvironment } from '@/lib/stripe';
+import { track } from '@/lib/analytics';
 
 interface Subscription {
   id: string;
@@ -125,10 +126,28 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (checkoutReturn) {
+      track('trial_purchase_completed', {
+        session_id: searchParams.get('session_id') ?? null,
+      });
       const t = setTimeout(load, 3000);
       return () => clearTimeout(t);
     }
   }, [checkoutReturn]);
+
+  // Fire subscription_activated once when sub becomes trialing/active (de-dupe per session).
+  useEffect(() => {
+    if (!sub) return;
+    const activeStatuses = ['trial', 'trialing', 'active'];
+    if (!activeStatuses.includes(sub.status)) return;
+    const key = `analytics:sub_activated:${sub.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    track('subscription_activated', {
+      status: sub.status,
+      billing_cycle: sub.billing_cycle,
+      monthly_amount_cents: sub.monthly_amount_cents,
+    });
+  }, [sub?.id, sub?.status]);
 
   async function startCheckout(cycle: 'four_weekly' | 'annual') {
     if (isExempt) {
