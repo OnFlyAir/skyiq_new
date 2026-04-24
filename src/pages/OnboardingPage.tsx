@@ -1,20 +1,52 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plane, Check, TrendingDown, Sparkles, Loader2 } from 'lucide-react';
+import { Plane, Check, TrendingDown, Sparkles, Loader2, Minus, Plus, Wrench } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
 import { useToast } from '@/hooks/use-toast';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 
+// Tiered per-plane pricing (mirrors public.calculate_subscription_price).
+// Billed every 4 weeks. Tiers apply marginally — first 4 at $200,
+// next 5 at $150, everything above 9 at $100.
 const PRICING_TIERS = [
-  { range: '1–4 aircraft', perPlane: 200, note: 'Starter' },
-  { range: '5–9 aircraft', perPlane: 150, note: 'Growing fleet' },
-  { range: '10+ aircraft', perPlane: 100, note: 'Enterprise' },
+  { range: '1–4 aircraft', min: 1, max: 4, perPlane: 200, note: 'Starter' },
+  { range: '5–9 aircraft', min: 5, max: 9, perPlane: 150, note: 'Growing fleet' },
+  { range: '10+ aircraft', min: 10, max: Infinity, perPlane: 100, note: 'Enterprise' },
 ];
+
+const DFY_RATE = 25;
+const ANNUAL_DISCOUNT = 0.2; // 20%
+
+function calc4WeeklyTotal(count: number): number {
+  if (count <= 0) return 0;
+  let total = 0;
+  const first = Math.min(count, 4);
+  total += first * 200;
+  if (count > 4) {
+    const second = Math.min(count - 4, 5);
+    total += second * 150;
+  }
+  if (count > 9) {
+    total += (count - 9) * 100;
+  }
+  return total;
+}
+
+function effectivePerPlane(count: number): number {
+  if (count <= 0) return 0;
+  return calc4WeeklyTotal(count) / count;
+}
+
+function activeTierIndex(count: number): number {
+  if (count <= 4) return 0;
+  if (count <= 9) return 1;
+  return 2;
+}
 
 export default function OnboardingPage() {
   const { profile, user } = useAuthContext();
@@ -22,6 +54,19 @@ export default function OnboardingPage() {
   const { toast } = useToast();
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
   const [activating, setActivating] = useState(false);
+
+  // Interactive calculator — preview the real-time monthly cost.
+  const [planeCount, setPlaneCount] = useState<number>(3);
+  const [dfyPlans, setDfyPlans] = useState<number>(0);
+
+  const fourWeeklyTotal = useMemo(() => calc4WeeklyTotal(planeCount), [planeCount]);
+  const annualTotal = useMemo(
+    () => Math.round(fourWeeklyTotal * 13 * (1 - ANNUAL_DISCOUNT)),
+    [fourWeeklyTotal],
+  );
+  const perPlane = useMemo(() => effectivePerPlane(planeCount), [planeCount]);
+  const currentTierIdx = activeTierIndex(planeCount);
+  const dfyMonthlyAddon = dfyPlans * DFY_RATE;
 
   const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
 
@@ -124,75 +169,209 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* How pricing works */}
-        <Card>
+        {/* Real-time pricing calculator */}
+        <Card className="border-primary/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <TrendingDown className="h-5 w-5 text-primary" />
-              How you'll be priced
+              Estimate your price
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Billing scales with your <strong>active aircraft</strong>. Enable or disable planes
-              in your fleet anytime — your invoice adjusts automatically.
+              Adjust the sliders to preview your cost. Billing always matches your{' '}
+              <strong>active aircraft count</strong> — enable or disable planes in your fleet
+              anytime and your invoice adjusts automatically.
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
+            {/* Aircraft stepper */}
             <div className="space-y-2">
-              {PRICING_TIERS.map((tier) => (
-                <div
-                  key={tier.range}
-                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border"
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <Plane className="h-4 w-4 text-primary" />
+                  Active aircraft
+                </label>
+                <span className="text-sm font-semibold text-foreground">{planeCount}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPlaneCount((n) => Math.max(1, n - 1))}
+                  disabled={planeCount <= 1}
+                  aria-label="Decrease aircraft"
                 >
-                  <div className="flex items-center gap-3">
-                    <Plane className="h-4 w-4 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{tier.range}</p>
-                      <p className="text-xs text-muted-foreground">{tier.note}</p>
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <input
+                  type="range"
+                  min={1}
+                  max={25}
+                  value={Math.min(planeCount, 25)}
+                  onChange={(e) => setPlaneCount(Number(e.target.value))}
+                  className="flex-1 accent-primary"
+                  aria-label="Active aircraft count"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPlaneCount((n) => n + 1)}
+                  aria-label="Increase aircraft"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Drag the slider past 25 using the <strong>+</strong> button for larger fleets.
+              </p>
+            </div>
+
+            {/* Tier breakdown */}
+            <div className="space-y-2">
+              {PRICING_TIERS.map((tier, idx) => {
+                const isActive = idx === currentTierIdx;
+                return (
+                  <div
+                    key={tier.range}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 border-primary/40'
+                        : 'bg-secondary/50 border-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Plane className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <div>
+                        <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                          {tier.range}
+                          {isActive && (
+                            <span className="text-[10px] uppercase tracking-wide font-semibold text-primary bg-primary/15 px-2 py-0.5 rounded-full">
+                              Your tier
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{tier.note}</p>
+                      </div>
                     </div>
+                    <span className="text-sm font-semibold text-foreground">
+                      {formatCurrency(tier.perPlane)}/plane
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    {formatCurrency(tier.perPlane)}/plane · every 4 weeks
+                );
+              })}
+            </div>
+
+            {/* DFY add-on selector */}
+            <div className="p-4 rounded-lg bg-secondary/40 border border-border space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">
+                    Done-For-You Fuel Planning
+                  </span>
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    $25 / plan
                   </span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setDfyPlans((n) => Math.max(0, n - 1))}
+                    disabled={dfyPlans <= 0}
+                    aria-label="Fewer DFY plans"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="text-sm font-semibold text-foreground w-14 text-center">
+                    {dfyPlans} / mo
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setDfyPlans((n) => n + 1)}
+                    aria-label="More DFY plans"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Prefer us to build your fuel plans? Upload a trip sheet and our team delivers an
+                optimized plan — <strong>$25 per plan</strong>, billed only when you use it. No
+                monthly commitment.
+              </p>
+            </div>
+
+            {/* Totals panel */}
+            <div className="rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 p-4 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Subscription · every 4 weeks
+                </span>
+                <span className="text-2xl font-bold text-foreground">
+                  {formatCurrency(fourWeeklyTotal)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Effective per-plane rate
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(Math.round(perPlane))}/plane
+                </span>
+              </div>
+              {dfyPlans > 0 && (
+                <div className="flex items-baseline justify-between text-sm pt-2 border-t border-primary/20">
+                  <span className="text-muted-foreground">
+                    DFY add-on · {dfyPlans} plan{dfyPlans === 1 ? '' : 's'}/mo
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    + {formatCurrency(dfyMonthlyAddon)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between text-sm pt-2 border-t border-primary/20">
+                <span className="text-foreground font-medium">
+                  Annual option (save 20%)
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(annualTotal)}/yr
+                </span>
+              </div>
             </div>
 
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm text-foreground">
               <div className="flex items-start gap-2">
                 <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <p>
-                  <strong>Dynamic pricing:</strong> your price tier updates automatically as you
-                  add or remove active aircraft. Switch to <strong>annual billing</strong> and
-                  save <strong>20%</strong> — available anytime from your subscription page.
+                  <strong>Dynamic pricing:</strong> your tier updates automatically as you enable
+                  or disable aircraft. Your <strong>first 30 days are free</strong> after the $1
+                  card verification — no full charge until the trial ends.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* DFY Service */}
+        {/* DFY detail card */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Done-For-You Fuel Planning
-              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-auto">
-                $25 per fuel plan
-              </span>
+              <Wrench className="h-5 w-5 text-primary" />
+              How Done-For-You works
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Don't want to build fuel plans yourself? Upload your trip sheets and our team will
-              optimize your fuel plan for you — <strong>$25 per fuel plan</strong>, billed only
-              when you use it.
-            </p>
             <ul className="space-y-1.5 pl-1">
               {[
                 'Upload any trip itinerary (PDF or document)',
                 'Our team builds a fully optimized fuel plan',
                 'Delivered to your inbox — ready to file',
-                'No commitment — pay only per plan used',
+                'No commitment — pay only per plan used ($25 each)',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
@@ -200,8 +379,8 @@ export default function OnboardingPage() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs pt-2">
-              You can request a DFY plan anytime from the DFY tab once your account is active.
+            <p className="text-xs pt-1">
+              Request DFY plans anytime from the DFY tab once your account is active.
             </p>
           </CardContent>
         </Card>
