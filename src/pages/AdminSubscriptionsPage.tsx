@@ -57,12 +57,14 @@ export default function AdminSubscriptionsPage() {
     if (!isAdmin) return;
     async function load() {
       const { data: subs } = await supabase.from('subscriptions').select('*');
-      const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name, company, email');
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, company, email, role_name, is_billing_manager');
 
-      const profileMap = new Map((profiles ?? []).map(p => [p.id, p]));
+      const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
       const mapped: SubRow[] = (subs ?? []).map((s: any) => {
-        const p = profileMap.get(s.user_id);
+        const p: any = profileMap.get(s.user_id);
         return {
           id: s.id,
           userId: s.user_id,
@@ -75,6 +77,8 @@ export default function AdminSubscriptionsPage() {
           monthly_amount_cents: s.monthly_amount_cents,
           trial_ends_at: s.trial_ends_at,
           current_period_end: s.current_period_end,
+          is_billing_manager: !!p?.is_billing_manager,
+          role_name: p?.role_name || 'User',
         };
       });
 
