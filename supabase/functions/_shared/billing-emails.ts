@@ -2,7 +2,7 @@
 // Lovable connector gateway. Used by payments-webhook and check-trial-reminders.
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/resend';
-const FROM_ADDRESS = 'OnFly Air <noreply@onflyair.com>';
+const FROM_ADDRESS = 'SkyIQ <info@skyIQ.net>';
 
 export type BillingEmailType =
   | 'trial_started'
