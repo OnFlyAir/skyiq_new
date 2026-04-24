@@ -209,7 +209,7 @@ export default function AdminSubscriptionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-4 text-center">
             <DollarSign className="h-5 w-5 mx-auto mb-1 text-green-600" />
@@ -229,6 +229,13 @@ export default function AdminSubscriptionsPage() {
             <AlertTriangle className="h-5 w-5 mx-auto mb-1 text-red-500" />
             <p className="text-2xl font-bold text-red-500">{pastDueCount}</p>
             <p className="text-xs text-muted-foreground">Past Due</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <XCircle className="h-5 w-5 mx-auto mb-1 text-red-500" />
+            <p className="text-2xl font-bold text-red-500">{autoDisabledCount}</p>
+            <p className="text-xs text-muted-foreground">Auto-disabled</p>
           </CardContent>
         </Card>
       </div>
