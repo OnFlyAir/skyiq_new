@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-export type DemoFlow = 'fleet' | 'trip';
+export type DemoFlow = 'fleet' | 'trip' | 'public';
 
 export interface DemoStep {
   id: string;
