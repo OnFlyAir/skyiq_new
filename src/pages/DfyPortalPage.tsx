@@ -297,7 +297,7 @@ export default function DfyPortalPage() {
       <div>
         <h1 className="text-2xl font-bold">Fuel Planning Portal</h1>
         <p className="text-sm text-muted-foreground">
-          {client.company_name} · {formatCurrencyCents(client.per_trip_rate_cents)}/trip
+          {client.company_name} · {formatCurrencyCents(client.per_trip_rate_cents)}/trip · billed at end of month
         </p>
       </div>
 
