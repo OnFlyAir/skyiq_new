@@ -113,12 +113,32 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
       };
       const safeTopInset = isMobile ? readInset('top') : 0;
       const safeBottomInset = isMobile ? readInset('bottom') : 0;
-      const reservedForTooltip = isMobile ? 260 + safeBottomInset : 0;
+      // The mobile tooltip card is roughly 230–260px tall (header + body + actions).
+      // It docks either to the top (below the sticky header at ~80px) or bottom of
+      // the viewport. We need to keep the highlighted target out of whichever side
+      // the tooltip occupies — otherwise the tooltip sits on top of the spotlight.
+      const MOBILE_TOOLTIP_HEIGHT = 260;
+      const MOBILE_HEADER = 80; // sticky app header + safe-area top inset
       const viewportPadding = 24;
+      // Decide which side the tooltip will dock on the same way DemoOverlay does:
+      // mid-of-target above viewport center -> tooltip docks BOTTOM, else TOP.
+      const targetMid = rect.top + rect.height / 2;
+      const tooltipDock: 'top' | 'bottom' = targetMid > window.innerHeight / 2 ? 'top' : 'bottom';
+      const tooltipTopBand = MOBILE_HEADER + MOBILE_TOOLTIP_HEIGHT + safeTopInset; // pixels from top reserved when dock=top
+      const tooltipBottomBand = MOBILE_TOOLTIP_HEIGHT + safeBottomInset;            // pixels from bottom reserved when dock=bottom
+
+      const safeMinTop = isMobile
+        ? (tooltipDock === 'top' ? tooltipTopBand + viewportPadding : viewportPadding + safeTopInset + 24)
+        : viewportPadding + safeTopInset;
+      const safeMaxBottom = isMobile
+        ? (tooltipDock === 'bottom'
+            ? window.innerHeight - tooltipBottomBand - viewportPadding
+            : window.innerHeight - viewportPadding - safeBottomInset - 24)
+        : window.innerHeight - viewportPadding;
 
       const isWithinViewport =
-        rect.top >= viewportPadding + safeTopInset &&
-        rect.bottom <= window.innerHeight - reservedForTooltip - viewportPadding &&
+        rect.top >= safeMinTop &&
+        rect.bottom <= safeMaxBottom &&
         rect.left >= viewportPadding &&
         rect.right <= window.innerWidth - viewportPadding;
 
