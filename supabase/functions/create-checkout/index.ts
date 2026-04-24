@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
 
     const sessionParams: Record<string, string | number> = {
       mode: 'subscription',
-      ui_mode: 'embedded',
+      ui_mode: 'embedded_page',
       customer: customerId!,
       return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
       'line_items[0][quantity]': 1,
