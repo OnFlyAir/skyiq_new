@@ -34,6 +34,8 @@ type NavItem = {
   description?: string;
   activeMatch?: (pathname: string, search: string) => boolean;
   demoTarget?: string;
+  badgeCount?: number;
+  badgeTone?: 'danger' | 'default';
 };
 
 export default function AppLayout() {
@@ -116,6 +118,14 @@ export default function AppLayout() {
       to: '/admin/subscriptions',
       description: 'Billing status and account management',
     },
+    {
+      label: 'Email Alerts',
+      icon: AlertTriangle,
+      to: '/admin/email-log',
+      description: 'Failed billing email notifications',
+      badgeCount: emailAlertCount,
+      badgeTone: 'danger',
+    },
   ];
 
   const flightToolsNavItems: NavItem[] = [
@@ -152,7 +162,20 @@ export default function AppLayout() {
             >
               <item.icon className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.label}</p>
+                <p className="truncate text-sm font-medium flex items-center gap-2">
+                  {item.label}
+                  {item.badgeCount && item.badgeCount > 0 ? (
+                    <span
+                      className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                        item.badgeTone === 'danger'
+                          ? 'bg-destructive text-destructive-foreground animate-pulse'
+                          : 'bg-primary text-primary-foreground'
+                      }`}
+                    >
+                      {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                    </span>
+                  ) : null}
+                </p>
                 {item.description ? (
                   <p className={`text-[11px] leading-relaxed ${active ? 'text-primary/80' : 'text-muted-foreground/80'}`}>
                     {item.description}
