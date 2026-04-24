@@ -291,7 +291,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Nothing's charged today beyond the $1 trial verification.
+                  Nothing else is charged today beyond the $1 for your 4-week trial.
                 </p>
               </div>
             )}
