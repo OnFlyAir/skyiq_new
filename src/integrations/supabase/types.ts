@@ -340,6 +340,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          billing_email_preference: Database["public"]["Enums"]["billing_email_preference"]
           company: string | null
           created_on: string
           email: string
@@ -351,6 +352,7 @@ export type Database = {
           role_name: string | null
         }
         Insert: {
+          billing_email_preference?: Database["public"]["Enums"]["billing_email_preference"]
           company?: string | null
           created_on?: string
           email: string
@@ -362,6 +364,7 @@ export type Database = {
           role_name?: string | null
         }
         Update: {
+          billing_email_preference?: Database["public"]["Enums"]["billing_email_preference"]
           company?: string | null
           created_on?: string
           email?: string
@@ -510,6 +513,7 @@ export type Database = {
     }
     Enums: {
       billing_cycle: "four_weekly" | "annual"
+      billing_email_preference: "all" | "critical" | "changes" | "none"
       subscription_status:
         | "trial"
         | "active"
@@ -644,6 +648,7 @@ export const Constants = {
   public: {
     Enums: {
       billing_cycle: ["four_weekly", "annual"],
+      billing_email_preference: ["all", "critical", "changes", "none"],
       subscription_status: [
         "trial",
         "active",
