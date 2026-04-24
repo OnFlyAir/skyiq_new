@@ -620,36 +620,48 @@ export default function TripLegsPage() {
     setParsing(true);
 
     try {
-      // Convert PDF to base64 for proper binary handling
-      const arrayBuffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+      let parsed: any;
+
+      // Demo mode: skip the AI call and use a pre-cached parse result.
+      // The sample PDF never changes, so re-running the parser wastes time
+      // and money on every demo run.
+      if (demoActive) {
+        const cachedRes = await fetch('/demo/sample-parsed.json');
+        parsed = await cachedRes.json();
+        console.log("Demo mode: using cached parse result", parsed);
+      } else {
+        // Convert PDF to base64 for proper binary handling
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+
+        const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
+        console.log("Sending to edge function:", edgeFnUrl);
+        const { data: { session } } = await supabase.auth.getSession();
+        const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const response = await fetch(edgeFnUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pdf_base64: base64, filename: file.name, trip_id: tripId ? parseInt(tripId) : undefined }),
+        });
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.error("API error response:", errBody);
+          throw new Error(`Parse failed (${response.status}): ${errBody}`);
+        }
+
+        parsed = await response.json();
       }
-      const base64 = btoa(binary);
 
-      const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-itinerary`;
-      console.log("Sending to edge function:", edgeFnUrl);
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const response = await fetch(edgeFnUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pdf_base64: base64, filename: file.name, trip_id: tripId ? parseInt(tripId) : undefined }),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        console.error("API error response:", errBody);
-        throw new Error(`Parse failed (${response.status}): ${errBody}`);
-      }
-
-      const parsed = await response.json();
       console.log("Parse response:", parsed);
 
       if (parsed.errors && parsed.errors.length > 0) {
