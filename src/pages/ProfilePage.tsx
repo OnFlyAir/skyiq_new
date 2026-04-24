@@ -264,6 +264,71 @@ export default function ProfilePage() {
           {saved ? 'Saved!' : saving ? 'Saving...' : 'Save changes'}
         </Button>
       </form>
+
+      <EmailPreferencesCard value={emailPref} onChange={updateEmailPref} saving={savingPref} />
     </div>
+  );
+}
+
+function EmailPreferencesCard({
+  value,
+  onChange,
+  saving,
+}: {
+  value: EmailPref;
+  onChange: (next: EmailPref) => void;
+  saving: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-primary" /> Billing email preferences
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Choose which billing notifications you want delivered to your inbox.
+        </p>
+        <div className="space-y-2">
+          {EMAIL_PREF_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const active = value === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={saving}
+                onClick={() => onChange(opt.value)}
+                className={`w-full text-left rounded-lg border p-3 transition-all ${
+                  active
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/30'
+                    : 'border-border bg-secondary/30 hover:border-primary/40'
+                } ${saving ? 'opacity-60 cursor-wait' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Icon className={`h-4 w-4 mt-0.5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm font-medium ${active ? 'text-foreground' : 'text-foreground/90'}`}>
+                        {opt.label}
+                      </span>
+                      {active && <Badge variant="outline" className="text-xs">Active</Badge>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {value === 'none' && (
+          <p className="mt-3 text-xs text-destructive flex items-start gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+            You won't be notified about payment failures. Your account may be disabled without warning.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
