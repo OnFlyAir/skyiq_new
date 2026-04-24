@@ -54,6 +54,7 @@ async function safeSendEmail(
   await sendBillingEmail({
     to: (profile as any).email,
     type,
+    userId,
     data: { firstName: (profile as any).first_name, ...extraData },
   });
 }
