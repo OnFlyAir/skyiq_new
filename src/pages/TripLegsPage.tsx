@@ -10,6 +10,7 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { parsedLegsToFormData } from "@/lib/itinerary-service";
 import { pendingParseFile } from "@/lib/pending-parse-file";
 import ParsingLoader from "@/components/ParsingLoader";
+import demoSampleParsed from "@/demo/sample-parsed.json";
 import type { TripFormData, LegFormData, FuelTier } from "@/types/trip";
 import type { Aircraft } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -617,18 +618,17 @@ export default function TripLegsPage() {
   const handlePdfUpload = async (file: File, appendMode = false) => {
     if (!tripForm) return;
     console.log("File selected:", file.name);
-    setParsing(true);
+
+    // Demo mode: instant — use the statically imported fixture, no loader, no fetch.
+    const isDemoFastPath = demoActive;
+    if (!isDemoFastPath) setParsing(true);
 
     try {
       let parsed: any;
 
-      // Demo mode: skip the AI call and use a pre-cached parse result.
-      // The sample PDF never changes, so re-running the parser wastes time
-      // and money on every demo run.
-      if (demoActive) {
-        const cachedRes = await fetch('/demo/sample-parsed.json');
-        parsed = await cachedRes.json();
-        console.log("Demo mode: using cached parse result", parsed);
+      if (isDemoFastPath) {
+        parsed = demoSampleParsed;
+        console.log("Demo mode: using preloaded parse result", parsed);
       } else {
         // Convert PDF to base64 for proper binary handling
         const arrayBuffer = await file.arrayBuffer();
@@ -661,6 +661,7 @@ export default function TripLegsPage() {
 
         parsed = await response.json();
       }
+
 
       console.log("Parse response:", parsed);
 
