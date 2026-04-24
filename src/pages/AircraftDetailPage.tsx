@@ -21,6 +21,7 @@ export default function AircraftDetailPage() {
   async function handleDelete() {
     if (!confirm('Are you sure you want to delete this aircraft?')) return;
     await supabase.from('aircrafts').delete().eq('id', Number(id));
+    supabase.functions.invoke('sync-subscription-billing', { body: {} }).catch(() => {});
     navigate('/fleet');
   }
 

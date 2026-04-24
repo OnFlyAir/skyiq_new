@@ -5,3 +5,15 @@ verify_jwt = false
 
 [functions.check-trial-reminders]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.create-portal-session]
+verify_jwt = false
+
+[functions.sync-subscription-billing]
+verify_jwt = false
+
+[functions.admin-subscription-action]
+verify_jwt = false
