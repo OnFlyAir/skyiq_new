@@ -298,10 +298,10 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
   {
     id: 'public-data-pulled',
     page: '',
-    target: 'verify-progress',
+    target: 'leg-1-card',
     title: 'All Data Is Pulled Automatically',
     description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to continue.",
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'click-fuel-burns',

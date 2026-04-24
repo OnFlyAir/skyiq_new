@@ -182,7 +182,7 @@ function LegEditor({
   }, []);
 
   return (
-    <Card className={`transition-all ${isConfirmed ? "border-green-300 bg-green-50/30" : ""}`}>
+    <Card data-demo={`leg-${leg.legNum}-card`} className={`transition-all ${isConfirmed ? "border-green-300 bg-green-50/30" : ""}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
