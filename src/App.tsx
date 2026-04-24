@@ -12,6 +12,7 @@ import DemoOverlay from "@/components/demo/DemoOverlay";
 import AppLayout from "@/components/layout/AppLayout";
 import AuthLayout from "@/components/layout/AuthLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import RootRedirect from "@/components/auth/RootRedirect";
 
 // Auth pages
 import LoginPage from "@/pages/LoginPage";
