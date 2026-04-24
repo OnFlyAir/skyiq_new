@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
+import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
 
 type NavItem = {
   label: string;
@@ -333,6 +334,7 @@ export default function AppLayout() {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
+        <PaymentTestModeBanner />
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card p-4 lg:hidden">
           <button onClick={() => setSidebarOpen(true)} className="rounded p-1.5 text-muted-foreground hover:bg-secondary">
             <Menu className="h-5 w-5" />
