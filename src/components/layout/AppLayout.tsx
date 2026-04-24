@@ -22,6 +22,7 @@ import {
   Moon,
   FileText,
   Play,
+  AlertTriangle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
@@ -53,6 +54,30 @@ export default function AppLayout() {
       .order('created_on', { ascending: false })
       .limit(5)
       .then(({ data }) => { if (data) setRecentTrips(data); });
+  }, [profile]);
+
+  // Admin: track unacknowledged billing email failures for sidebar badge
+  const [emailAlertCount, setEmailAlertCount] = useState(0);
+  useEffect(() => {
+    if (profile?.role_name !== 'Admin') return;
+    let cancelled = false;
+    const refresh = async () => {
+      const { count } = await supabase
+        .from('billing_email_log' as any)
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'failed')
+        .eq('acknowledged', false);
+      if (!cancelled) setEmailAlertCount(count ?? 0);
+    };
+    refresh();
+    const channel = supabase
+      .channel('billing_email_log_badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'billing_email_log' }, refresh)
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [profile]);
 
   const handleSignOut = async () => {
