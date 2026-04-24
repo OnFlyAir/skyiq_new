@@ -125,7 +125,6 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     if (checkoutReturn) {
-      toast({ title: 'Checkout complete', description: 'Your subscription is syncing — this takes a few seconds.' });
       const t = setTimeout(load, 3000);
       return () => clearTimeout(t);
     }
@@ -232,9 +231,45 @@ export default function SubscriptionPage() {
   const annualPrice = Math.round(fourWeekPrice * 13 * 0.8);
   const needsReactivate = sub && (sub.status === 'canceled' || sub.status === 'expired' || sub.status === 'past_due');
 
+  // Trial / next billing dates derived from sub if available, otherwise from
+  // a fresh "today + 28 days" calculation right after returning from Stripe.
+  const trialEndsAt = sub?.trial_ends_at
+    ? new Date(sub.trial_ends_at)
+    : new Date(Date.now() + 28 * 86400000);
+  const nextBillingAt = sub?.current_period_end
+    ? new Date(sub.current_period_end)
+    : trialEndsAt;
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
+
+      {checkoutReturn && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-green-900">You're all set — welcome to SkyIQ</p>
+                <p className="text-sm text-green-800 mt-1">
+                  We charged $1.00 today for 4 weeks of full access. No further charges until your trial ends.
+                </p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3 pt-2">
+              <div className="rounded-lg bg-white border border-green-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Trial ends</p>
+                <p className="text-lg font-semibold text-foreground mt-1">{formatDate(trialEndsAt.toISOString())}</p>
+              </div>
+              <div className="rounded-lg bg-white border border-green-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Next billing date</p>
+                <p className="text-lg font-semibold text-foreground mt-1">{formatDate(nextBillingAt.toISOString())}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {(showCheckoutBanner || isBlocked) && (
         <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
