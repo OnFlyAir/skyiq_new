@@ -151,20 +151,20 @@ export default function PricingTour({ onFinish }: Props) {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-foreground">Want us to do it for you?</h3>
-                <p className="text-xs text-muted-foreground">Done-For-You · $25 per plan</p>
+                <p className="text-xs text-muted-foreground">Done-For-You · $25 per plan · billed monthly</p>
               </div>
             </div>
             <p className="text-sm text-foreground/90">
               Don't have time to build fuel plans? Upload your trip sheet and our team delivers a
-              fully optimized plan to your inbox. <strong>No commitment</strong> — pay
-              <strong> $25 per plan</strong> only when you use it.
+              fully optimized plan to your inbox. <strong>Nothing to pay up front</strong> —
+              we add <strong>$25 per plan</strong> to your end-of-month invoice, only for the plans you actually request.
             </p>
             <ul className="space-y-1.5 text-sm">
               {[
                 'Upload any trip itinerary (PDF or doc)',
                 'Our team builds the optimized fuel plan',
                 'Delivered ready-to-file, usually within hours',
-                'Pay per plan — no subscription, no minimum',
+                'No upfront charge — billed at the end of the month',
               ].map((it) => (
                 <li key={it} className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
@@ -173,7 +173,7 @@ export default function PricingTour({ onFinish }: Props) {
               ))}
             </ul>
             <p className="text-xs text-muted-foreground">
-              You can request DFY plans anytime from the DFY tab inside the app.
+              You can request DFY plans anytime from the DFY tab inside the app — your monthly invoice will include only the plans you used.
             </p>
           </div>
         )}
