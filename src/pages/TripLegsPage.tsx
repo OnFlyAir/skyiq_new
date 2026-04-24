@@ -598,6 +598,15 @@ export default function TripLegsPage() {
     }
   }, [tripForm]);
 
+  // Demo: continuously mirror tripForm into sessionStorage so any reload of
+  // this page (or load() re-run) restores the multi-leg state instead of the
+  // single-leg DB placeholder.
+  useEffect(() => {
+    if (!demoActive || !tripId || !tripForm) return;
+    if (!tripForm.legs || tripForm.legs.length === 0) return;
+    sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(tripForm));
+  }, [demoActive, tripId, tripForm]);
+
   // Demo: auto-advance from wait-for-parse step when parsing finishes
   const wasParsing = useRef(false);
   useEffect(() => {
