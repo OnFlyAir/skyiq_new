@@ -302,8 +302,8 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     id: 'public-fuel-burns',
     page: '',
     target: 'fuel-burn-inputs',
-    title: 'Fuel Burns Are Pre-Filled',
-    description: 'This screen is where fuel burns are entered for each leg based on the filed flight plans. They are already filled in for the demo so you can review them instantly.',
+    title: 'Fuel Burns will be entered for each leg on this page',
+    description: 'Fuel burns are entered for each leg from the filed flight plans. They are already filled in for the demo so you can review them instantly.',
     placement: 'top',
   },
   {
