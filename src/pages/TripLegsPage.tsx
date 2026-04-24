@@ -926,6 +926,18 @@ export default function TripLegsPage() {
 
     if (demoActive) {
       sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(updatedForm));
+      navigate(`/trips/${tripId}/fuel`);
+
+      void supabase
+        .from("trips")
+        .update({
+          itinerary_details: updatedForm as unknown as import('@/integrations/supabase/types').Json,
+          itinerary_num: updatedForm.itineraryNum,
+        })
+        .eq("id", parseInt(tripId));
+
+      setSaving(false);
+      return;
     }
 
     const { error } = await supabase
