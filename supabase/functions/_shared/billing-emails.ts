@@ -1,7 +1,7 @@
-// Billing email helper — sends transactional emails via Resend through the
-// Lovable connector gateway. Used by payments-webhook and check-trial-reminders.
+// Billing email helper — sends transactional emails via Resend directly
+// using the RESEND_API_KEY secret. Used by payments-webhook and check-trial-reminders.
 
-const GATEWAY_URL = 'https://connector-gateway.lovable.dev/resend';
+const RESEND_API_URL = 'https://api.resend.com/emails';
 const FROM_ADDRESS = 'SkyIQ <info@skyIQ.net>';
 
 export type BillingEmailType =
@@ -165,10 +165,9 @@ function shouldSend(type: BillingEmailType, pref: 'all' | 'critical' | 'changes'
 }
 
 export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Promise<{ ok: boolean; error?: string; skipped?: boolean }> {
-  const lovableKey = Deno.env.get('LOVABLE_API_KEY');
   const resendKey = Deno.env.get('RESEND_API_KEY');
-  if (!lovableKey || !resendKey) {
-    const error = 'missing api keys (LOVABLE_API_KEY or RESEND_API_KEY)';
+  if (!resendKey) {
+    const error = 'missing RESEND_API_KEY';
     console.error('[billing-email]', error);
     await logAttempt({ userId, to, type, status: 'failed', error });
     return { ok: false, error };
@@ -188,12 +187,11 @@ export async function sendBillingEmail({ to, type, data, userId }: SendArgs): Pr
 
   const { subject, html } = build(type, data);
   try {
-    const res = await fetch(`${GATEWAY_URL}/emails`, {
+    const res = await fetch(RESEND_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${lovableKey}`,
-        'X-Connection-Api-Key': resendKey,
+        'Authorization': `Bearer ${resendKey}`,
       },
       body: JSON.stringify({ from: FROM_ADDRESS, to: [to], subject, html }),
     });
