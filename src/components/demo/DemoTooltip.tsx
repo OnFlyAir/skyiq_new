@@ -56,15 +56,7 @@ export const DemoTooltip = forwardRef<HTMLDivElement, DemoTooltipProps>(function
           </div>
         )}
 
-        {/* Progress bar */}
-        <div className="px-4">
-          <div className="h-1 bg-border rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }}
-            />
-          </div>
-        </div>
+        {/* Progress bar hidden — keeps demo length feeling light */}
 
         {/* Actions */}
         <div className="flex items-center justify-between px-4 py-3">
