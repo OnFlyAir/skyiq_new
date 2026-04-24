@@ -105,11 +105,12 @@ export default function DemoOverlay() {
     // Top-dock sits below the sticky app header (~64px) PLUS the safe-area top inset.
     const safeTopDock = 'calc(env(safe-area-inset-top, 0px) + 80px)';
 
-    // PDF preview step: dock the tooltip below the PDF panel so it doesn't cover it.
+    // PDF preview step: dock the tooltip just below the PDF panel so it sits
+    // close to the itinerary instead of floating at the bottom of the screen.
     if (currentStep.id === 'preview-itinerary-pdf') {
       return isMobile
         ? { position: 'fixed', left: safeLeft, right: safeRight, bottom: safeBottom, width: 'auto' }
-        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, width: 360 };
+        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: 'calc(100vh - 230px)', width: 360 };
     }
 
     // 'center' placement always centers tooltip on screen, regardless of target
@@ -259,12 +260,13 @@ export default function DemoOverlay() {
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            top: 'max(24px, env(safe-area-inset-top, 0px))',
-            width: 'min(720px, calc(100vw - 24px))',
-            // Reserve enough room at the bottom for the tooltip dock so the
-            // user can always see the "Next" button on small mobile screens.
-            height: 'calc(100vh - 360px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-            maxHeight: 'calc(100vh - 340px)',
+            top: 'max(16px, env(safe-area-inset-top, 0px))',
+            width: 'min(720px, calc(100vw - 16px))',
+            // On mobile, reserve only enough room for the compact tooltip dock
+            // (~230px) so the itinerary itself stays as tall as possible.
+            // On desktop the tooltip sits ~250px from the bottom.
+            height: 'calc(100vh - 240px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            maxHeight: 'calc(100vh - 220px)',
           }}
         >
           <iframe
