@@ -256,9 +256,112 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
   },
 ];
 
+// ============================================================
+// PUBLIC DEMO — short outward-facing tour shown from the login page.
+// 7 high-level steps: welcome → what an itinerary is → upload/parse →
+// data pulled → fuel burns → optimizer → email. Auto-fills everything.
+// ============================================================
+export const PUBLIC_DEMO_STEPS: DemoStep[] = [
+  {
+    id: 'public-welcome',
+    page: '/trips/new',
+    title: 'Welcome to SkyIQ ✈️',
+    description: "In about 60 seconds you'll see how SkyIQ turns a trip sheet into an optimized fuel plan. Just click Next — we'll do the typing for you.",
+    placement: 'center',
+  },
+  {
+    id: 'preview-itinerary-pdf',
+    page: '/trips/new',
+    title: 'This Is a Trip Itinerary 📄',
+    description: "Here's the kind of PDF an operator receives — pickup times, legs, passengers, fuel notes. Scroll through it, then click Next.",
+    placement: 'center',
+  },
+  {
+    id: 'upload-pdf',
+    page: '/trips/new',
+    target: 'upload-pdf-area',
+    title: 'Upload & Parse',
+    description: "Normally you'd drop a PDF here and SkyIQ's AI reads every detail. Click Next and we'll upload the sample for you.",
+    placement: 'bottom',
+    action: 'click',
+    autoAdvance: true,
+  },
+  {
+    id: 'wait-for-parse',
+    page: '',
+    title: 'Parsing Your Itinerary',
+    description: "SkyIQ is reading the trip sheet. This usually takes a few seconds…",
+    placement: 'center',
+    action: 'wait',
+    requireAction: true,
+  },
+  {
+    id: 'public-data-pulled',
+    page: '',
+    target: 'verify-progress',
+    title: 'All Data Is Pulled Automatically',
+    description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to continue.",
+    placement: 'bottom',
+  },
+  {
+    id: 'click-fuel-burns',
+    page: '',
+    target: 'next-fuel-burns-btn',
+    title: 'Next: Fuel Burns',
+    description: "Click Next and we'll move on to enter fuel burns from your flight plan.",
+    placement: 'top',
+    action: 'click',
+    autoAdvance: true,
+  },
+  {
+    id: 'public-fuel-burns',
+    page: '',
+    target: 'fuel-burn-leg-1',
+    title: 'Enter Fuel Burns',
+    description: "Burns from your flight plan go here for each leg. We've filled them in for the demo. Click Next to run the optimizer.",
+    placement: 'top',
+  },
+  {
+    id: 'click-confirm',
+    page: '',
+    target: 'confirm-trip-btn',
+    title: 'Run the Optimizer',
+    description: 'Click Next to run SkyIQ\'s fuel optimizer across the whole trip.',
+    placement: 'top',
+    action: 'click',
+    autoAdvance: true,
+  },
+  {
+    id: 'public-optimizer',
+    page: '',
+    target: 'optimizer-strategy',
+    title: 'Optimized Fuel Plan',
+    description: "SkyIQ picked the cheapest legal fuel strategy across every leg — tankering, fee waivers, volume discounts, weight limits, all considered. Per-leg savings are shown below.",
+    placement: 'bottom',
+  },
+  {
+    id: 'click-send-email',
+    page: '',
+    target: 'send-email-btn',
+    title: 'Email to Your Team',
+    description: "Send the fuel plan to anyone — pilots, dispatchers, FBOs. Click Next to see how.",
+    placement: 'top',
+    action: 'click',
+    autoAdvance: true,
+  },
+  {
+    id: 'public-complete',
+    page: '',
+    title: "That's SkyIQ! 🚀",
+    description: 'Sign up for $1 to start saving on your own trips. Questions? Email info@skyiq.net.',
+    placement: 'center',
+  },
+];
+
 function getSteps(flow: DemoFlow | null): DemoStep[] {
   if (flow === 'fleet') return FLEET_DEMO_STEPS;
   if (flow === 'trip') return TRIP_DEMO_STEPS;
+  if (flow === 'public') return PUBLIC_DEMO_STEPS;
   return [];
 }
 
