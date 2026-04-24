@@ -692,23 +692,23 @@ export default function TripLegsPage() {
       // Use itinerary_num from parsed sheet as trip ID
       const parsedItineraryNum = parsed.itinerary_num || tripForm.itineraryNum;
 
-      // In append mode, keep existing legs and add new ones with renumbered leg numbers
-      // Use functional setter to read latest legs (avoids stale closure)
-      let existingLegs: LegFormData[] = [];
-      let renumberedNewLegs: LegFormData[] = [];
+      // In append mode, keep existing legs and add new ones with renumbered leg numbers.
+      // Compute synchronously from current state so values are usable below (avoids
+      // stale [] when later code reads `existingLegs` / `renumberedNewLegs`).
+      const prevLegsSnapshot = tripForm?.legs ?? [];
+      const existingLegs: LegFormData[] = appendMode ? prevLegsSnapshot : [];
+      const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
+      const renumberedNewLegs: LegFormData[] = newLegs.map((leg, i) => ({
+        ...leg,
+        legNum: maxLegNum + i + 1,
+      }));
       setTripForm((prev) => {
         if (!prev) return prev;
-        existingLegs = appendMode ? prev.legs : [];
-        const maxLegNum = existingLegs.length > 0 ? Math.max(...existingLegs.map((l) => l.legNum)) : 0;
-        renumberedNewLegs = newLegs.map((leg, i) => ({
-          ...leg,
-          legNum: maxLegNum + i + 1,
-        }));
         return {
           ...prev,
           itineraryNum: appendMode ? prev.itineraryNum : parsedItineraryNum,
           aircraftId: parsed.aircraft || prev.aircraftId,
-          legs: [...existingLegs, ...renumberedNewLegs],
+          legs: [...(appendMode ? prev.legs : []), ...renumberedNewLegs],
         };
       });
 
