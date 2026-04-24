@@ -168,8 +168,94 @@ export default function AdminDfyPage() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: `Request marked as ${status}` });
+
+    // When marking sent, fire the client completion email.
+    if (status === "sent") {
+      try {
+        await supabase.functions.invoke("notify-dfy", {
+          body: { kind: "client_completed", request_id: requestId },
+        });
+        toast({ title: "Client notified", description: "Completion email sent." });
+      } catch (e) {
+        console.error("client email failed", e);
+        toast({ title: "Email failed", description: "Status saved, but client email did not send.", variant: "destructive" });
+      }
+    } else {
+      toast({ title: `Request marked as ${status}` });
+    }
     loadData();
+  };
+
+  const runStandardFlow = async (req: DfyRequest) => {
+    if (!req.client) {
+      toast({ title: "Missing client", variant: "destructive" });
+      return;
+    }
+    const parsed = req.parsed_result || {};
+    const fuelBurns = req.fuel_burns || [];
+
+    // Build legs prefilled from parsed itinerary + fuel burns. We merge by leg
+    // index so admin sees airports + burns already populated in /trips/.../legs.
+    const parsedLegs = parsed.legs || [];
+    const legs = (parsedLegs.length ? parsedLegs : fuelBurns).map((src, i) => {
+      const burn = fuelBurns[i];
+      const departure = (parsedLegs[i]?.departure || burn?.departure || "").toUpperCase();
+      const destination = (parsedLegs[i]?.destination || burn?.destination || "").toUpperCase();
+      return {
+        departure,
+        destination,
+        fuelBurn: burn?.fuel_burn_lbs ?? 0,
+      };
+    });
+
+    // Find an aircraft owned by the client matching the parsed tail number, if any.
+    let aircraftTail = parsed.aircraft || "";
+    if (aircraftTail) {
+      const { data: ac } = await supabase
+        .from("aircrafts")
+        .select("tail_number")
+        .eq("user_company", req.client.user_id)
+        .eq("tail_number", aircraftTail)
+        .limit(1);
+      if (!ac || ac.length === 0) aircraftTail = "";
+    }
+
+    const { data: trip, error } = await supabase
+      .from("trips")
+      .insert({
+        user_company: req.client.user_id,
+        itinerary_num: parsed.itinerary_num || "",
+        details: { source: "dfy", dfy_request_id: req.id },
+        itinerary_details: {
+          itineraryNum: parsed.itinerary_num || "",
+          startingFuel: req.fuel_on_board_lbs ?? 0,
+          aircraftId: aircraftTail,
+          basicEmptyWeight: 0,
+          maxFuelReserve: 0,
+          penalty: 0,
+          lbsPerHour: 0,
+          legs,
+        },
+        savings: 0,
+      })
+      .select("id")
+      .single();
+
+    if (error || !trip) {
+      toast({ title: "Failed to create trip", description: error?.message ?? "", variant: "destructive" });
+      return;
+    }
+
+    // Move the request to processing if it's still pending so the dashboard reflects work-in-progress.
+    if (req.status === "pending") {
+      await supabase
+        .from("dfy_requests" as any)
+        .update({ status: "processing", reviewed_by: profile?.id, reviewed_at: new Date().toISOString() } as any)
+        .eq("id", req.id);
+    }
+
+    toast({ title: "Trip prefilled", description: "Opening standard fuel-planning flow…" });
+    navigate(`/trips/${trip.id}/legs`);
   };
 
   if (!isAdmin) {
