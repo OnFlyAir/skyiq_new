@@ -32,6 +32,7 @@ interface DfyRequest {
   admin_notes: string;
   pdf_storage_path: string | null;
   fuel_burns: FuelBurnEntry[];
+  fuel_on_board_lbs: number | null;
   parsed_result: Record<string, unknown>;
 }
 
@@ -64,6 +65,7 @@ export default function DfyPortalPage() {
   const [fuelBurns, setFuelBurns] = useState<FuelBurnEntry[]>([
     { leg: 1, departure: "", destination: "", fuel_burn_lbs: 0 },
   ]);
+  const [fuelOnBoard, setFuelOnBoard] = useState<number | "">("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -72,12 +74,44 @@ export default function DfyPortalPage() {
   }, [user]);
 
   async function loadData() {
-    const { data: clients } = await supabase
+    // Any logged-in user can access the DFY portal. Auto-provision a
+    // dfy_clients row on first visit so the portal is immediately usable.
+    let { data: clients } = await supabase
       .from("dfy_clients" as any)
       .select("id, company_name, pricing_tier, per_trip_rate_cents, status")
       .eq("user_id", user!.id)
-      .eq("status", "active")
       .limit(1);
+
+    if (!clients || clients.length === 0) {
+      // Pull name/email from profile for a sensible default company name.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, email, company")
+        .eq("id", user!.id)
+        .maybeSingle();
+
+      const companyName =
+        (profile?.company && profile.company.trim()) ||
+        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() ||
+        profile?.email ||
+        "DFY Client";
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("dfy_clients" as any)
+        .insert({
+          user_id: user!.id,
+          company_name: companyName,
+          contact_name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
+          contact_email: profile?.email ?? "",
+          pricing_tier: "per_trip",
+        } as any)
+        .select("id, company_name, pricing_tier, per_trip_rate_cents, status")
+        .limit(1);
+
+      if (!insertErr && inserted) {
+        clients = inserted;
+      }
+    }
 
     if (clients && clients.length > 0) {
       const c = clients[0] as any;
@@ -85,7 +119,7 @@ export default function DfyPortalPage() {
 
       const { data: reqs } = await supabase
         .from("dfy_requests" as any)
-        .select("id, status, created_at, admin_notes, pdf_storage_path, fuel_burns, parsed_result")
+        .select("id, status, created_at, admin_notes, pdf_storage_path, fuel_burns, fuel_on_board_lbs, parsed_result")
         .eq("client_id", c.id)
         .order("created_at", { ascending: false });
 
@@ -171,7 +205,7 @@ export default function DfyPortalPage() {
         console.error("Auto-parse failed (non-blocking):", parseErr);
       }
 
-      // Create request with fuel burns and parsed result
+      // Create request with fuel burns, fuel-on-board estimate, and parsed result
       const { error: insertErr } = await supabase
         .from("dfy_requests" as any)
         .insert({
@@ -179,6 +213,7 @@ export default function DfyPortalPage() {
           pdf_storage_path: fileName,
           status: "pending",
           fuel_burns: fuelBurns,
+          fuel_on_board_lbs: typeof fuelOnBoard === "number" ? fuelOnBoard : null,
           parsed_result: parsedResult,
         } as any);
 
@@ -187,6 +222,7 @@ export default function DfyPortalPage() {
       toast({ title: "Request submitted", description: "Your trip sheet and fuel burns have been submitted for review." });
       setSelectedFile(null);
       setFuelBurns([{ leg: 1, departure: "", destination: "", fuel_burn_lbs: 0 }]);
+      setFuelOnBoard("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       await loadData();
     } catch (err) {
@@ -334,6 +370,27 @@ export default function DfyPortalPage() {
             </div>
           </div>
 
+          {/* Fuel on board */}
+          <div>
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Fuel className="h-4 w-4 text-primary" />
+              Estimated Fuel On Board (lbs)
+            </Label>
+            <Input
+              type="number"
+              placeholder="e.g. 3500"
+              value={fuelOnBoard}
+              onChange={(e) =>
+                setFuelOnBoard(e.target.value === "" ? "" : Number(e.target.value))
+              }
+              min={0}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Approximately how much fuel is already in the aircraft at trip start. Leave blank if unknown.
+            </p>
+          </div>
+
           <Button onClick={handleSubmit} disabled={uploading || !selectedFile} className="w-full">
             {uploading ? (
               <>
@@ -406,6 +463,12 @@ export default function DfyPortalPage() {
                           </span>
                         ))}
                       </div>
+                    )}
+
+                    {typeof req.fuel_on_board_lbs === "number" && req.fuel_on_board_lbs > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Fuel on board at start: <strong>{req.fuel_on_board_lbs} lbs</strong>
+                      </p>
                     )}
 
                     {req.admin_notes && (

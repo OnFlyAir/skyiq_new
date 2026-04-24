@@ -215,6 +215,7 @@ export type Database = {
           client_id: string
           created_at: string
           fuel_burns: Json | null
+          fuel_on_board_lbs: number | null
           id: string
           parsed_result: Json | null
           pdf_storage_path: string | null
@@ -229,6 +230,7 @@ export type Database = {
           client_id: string
           created_at?: string
           fuel_burns?: Json | null
+          fuel_on_board_lbs?: number | null
           id?: string
           parsed_result?: Json | null
           pdf_storage_path?: string | null
@@ -243,6 +245,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           fuel_burns?: Json | null
+          fuel_on_board_lbs?: number | null
           id?: string
           parsed_result?: Json | null
           pdf_storage_path?: string | null
