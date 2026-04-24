@@ -158,6 +158,8 @@ export default function AddAircraftPage() {
       setError(dbError.message);
       setLoading(false);
     } else {
+      // Fire-and-forget: prorate new aircraft count to Stripe.
+      supabase.functions.invoke('sync-subscription-billing', { body: {} }).catch(() => {});
       navigate('/fleet');
     }
   }
