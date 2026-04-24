@@ -12,6 +12,7 @@ import DemoOverlay from "@/components/demo/DemoOverlay";
 import AppLayout from "@/components/layout/AppLayout";
 import AuthLayout from "@/components/layout/AuthLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import RootRedirect from "@/components/auth/RootRedirect";
 
 // Auth pages
 import LoginPage from "@/pages/LoginPage";
@@ -110,7 +111,7 @@ function App() {
                 </Route>
 
                 {/* Redirects */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/" element={<RootRedirect />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <DemoOverlay />
