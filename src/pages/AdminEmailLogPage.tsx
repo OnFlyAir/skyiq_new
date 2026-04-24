@@ -40,6 +40,33 @@ export default function AdminEmailLogPage() {
   const [rows, setRows] = useState<EmailLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'failed' | 'unack'>('unack');
+  const [sendingTest, setSendingTest] = useState(false);
+
+  async function sendTestSuite() {
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-billing-emails', {
+        body: {},
+      });
+      if (error) {
+        toast({ title: 'Test failed', description: error.message, variant: 'destructive' });
+      } else {
+        const results = (data as any)?.results ?? [];
+        const okCount = results.filter((r: any) => r.ok).length;
+        const failCount = results.length - okCount;
+        toast({
+          title: failCount === 0 ? 'All test emails sent ✓' : `${okCount} sent, ${failCount} failed`,
+          description: `Sent to ${(data as any)?.recipient}. Check inbox & log below.`,
+          variant: failCount === 0 ? 'default' : 'destructive',
+        });
+        load();
+      }
+    } catch (e: any) {
+      toast({ title: 'Test failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setSendingTest(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
