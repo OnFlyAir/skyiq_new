@@ -7,7 +7,7 @@ import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-re
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
 
-const DEV_EMAIL = 'dev@skyiq.test';
+export const DEV_EMAIL = 'dev@skyiq.test';
 const DEV_PASSWORD = 'devpass123';
 const ADMIN_EMAIL = 'admin@skyiq.net';
 const ADMIN_PASSWORD = 'admin123';
