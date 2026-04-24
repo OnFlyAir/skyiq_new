@@ -169,17 +169,62 @@ export default function AdminDfyPage() {
       return;
     }
 
-    // When marking sent, fire the client completion email.
-    if (status === "sent") {
+    // Billing side-effects: when sent → create a $25 metered charge that
+    // attaches to the user's next subscription invoice. When rejected →
+    // void the pending charge (or flag refund if already invoiced).
+    const reqRow = requests.find((r) => r.id === requestId);
+    const userId = reqRow?.client?.user_id;
+
+    if (status === "sent" && userId && reqRow) {
+      // Look up current subscription period end so the charge knows which invoice to attach to.
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const { error: chargeErr } = await (supabase.from("dfy_usage_charges" as any) as any).upsert(
+        {
+          user_id: userId,
+          request_id: requestId,
+          client_id: reqRow.client_id,
+          amount_cents: reqRow.client?.per_trip_rate_cents ?? 2500,
+          description: "Fuel Planning (DFY)",
+          status: "pending_invoice",
+          invoice_period_end: sub?.current_period_end ?? null,
+        },
+        { onConflict: "request_id" },
+      );
+      if (chargeErr) console.error("usage charge insert failed", chargeErr);
+
       try {
         await supabase.functions.invoke("notify-dfy", {
           body: { kind: "client_completed", request_id: requestId },
         });
-        toast({ title: "Client notified", description: "Completion email sent." });
+        toast({ title: "Sent & billed", description: "$25 added to client's next invoice." });
       } catch (e) {
         console.error("client email failed", e);
-        toast({ title: "Email failed", description: "Status saved, but client email did not send.", variant: "destructive" });
+        toast({ title: "Email failed", description: "Status & charge saved, but email did not send.", variant: "destructive" });
       }
+    } else if (status === "rejected") {
+      // Void any pending charge; flag for refund if it was already invoiced.
+      const { data: existing } = await (supabase
+        .from("dfy_usage_charges" as any) as any)
+        .select("id, status")
+        .eq("request_id", requestId)
+        .maybeSingle();
+      if (existing) {
+        if (existing.status === "pending_invoice") {
+          await (supabase.from("dfy_usage_charges" as any) as any)
+            .update({ status: "voided", voided_at: new Date().toISOString() })
+            .eq("id", existing.id);
+        } else if (existing.status === "invoiced") {
+          await (supabase.from("dfy_usage_charges" as any) as any)
+            .update({ status: "refunded", refunded_at: new Date().toISOString(), notes: "Auto-refund on reject" })
+            .eq("id", existing.id);
+        }
+      }
+      toast({ title: "Request rejected", description: "Any pending charge was voided / flagged for refund." });
     } else {
       toast({ title: `Request marked as ${status}` });
     }
