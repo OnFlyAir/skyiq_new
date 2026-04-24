@@ -100,6 +100,7 @@ export default function AdminSubscriptionsPage() {
           current_period_end: s.current_period_end,
           is_billing_manager: !!p?.is_billing_manager,
           role_name: p?.role_name || 'User',
+          is_enabled: p?.is_enabled !== false,
         };
       });
 
