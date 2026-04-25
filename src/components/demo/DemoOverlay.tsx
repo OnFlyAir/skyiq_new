@@ -20,6 +20,7 @@ export default function DemoOverlay() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { profile } = useAuthContext();
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const targetRect = useDemoTarget(active, currentStep);
