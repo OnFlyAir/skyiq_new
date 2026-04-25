@@ -340,7 +340,7 @@ export default function AircraftEditPage() {
                     <Input
                       type="number"
                       step="any"
-                      value={formData[field.key] ?? ""}
+                     value={formData[field.key] === 0 || formData[field.key] == null ? "" : formData[field.key]}
                       onChange={(e) => updateField(field.key, e.target.value)}
                       className="h-9 w-24 text-right text-sm"
                     />
