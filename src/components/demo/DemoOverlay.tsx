@@ -76,7 +76,7 @@ export default function DemoOverlay() {
 
   const handleNext = () => {
     if (currentStepIndex === totalSteps - 1) {
-      void finishAndReturnToLogin();
+      void finishDemo();
       return;
     }
     if (currentStep.target && currentStep.action === 'click') {
@@ -105,7 +105,7 @@ export default function DemoOverlay() {
   };
 
   const handleSkip = () => {
-    void finishAndReturnToLogin();
+    void finishDemo();
   };
 
   const hasTarget = !!targetRect;
