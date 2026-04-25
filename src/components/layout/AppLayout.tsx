@@ -294,41 +294,56 @@ export default function AppLayout() {
           </nav>
 
           <div className="space-y-3 border-t border-border p-4">
-            <Link
-              to="/profile"
-              className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                isAdmin ? 'border-primary/20 bg-primary/10 hover:bg-primary/15' : 'border-border/60 hover:bg-secondary'
-              }`}
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
-                  isAdmin ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
-                }`}
-              >
-                {initials}
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {isAdmin ? 'Administrator · Internal tools enabled' : profile?.role_name || 'User'}
-                </p>
-              </div>
-              {isAdmin ? <Shield className="h-4 w-4 shrink-0 text-primary" /> : null}
-            </Link>
-
-            {!isAdmin && (
-              <Link
-                to="/subscription"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                  location.pathname === '/subscription'
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                }`}
-              >
-                <CreditCard className="h-4 w-4" /> Subscription
-              </Link>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                    isAdmin ? 'border-primary/20 bg-primary/10 hover:bg-primary/15' : 'border-border/60 hover:bg-secondary'
+                  }`}
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold ${
+                      isAdmin ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
+                    }`}
+                  >
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {isAdmin ? 'Administrator · Internal tools enabled' : profile?.role_name || 'User'}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 rotate-90 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-64">
+                <DropdownMenuLabel className="truncate">{profile?.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => { setSidebarOpen(false); navigate('/profile'); }}>
+                  <UserIcon className="mr-2 h-4 w-4" /> Profile &amp; settings
+                </DropdownMenuItem>
+                {!isAdmin && (
+                  <DropdownMenuItem onSelect={() => { setSidebarOpen(false); navigate('/subscription'); }}>
+                    <CreditCard className="mr-2 h-4 w-4" /> Subscription
+                  </DropdownMenuItem>
+                )}
+                {isAdmin && (
+                  <DropdownMenuItem onSelect={() => { setSidebarOpen(false); navigate('/admin'); }}>
+                    <Shield className="mr-2 h-4 w-4" /> Admin panel
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={toggleTheme}>
+                  {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                  {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <div className="flex items-center gap-2">
               <button
