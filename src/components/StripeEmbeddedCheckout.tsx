@@ -10,9 +10,10 @@ interface Props {
   cycle: 'four_weekly' | 'annual';
   onBypass?: () => void;
   onError?: (msg: string) => void;
+  returnUrl?: string;
 }
 
-export default function StripeEmbeddedCheckout({ cycle, onBypass, onError }: Props) {
+export default function StripeEmbeddedCheckout({ cycle, onBypass, onError, returnUrl }: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
