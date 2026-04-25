@@ -297,9 +297,29 @@ export default function DfyPortalPage() {
       <div>
         <h1 className="text-2xl font-bold">Fuel Planning Portal</h1>
         <p className="text-sm text-muted-foreground">
-          {client.company_name} · {formatCurrencyCents(client.per_trip_rate_cents)}/trip · billed at end of month
+          {client.company_name} · {formatCurrencyCents(client.per_trip_rate_cents)}/plan · billed at end of month
         </p>
       </div>
+
+      {/* Turnaround timeline notice */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex gap-3 items-start">
+            <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                Guaranteed turnaround within 12 hours
+                <Zap className="h-3.5 w-3.5 text-primary" />
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Most fuel plans are returned much faster — depending on volume,
+                often in as little as <span className="font-medium text-foreground">30 minutes</span>.
+                You'll receive an email the moment your completed plan is ready.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Upload Card with Fuel Burns */}
       <Card>
