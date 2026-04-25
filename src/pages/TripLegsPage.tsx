@@ -45,6 +45,7 @@ import {
   Info,
 } from "lucide-react";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import WeightChipsInput from "@/components/WeightChipsInput";
 import { useDemo } from "@/contexts/DemoContext";
 import {
   Tooltip,
