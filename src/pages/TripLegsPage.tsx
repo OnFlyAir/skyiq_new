@@ -303,7 +303,7 @@ function LegEditor({
 
           <div data-demo={`leg-${leg.legNum}-weights-limits`} className="space-y-4">
           {/* Crew & Passengers */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs flex items-center gap-1 mb-1">
                 Crew Weights
@@ -314,18 +314,22 @@ function LegEditor({
                   </Tooltip>
                 </TooltipProvider>
               </Label>
-              <Input
+              <WeightChipsInput
                 value={leg.crewWeight}
-                onChange={(e) => updateField("crewWeight", e.target.value)}
-                placeholder="180, 180, 0"
+                onChange={(v) => updateField("crewWeight", v)}
+                slotLabels={["PIC", "SIC", "FA"]}
+                defaultWeight={180}
+                allowAddRemove={false}
+                addLabel="Crew"
               />
             </div>
             <div>
               <Label className="text-xs mb-1 block">Passenger Weights</Label>
-              <Input
+              <WeightChipsInput
                 value={leg.passengerWeights}
-                onChange={(e) => updateField("passengerWeights", e.target.value)}
-                placeholder="180, 200"
+                onChange={(v) => updateField("passengerWeights", v)}
+                defaultWeight={180}
+                addLabel="Passenger"
               />
             </div>
           </div>
