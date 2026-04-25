@@ -46,7 +46,7 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError, retur
     } finally {
       setLoading(false);
     }
-  }, [cycle, onBypass, onError]);
+  }, [cycle, onBypass, onError, returnUrl]);
 
   useEffect(() => {
     loadSecret();
