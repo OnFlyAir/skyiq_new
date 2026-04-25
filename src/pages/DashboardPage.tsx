@@ -119,7 +119,7 @@ export default function DashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold">Plan a Trip Demo</p>
-              <p className="text-xs text-muted-foreground">~3 min · guided</p>
+              <p className="text-xs text-muted-foreground">~1 min · guided</p>
             </div>
           </CardContent>
         </Card>
