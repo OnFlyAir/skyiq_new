@@ -626,16 +626,23 @@ export default function TripLegsPage() {
     sessionStorage.setItem(`skyiq_demo_trip_${tripId}`, JSON.stringify(tripForm));
   }, [demoActive, tripId, tripForm]);
 
-  // Demo: auto-advance from wait-for-parse step when parsing finishes
+  // Demo: auto-advance from wait-for-parse step when parsing finishes.
+  // In demo fast-path, parsing is never set true, so also advance once legs
+  // are populated and we're on this step.
   const wasParsing = useRef(false);
   useEffect(() => {
     if (parsing) {
       wasParsing.current = true;
-    } else if (wasParsing.current && demoActive && currentStep?.id === 'wait-for-parse') {
-      wasParsing.current = false;
-      setTimeout(() => nextStep(), 400);
+      return;
     }
-  }, [parsing, demoActive, currentStep, nextStep]);
+    if (!demoActive || currentStep?.id !== 'wait-for-parse') return;
+    const hasLegs = (tripForm?.legs?.length ?? 0) > 0;
+    if (wasParsing.current || hasLegs) {
+      wasParsing.current = false;
+      const t = setTimeout(() => nextStep(), 600);
+      return () => clearTimeout(t);
+    }
+  }, [parsing, demoActive, currentStep, nextStep, tripForm]);
 
   // Demo: auto-confirm all legs when reaching a step that needs the (otherwise
   // disabled) "Next: Fuel Burns" button to be clickable.
