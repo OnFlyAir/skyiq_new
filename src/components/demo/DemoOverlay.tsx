@@ -6,7 +6,10 @@ import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import PdfScrollViewer from '@/components/PdfScrollViewer';
+
+const DEV_DEMO_EMAIL = 'dev@skyiq.test';
 
 export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 
