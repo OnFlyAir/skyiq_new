@@ -13,7 +13,7 @@ export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
 export default function DemoOverlay() {
-  const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
+  const { active, flow, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -54,22 +54,29 @@ export default function DemoOverlay() {
   // ---------- Safe to early-return below this line ----------
   if (!active || !currentStep || pendingRouteAdvanceFrom) return null;
 
-  // End-of-demo handler: sign out the demo account, drop user back on the
-  // login page, and flag the signup-for-$1 CTA so it pulses to grab attention.
-  const finishAndReturnToLogin = async () => {
+  // End-of-demo handler.
+  // - Public demo (started from /login by an anonymous visitor): sign out the
+  //   demo account and route to /login with the signup-for-$1 CTA highlighted.
+  // - In-app demo (logged-in user clicked a "Run demo" button on Dashboard /
+  //   Fleet / etc.): just close the overlay and leave them where they are.
+  //   Do NOT sign them out — that was kicking real users back to the login page.
+  const finishDemo = async () => {
+    const wasPublic = flow === 'public';
     endDemo();
-    sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      /* noop — even if sign out fails we still want to land on /login */
+    if (wasPublic) {
+      sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        /* noop — even if sign out fails we still want to land on /login */
+      }
+      navigate('/login', { replace: true });
     }
-    navigate('/login', { replace: true });
   };
 
   const handleNext = () => {
     if (currentStepIndex === totalSteps - 1) {
-      void finishAndReturnToLogin();
+      void finishDemo();
       return;
     }
     if (currentStep.target && currentStep.action === 'click') {
@@ -98,7 +105,7 @@ export default function DemoOverlay() {
   };
 
   const handleSkip = () => {
-    void finishAndReturnToLogin();
+    void finishDemo();
   };
 
   const hasTarget = !!targetRect;
