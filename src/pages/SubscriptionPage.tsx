@@ -380,19 +380,9 @@ export default function SubscriptionPage() {
             )}
             {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
               <>
-                {sub.billing_cycle === 'four_weekly' && sub.pending_billing_cycle !== 'annual' && (
-                  <Button onClick={() => scheduleCycleSwitch('annual')} disabled={acting} variant="outline">
-                    Switch to annual (save 20%)
-                  </Button>
-                )}
-                {sub.billing_cycle === 'annual' && sub.pending_billing_cycle !== 'four_weekly' && (
-                  <Button onClick={() => scheduleCycleSwitch('four_weekly')} disabled={acting} variant="outline">
-                    Switch to 4-week billing
-                  </Button>
-                )}
                 {sub.stripe_customer_id && (
                   <Button onClick={openBillingPortal} disabled={acting} variant="outline" className="gap-1.5">
-                    <ExternalLink className="h-4 w-4" /> Manage billing
+                    <ExternalLink className="h-4 w-4" /> Update payment method
                   </Button>
                 )}
               </>
