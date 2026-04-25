@@ -68,8 +68,12 @@ export default function DemoOverlay() {
     // Capture flow BEFORE endDemo() resets it — otherwise the branch below
     // always sees null and falls through to the public-demo logout path.
     const wasPublic = flow === 'public';
+    // Extra safety: only ever sign out if the active session is the public
+    // sandbox account. A real logged-in user must never be signed out by
+    // closing an in-app demo, regardless of how `flow` was set.
+    const isSandboxUser = profile?.email === DEV_DEMO_EMAIL;
     endDemo();
-    if (wasPublic) {
+    if (wasPublic && isSandboxUser) {
       sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
       try {
         await supabase.auth.signOut();
