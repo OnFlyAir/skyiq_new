@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatCurrencyCents } from "@/lib/format";
 import {
   FileUp, Loader2, Plane, Clock, CheckCircle, Send, XCircle,
-  Plus, Trash2, Fuel, FileDown,
+  Plus, Trash2, Fuel, FileDown, Zap,
 } from "lucide-react";
 
 interface DfyClient {
