@@ -337,9 +337,8 @@ export default function SubscriptionPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <Stat icon={<Plane className="h-5 w-5 text-muted-foreground" />} label="Aircraft" value={aircraftCount} />
-              <Stat icon={<CreditCard className="h-5 w-5 text-muted-foreground" />} label="Billing Cycle"
-                value={sub.billing_cycle === 'annual' ? 'Annual (20% off)' : 'Every 4 weeks'} />
+              <Stat icon={<Plane className="h-5 w-5 text-muted-foreground" />} label="Aircraft on account" value={aircraftCount} />
+              <Stat icon={<FileText className="h-5 w-5 text-muted-foreground" />} label="Completed fuel plans" value={completedTrips} />
               <Stat icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
                 label={sub.status === 'trial' ? 'Trial Ends' : 'Next Billing'}
                 value={formatDate(sub.status === 'trial' ? sub.trial_ends_at : sub.current_period_end)} />
