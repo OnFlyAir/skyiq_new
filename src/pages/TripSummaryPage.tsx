@@ -248,7 +248,7 @@ export default function TripSummaryPage() {
   const overallReasoning = generateOverallReasoning(summary.legs, summary.savings, summary.maxFuelLbs ?? 0);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6 px-3 sm:p-4 pb-24 sm:pb-8">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/trips/${tripId}/fuel`)}>
