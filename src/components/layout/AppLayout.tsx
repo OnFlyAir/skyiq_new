@@ -307,6 +307,20 @@ export default function AppLayout() {
               {isAdmin ? <Shield className="h-4 w-4 shrink-0 text-primary" /> : null}
             </Link>
 
+            {!isAdmin && (
+              <Link
+                to="/subscription"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  location.pathname === '/subscription'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                }`}
+              >
+                <CreditCard className="h-4 w-4" /> Subscription
+              </Link>
+            )}
+
             <div className="flex items-center gap-2">
               <button
                 onClick={() => { endDemo(); navigate('/dashboard'); }}
