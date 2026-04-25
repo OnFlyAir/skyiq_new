@@ -62,6 +62,7 @@ export default function SubscriptionPage() {
   const [searchParams] = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [aircraftCount, setAircraftCount] = useState(0);
+  const [completedTrips, setCompletedTrips] = useState(0);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
