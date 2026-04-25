@@ -340,7 +340,7 @@ export default function AircraftEditPage() {
                     <Input
                       type="number"
                       step="any"
-                      value={formData[field.key] ?? ""}
+                     value={formData[field.key] === 0 || formData[field.key] == null ? "" : formData[field.key]}
                       onChange={(e) => updateField(field.key, e.target.value)}
                       className="h-9 w-24 text-right text-sm"
                     />
@@ -357,7 +357,7 @@ export default function AircraftEditPage() {
                     <Label className="text-xs text-muted-foreground whitespace-nowrap">{field.label}</Label>
                     <Input
                       type="number"
-                      value={formData[field.key] ?? ""}
+                      value={formData[field.key] === 0 || formData[field.key] == null ? "" : formData[field.key]}
                       onChange={(e) => updateField(field.key, e.target.value)}
                       className="h-9 w-24 text-right text-sm"
                     />
