@@ -85,16 +85,18 @@ export default function SubscriptionPage() {
 
   async function load() {
     if (!profile) return;
-    const [subRes, acRes, chargesRes] = await Promise.all([
+    const [subRes, acRes, chargesRes, tripsRes] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('user_id', profile.id).maybeSingle(),
       supabase.from('aircrafts').select('id').eq('user_company', profile.id).eq('is_enabled', true),
       (supabase.from('dfy_usage_charges' as any) as any)
         .select('amount_cents')
         .eq('user_id', profile.id)
         .eq('status', 'pending_invoice'),
+      supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_company', profile.id),
     ]);
     setSub(subRes.data as unknown as Subscription);
     setAircraftCount(acRes.data?.length ?? 0);
+    setCompletedTrips(tripsRes.count ?? 0);
     const charges = (chargesRes.data ?? []) as Array<{ amount_cents: number }>;
     setPendingAddons({
       count: charges.length,
