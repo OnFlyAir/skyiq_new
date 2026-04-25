@@ -61,6 +61,8 @@ export default function DemoOverlay() {
   //   Fleet / etc.): just close the overlay and leave them where they are.
   //   Do NOT sign them out — that was kicking real users back to the login page.
   const finishDemo = async () => {
+    // Capture flow BEFORE endDemo() resets it — otherwise the branch below
+    // always sees null and falls through to the public-demo logout path.
     const wasPublic = flow === 'public';
     endDemo();
     if (wasPublic) {
@@ -71,7 +73,10 @@ export default function DemoOverlay() {
         /* noop — even if sign out fails we still want to land on /login */
       }
       navigate('/login', { replace: true });
+      return;
     }
+    // In-app demo for a logged-in user: stay logged in, return to dashboard.
+    navigate('/dashboard', { replace: true });
   };
 
   const handleNext = () => {
