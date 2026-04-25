@@ -142,7 +142,7 @@ export default function AppLayout() {
     { label: 'Dashboard', icon: Home, to: '/dashboard', demoTarget: 'nav-dashboard' },
     { label: 'Plan a Trip', icon: Plane, to: '/trips/new', demoTarget: 'nav-plan-trip' },
     { label: 'Manage Fleet', icon: Settings, to: '/fleet', demoTarget: 'nav-fleet' },
-    { label: 'Fuel Planning (DFY)', icon: Wrench, to: '/dfy', description: '$25 / plan · billed end of month' },
+    { label: 'Fuel Planning (DFY)', icon: Wrench, to: '/dfy', description: '$25 / plan · guaranteed back in 12 hrs' },
     { label: 'Savings Accrued', icon: DollarSign, to: '/savings' },
   ];
 
