@@ -135,7 +135,6 @@ export default function AppLayout() {
     { label: 'Manage Fleet', icon: Settings, to: '/fleet', demoTarget: 'nav-fleet' },
     { label: 'Fuel Planning (DFY)', icon: Wrench, to: '/dfy', description: '$25 / plan · billed end of month' },
     { label: 'Savings Accrued', icon: DollarSign, to: '/savings' },
-    { label: 'Subscription', icon: CreditCard, to: '/subscription' },
   ];
 
   const isItemActive = (item: NavItem) =>
