@@ -23,7 +23,16 @@ import {
   FileText,
   Play,
   AlertTriangle,
+  User as UserIcon,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { LucideIcon } from 'lucide-react';
 import skyiqLogo from '@/assets/skyiq-logo-circle.png';
 import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
