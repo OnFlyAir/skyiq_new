@@ -5,6 +5,8 @@ import { useDemoTarget } from './useDemoTarget';
 import { useDemoAutoAdvance } from './useDemoAutoAdvance';
 import { DemoTooltip } from './DemoTooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
+import PdfScrollViewer from '@/components/PdfScrollViewer';
 
 export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 
@@ -14,6 +16,7 @@ export default function DemoOverlay() {
   const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const targetRect = useDemoTarget(active, currentStep);
@@ -289,11 +292,15 @@ export default function DemoOverlay() {
             maxHeight: 'calc(100vh - 220px)',
           }}
         >
-          <iframe
-            src={`${DEMO_PDF_PATH}#view=FitH`}
-            title="Sample trip itinerary"
-            className="w-full h-full"
-          />
+          {isMobile ? (
+            <PdfScrollViewer src={DEMO_PDF_PATH} title="Sample trip itinerary" />
+          ) : (
+            <iframe
+              src={`${DEMO_PDF_PATH}#view=FitH`}
+              title="Sample trip itinerary"
+              className="w-full h-full"
+            />
+          )}
         </div>
       )}
 
