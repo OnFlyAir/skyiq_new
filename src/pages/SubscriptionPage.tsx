@@ -391,6 +391,31 @@ export default function SubscriptionPage() {
         </CardContent>
       </Card>
 
+      {/* Cancel subscription via email — we don't allow self-serve cancellation. */}
+      {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Cancel your subscription</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              To cancel your plan, email us at{' '}
+              <a href="mailto:info@skyiq.net" className="font-medium text-primary hover:underline">info@skyiq.net</a>{' '}
+              and we'll take care of it within one business day.
+            </p>
+            <Button asChild variant="outline" className="gap-1.5">
+              <a
+                href={`mailto:info@skyiq.net?subject=${encodeURIComponent('I want to cancel my subscription')}&body=${encodeURIComponent(
+                  `Hi SkyIQ team,\n\nI'd like to cancel my subscription.\n\nAccount email: ${profile?.email ?? ''}\nName: ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}\nCompany: ${profile?.company ?? ''}\n\nReason (optional):\n\nThanks.`
+                )}`}
+              >
+                <Mail className="h-4 w-4" /> Email info@skyiq.net to cancel
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pricing */}
       <Card>
         <CardHeader className="pb-3">
