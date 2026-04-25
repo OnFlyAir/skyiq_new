@@ -135,7 +135,6 @@ export default function AppLayout() {
     { label: 'Manage Fleet', icon: Settings, to: '/fleet', demoTarget: 'nav-fleet' },
     { label: 'Fuel Planning (DFY)', icon: Wrench, to: '/dfy', description: '$25 / plan · billed end of month' },
     { label: 'Savings Accrued', icon: DollarSign, to: '/savings' },
-    { label: 'Subscription', icon: CreditCard, to: '/subscription' },
   ];
 
   const isItemActive = (item: NavItem) =>
@@ -307,6 +306,20 @@ export default function AppLayout() {
               </div>
               {isAdmin ? <Shield className="h-4 w-4 shrink-0 text-primary" /> : null}
             </Link>
+
+            {!isAdmin && (
+              <Link
+                to="/subscription"
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  location.pathname === '/subscription'
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                }`}
+              >
+                <CreditCard className="h-4 w-4" /> Subscription
+              </Link>
+            )}
 
             <div className="flex items-center gap-2">
               <button

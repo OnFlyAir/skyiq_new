@@ -4,7 +4,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, ExternalLink, ShieldAlert, FileText, Download } from 'lucide-react';
+import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, ExternalLink, ShieldAlert, FileText, Download, Mail } from 'lucide-react';
 import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
@@ -62,6 +62,7 @@ export default function SubscriptionPage() {
   const [searchParams] = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [aircraftCount, setAircraftCount] = useState(0);
+  const [completedTrips, setCompletedTrips] = useState(0);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [checkoutCycle, setCheckoutCycle] = useState<'four_weekly' | 'annual' | null>(null);
@@ -84,16 +85,18 @@ export default function SubscriptionPage() {
 
   async function load() {
     if (!profile) return;
-    const [subRes, acRes, chargesRes] = await Promise.all([
+    const [subRes, acRes, chargesRes, tripsRes] = await Promise.all([
       supabase.from('subscriptions').select('*').eq('user_id', profile.id).maybeSingle(),
       supabase.from('aircrafts').select('id').eq('user_company', profile.id).eq('is_enabled', true),
       (supabase.from('dfy_usage_charges' as any) as any)
         .select('amount_cents')
         .eq('user_id', profile.id)
         .eq('status', 'pending_invoice'),
+      supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_company', profile.id),
     ]);
     setSub(subRes.data as unknown as Subscription);
     setAircraftCount(acRes.data?.length ?? 0);
+    setCompletedTrips(tripsRes.count ?? 0);
     const charges = (chargesRes.data ?? []) as Array<{ amount_cents: number }>;
     setPendingAddons({
       count: charges.length,
@@ -334,9 +337,8 @@ export default function SubscriptionPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <Stat icon={<Plane className="h-5 w-5 text-muted-foreground" />} label="Aircraft" value={aircraftCount} />
-              <Stat icon={<CreditCard className="h-5 w-5 text-muted-foreground" />} label="Billing Cycle"
-                value={sub.billing_cycle === 'annual' ? 'Annual (20% off)' : 'Every 4 weeks'} />
+              <Stat icon={<Plane className="h-5 w-5 text-muted-foreground" />} label="Aircraft on account" value={aircraftCount} />
+              <Stat icon={<FileText className="h-5 w-5 text-muted-foreground" />} label="Completed fuel plans" value={completedTrips} />
               <Stat icon={<Calendar className="h-5 w-5 text-muted-foreground" />}
                 label={sub.status === 'trial' ? 'Trial Ends' : 'Next Billing'}
                 value={formatDate(sub.status === 'trial' ? sub.trial_ends_at : sub.current_period_end)} />
@@ -378,19 +380,9 @@ export default function SubscriptionPage() {
             )}
             {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
               <>
-                {sub.billing_cycle === 'four_weekly' && sub.pending_billing_cycle !== 'annual' && (
-                  <Button onClick={() => scheduleCycleSwitch('annual')} disabled={acting} variant="outline">
-                    Switch to annual (save 20%)
-                  </Button>
-                )}
-                {sub.billing_cycle === 'annual' && sub.pending_billing_cycle !== 'four_weekly' && (
-                  <Button onClick={() => scheduleCycleSwitch('four_weekly')} disabled={acting} variant="outline">
-                    Switch to 4-week billing
-                  </Button>
-                )}
                 {sub.stripe_customer_id && (
                   <Button onClick={openBillingPortal} disabled={acting} variant="outline" className="gap-1.5">
-                    <ExternalLink className="h-4 w-4" /> Manage billing
+                    <ExternalLink className="h-4 w-4" /> Update payment method
                   </Button>
                 )}
               </>
@@ -398,6 +390,31 @@ export default function SubscriptionPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Cancel subscription via email — we don't allow self-serve cancellation. */}
+      {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Cancel your subscription</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              To cancel your plan, email us at{' '}
+              <a href="mailto:info@skyiq.net" className="font-medium text-primary hover:underline">info@skyiq.net</a>{' '}
+              and we'll take care of it within one business day.
+            </p>
+            <Button asChild variant="outline" className="gap-1.5">
+              <a
+                href={`mailto:info@skyiq.net?subject=${encodeURIComponent('I want to cancel my subscription')}&body=${encodeURIComponent(
+                  `Hi SkyIQ team,\n\nI'd like to cancel my subscription.\n\nAccount email: ${profile?.email ?? ''}\nName: ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}\nCompany: ${profile?.company ?? ''}\n\nReason (optional):\n\nThanks.`
+                )}`}
+              >
+                <Mail className="h-4 w-4" /> Email info@skyiq.net to cancel
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pricing */}
       <Card>
