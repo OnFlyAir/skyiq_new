@@ -413,6 +413,7 @@ export default function OnboardingPage() {
                 ) : (
                   <StripeEmbeddedCheckout
                     cycle={cycle}
+                    returnUrl={`${window.location.origin}/dashboard?checkout=success`}
                     onBypass={() => navigate('/dashboard')}
                     onError={(msg) =>
                       toast({
