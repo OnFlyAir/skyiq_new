@@ -96,7 +96,7 @@ export default function FleetPage() {
 
         <Link
           to="/fleet/add"
-          data-demo="add-aircraft-btn"
+          data-demo="add-aircraft-tile"
           className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border p-6 transition-all hover:border-primary hover:bg-secondary/30"
         >
           <Plus className="mb-3 h-12 w-12 text-muted-foreground" />
