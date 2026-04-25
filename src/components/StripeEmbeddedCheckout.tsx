@@ -10,9 +10,10 @@ interface Props {
   cycle: 'four_weekly' | 'annual';
   onBypass?: () => void;
   onError?: (msg: string) => void;
+  returnUrl?: string;
 }
 
-export default function StripeEmbeddedCheckout({ cycle, onBypass, onError }: Props) {
+export default function StripeEmbeddedCheckout({ cycle, onBypass, onError, returnUrl }: Props) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError }: Pro
       const { data, error: fnError } = await supabase.functions.invoke('create-checkout', {
         body: {
           cycle,
-          return_url: `${window.location.origin}/subscription`,
+          return_url: returnUrl ?? `${window.location.origin}/subscription`,
           environment: getStripeEnvironment(),
         },
       });
@@ -45,7 +46,7 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError }: Pro
     } finally {
       setLoading(false);
     }
-  }, [cycle, onBypass, onError]);
+  }, [cycle, onBypass, onError, returnUrl]);
 
   useEffect(() => {
     loadSecret();
