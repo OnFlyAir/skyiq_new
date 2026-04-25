@@ -13,7 +13,7 @@ export const POST_DEMO_HIGHLIGHT_KEY = 'skyiq_post_demo_highlight_signup';
 type Placement = 'top' | 'bottom' | 'left' | 'right' | 'center';
 
 export default function DemoOverlay() {
-  const { active, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
+  const { active, flow, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, endDemo } = useDemo();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
