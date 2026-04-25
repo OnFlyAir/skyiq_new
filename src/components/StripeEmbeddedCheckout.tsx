@@ -27,7 +27,7 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError, retur
       const { data, error: fnError } = await supabase.functions.invoke('create-checkout', {
         body: {
           cycle,
-          return_url: `${window.location.origin}/subscription`,
+          return_url: returnUrl ?? `${window.location.origin}/subscription`,
           environment: getStripeEnvironment(),
         },
       });
