@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { FileText, X, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import PdfScrollViewer from "@/components/PdfScrollViewer";
 
 interface Props {
   tripId: string;
@@ -171,11 +172,15 @@ export default function ItineraryViewer({ tripId, children }: Props) {
                   </div>
                 </div>
               ) : pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full border-0"
-                  title="Itinerary PDF"
-                />
+                isMobile ? (
+                  <PdfScrollViewer src={pdfUrl} title="Itinerary PDF" />
+                ) : (
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full h-full border-0"
+                    title="Itinerary PDF"
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-full p-6 text-center">
                   <div>
