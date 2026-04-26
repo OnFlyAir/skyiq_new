@@ -87,7 +87,12 @@ export default function LoginPage() {
     setLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
-      setError(error.message);
+      const isUnconfirmed = /confirm|verify|not.*confirmed/i.test(error.message);
+      setError(
+        isUnconfirmed
+          ? 'Please verify your email first. Check your inbox for the verification link we sent when you signed up.'
+          : error.message
+      );
       setLoading(false);
     }
   }

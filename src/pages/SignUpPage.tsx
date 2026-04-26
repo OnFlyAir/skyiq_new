@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff, User, Plane } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Plane, MailCheck } from 'lucide-react';
 
 export default function SignUpPage() {
   const [firstName, setFirstName] = useState('');
@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
   const { signUp } = useAuthContext();
   const navigate = useNavigate();
 
@@ -44,22 +45,67 @@ export default function SignUpPage() {
       return;
     }
 
-    // Auto-confirm is enabled — explicitly sign in to make sure the session is
-    // established before navigating, otherwise ProtectedRoute can briefly see
-    // no user and bounce us back to /login.
+    // Try to sign in immediately. If auto-confirm is on, this succeeds and we
+    // continue to onboarding (where the $1 checkout lives). If email
+    // confirmation is required, sign-in will fail with "Email not confirmed" —
+    // in that case we show a "check your email" screen instead of looping.
     const { supabase } = await import('@/integrations/supabase/client');
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
+      const isUnconfirmed = /confirm|verify|not.*confirmed/i.test(signInError.message);
+      if (isUnconfirmed) {
+        setVerifyEmail(email);
+        setLoading(false);
+        return;
+      }
       setError(signInError.message);
       setLoading(false);
       return;
     }
 
-    // Send the new user straight into the app.
+    // Auto-confirmed: send the new user into onboarding so they hit the $1
+    // checkout step before landing in the dashboard.
     navigate('/onboarding', { replace: true });
   }
 
   const inputCls = "w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all";
+
+  if (verifyEmail) {
+    return (
+      <>
+        <div className="text-center mb-6">
+          <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <MailCheck className="w-7 h-7 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground">Check your email</h2>
+          <p className="text-sm text-muted-foreground mt-2">
+            We sent a verification link to
+          </p>
+          <p className="text-sm font-medium text-foreground mt-1">{verifyEmail}</p>
+        </div>
+        <div className="p-4 bg-secondary/50 border border-border rounded-lg text-sm text-muted-foreground space-y-2">
+          <p>
+            <strong className="text-foreground">Next step:</strong> Click the link in
+            that email to verify your account.
+          </p>
+          <p>
+            After verifying, sign in and we'll walk you through activating your
+            account for <strong className="text-foreground">$1</strong>.
+          </p>
+          <p className="text-xs">
+            Didn't get it? Check your spam folder, or wait a minute and try
+            signing in — the link can take a moment to arrive.
+          </p>
+        </div>
+        <Link
+          to="/login"
+          className="mt-6 w-full inline-flex items-center justify-center py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-all active:scale-[0.98]"
+        >
+          Go to sign in
+        </Link>
+      </>
+    );
+  }
 
   return (
     <>
