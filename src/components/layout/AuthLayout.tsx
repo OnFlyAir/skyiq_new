@@ -18,7 +18,7 @@ export default function AuthLayout() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-10 text-center text-sm text-muted-foreground relative z-10">
+      <footer className="mt-4 text-center text-sm text-muted-foreground relative z-10">
         <p>
           Need help?{' '}
           <a href="mailto:info@skyiq.net" className="text-primary hover:underline font-medium">
