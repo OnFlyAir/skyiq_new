@@ -45,18 +45,26 @@ export default function SignUpPage() {
       return;
     }
 
-    // Auto-confirm is enabled — explicitly sign in to make sure the session is
-    // established before navigating, otherwise ProtectedRoute can briefly see
-    // no user and bounce us back to /login.
+    // Try to sign in immediately. If auto-confirm is on, this succeeds and we
+    // continue to onboarding (where the $1 checkout lives). If email
+    // confirmation is required, sign-in will fail with "Email not confirmed" —
+    // in that case we show a "check your email" screen instead of looping.
     const { supabase } = await import('@/integrations/supabase/client');
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
+      const isUnconfirmed = /confirm|verify|not.*confirmed/i.test(signInError.message);
+      if (isUnconfirmed) {
+        setVerifyEmail(email);
+        setLoading(false);
+        return;
+      }
       setError(signInError.message);
       setLoading(false);
       return;
     }
 
-    // Send the new user straight into the app.
+    // Auto-confirmed: send the new user into onboarding so they hit the $1
+    // checkout step before landing in the dashboard.
     navigate('/onboarding', { replace: true });
   }
 
