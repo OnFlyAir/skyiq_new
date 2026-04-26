@@ -137,17 +137,47 @@ export default function AddAircraftPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user) return;
-    if (!tailNumber.trim()) {
-      setError('Tail number is required');
+
+    // Collect all missing required fields so we can tell the user exactly
+    // what's blocking the save instead of failing silently or one at a time.
+    const missing: string[] = [];
+    if (!selectedMfg) missing.push('Manufacturer');
+    if (!selectedPreset) missing.push('Model');
+    if (!tailNumber.trim()) missing.push('Tail Number');
+    const bew = parseFloat(basicEmptyWeight);
+    if (!basicEmptyWeight.trim() || isNaN(bew) || bew <= 0) missing.push('Empty Weight');
+
+    // Core performance values we need for any planning math.
+    const requiredPerf: Array<{ key: keyof typeof formData; label: string }> = [
+      { key: 'max_takeoff_weight', label: 'MTOW' },
+      { key: 'max_landing_weight', label: 'MLW' },
+      { key: 'max_fuel_capacity', label: 'Max Fuel' },
+      { key: 'cruise_fuel_burn', label: 'Cruise Burn' },
+    ];
+    for (const f of requiredPerf) {
+      if (!formData[f.key] || formData[f.key] <= 0) missing.push(f.label);
+    }
+
+    if (missing.length > 0) {
+      const needsExpand = missing.some((m) =>
+        ['MTOW', 'MLW', 'Max Fuel', 'Cruise Burn'].includes(m),
+      );
+      if (needsExpand) setDetailsOpen(true);
+      setError(
+        `Please fill in the following before adding this aircraft: ${missing.join(', ')}.`,
+      );
+      // Scroll the error into view so the user sees what's wrong.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
     setError('');
     setLoading(true);
 
     const payload: Record<string, any> = {
       ...formData,
       tail_number: tailNumber.trim().toUpperCase(),
-      basic_empty_weight: parseFloat(basicEmptyWeight) || 0,
+      basic_empty_weight: bew,
       manufacturer: selectedMfg,
       type: selectedPreset?.model ?? '',
       user_company: user.id,
@@ -155,8 +185,9 @@ export default function AddAircraftPage() {
 
     const { error: dbError } = await supabase.from('aircrafts').insert(payload as any);
     if (dbError) {
-      setError(dbError.message);
+      setError(`Couldn't add this aircraft: ${dbError.message}`);
       setLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       // Fire-and-forget: prorate new aircraft count to Stripe.
       supabase.functions.invoke('sync-subscription-billing', { body: {} }).catch(() => {});
