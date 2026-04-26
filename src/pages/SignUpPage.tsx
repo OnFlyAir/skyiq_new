@@ -22,14 +22,38 @@ export default function SignUpPage() {
     if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
     setLoading(true);
 
-    const { error: signUpError } = await signUp(email, password, firstName, lastName);
-    if (signUpError) { setError(signUpError.message); setLoading(false); return; }
+    const { data: signUpData, error: signUpError } = await signUp(email, password, firstName, lastName);
+    if (signUpError) {
+      // Supabase returns a clear error for already-registered emails when
+      // email confirmation is off. Surface a friendly message.
+      const msg = /already|registered|exists/i.test(signUpError.message)
+        ? 'An account with this email already exists. Please sign in instead.'
+        : signUpError.message;
+      setError(msg);
+      setLoading(false);
+      return;
+    }
+
+    // Anti-enumeration fallback: when an account already exists AND email
+    // confirmation is enabled, Supabase returns a "fake" user with an empty
+    // `identities` array instead of an error. Detect that and route to login.
+    const identities = signUpData?.user?.identities;
+    if (signUpData?.user && Array.isArray(identities) && identities.length === 0) {
+      setError('An account with this email already exists. Please sign in instead.');
+      setLoading(false);
+      return;
+    }
 
     // Auto-confirm is enabled — explicitly sign in to make sure the session is
     // established before navigating, otherwise ProtectedRoute can briefly see
     // no user and bounce us back to /login.
     const { supabase } = await import('@/integrations/supabase/client');
-    await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
 
     // Send the new user straight into the app.
     navigate('/onboarding', { replace: true });
