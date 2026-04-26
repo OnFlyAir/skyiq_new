@@ -369,8 +369,8 @@ export default function LoginPage() {
       </div>
 
       <p className="mt-6 text-sm text-center text-muted-foreground">
-        Already have an account?{' '}
-        <Link to="/login" className="text-primary font-medium hover:underline">Sign in above</Link>
+        Don&apos;t have an account?{' '}
+        <Link to="/signup?tour=1" className="text-primary font-medium hover:underline">Sign up</Link>
       </p>
     </>
   );
