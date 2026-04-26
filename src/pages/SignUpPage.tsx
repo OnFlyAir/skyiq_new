@@ -1,7 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
-import { Mail, Lock, Eye, EyeOff, User, Plane } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Plane, MailCheck } from 'lucide-react';
 
 export default function SignUpPage() {
   const [firstName, setFirstName] = useState('');
@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState<string | null>(null);
   const { signUp } = useAuthContext();
   const navigate = useNavigate();
 
