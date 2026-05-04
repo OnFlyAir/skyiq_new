@@ -41,6 +41,8 @@ export default function AdminOverviewTab() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<CompanyRow | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function loadData() {
@@ -134,18 +136,46 @@ export default function AdminOverviewTab() {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const target = pendingDelete;
+    setDeleting(true);
     setBusyId(target.userId);
-    const { error } = await supabase.functions.invoke("admin-delete-user", {
-      body: { target_user_id: target.userId },
+    const toastId = toast.loading(`Deleting ${target.email}…`, {
+      description: "Removing profile, aircraft, trips, subscription, and login.",
     });
-    setBusyId(null);
-    setPendingDelete(null);
-    if (error) {
-      toast.error("Failed to delete user", { description: error.message });
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { target_user_id: target.userId },
+      });
+      // Edge function may return a non-2xx with an error payload — surface it.
+      const apiError = (data as any)?.error;
+      if (error || apiError) {
+        const message = apiError || error?.message || "Unknown error";
+        const ctx = (error as any)?.context;
+        const status = ctx?.status ? ` (HTTP ${ctx.status})` : "";
+        toast.error(`Failed to delete ${target.email}`, {
+          id: toastId,
+          description: `${message}${status}. No changes were saved.`,
+          duration: 8000,
+        });
+        return;
+      }
+      toast.success(`Deleted ${target.email}`, {
+        id: toastId,
+        description: "All associated data has been permanently removed.",
+      });
+      setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
+      setPendingDelete(null);
+      setConfirmText("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Network error";
+      toast.error(`Failed to delete ${target.email}`, {
+        id: toastId,
+        description: `${message}. Please try again.`,
+        duration: 8000,
+      });
+    } finally {
+      setDeleting(false);
+      setBusyId(null);
     }
-    toast.success(`Deleted ${target.email}`);
-    setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
   }
 
   return (
@@ -304,22 +334,65 @@ export default function AdminOverviewTab() {
         </div>
       )}
 
-      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => {
+          if (deleting) return;
+          if (!o) {
+            setPendingDelete(null);
+            setConfirmText("");
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this user?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes <strong>{pendingDelete?.email}</strong> and all of their
-              data — profile, aircraft, trips, subscription, and login. This cannot be undone.
+            <AlertDialogTitle className="text-destructive">
+              Permanently delete {pendingDelete?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will <strong>permanently remove</strong> the account for{" "}
+                  <strong>{pendingDelete?.name || pendingDelete?.email}</strong>
+                  {pendingDelete?.company ? <> at <strong>{pendingDelete.company}</strong></> : null}.
+                  This action cannot be undone.
+                </p>
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <div className="font-medium mb-1 text-destructive">The following will be deleted:</div>
+                  <ul className="list-disc pl-5 space-y-0.5 text-muted-foreground">
+                    <li>Login &amp; profile</li>
+                    <li>{pendingDelete?.tailNumbers ?? 0} aircraft in fleet</li>
+                    <li>{pendingDelete?.tripsRun ?? 0} saved trips</li>
+                    <li>Subscription &amp; billing history</li>
+                  </ul>
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Type <code className="px-1 py-0.5 bg-muted rounded">DELETE</code> to confirm
+                  </label>
+                  <Input
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    autoComplete="off"
+                    disabled={deleting}
+                  />
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deleting || confirmText !== "DELETE"}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete user
+              {deleting ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deleting…</>
+              ) : (
+                <>Delete user permanently</>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
