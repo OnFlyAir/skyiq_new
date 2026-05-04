@@ -170,11 +170,9 @@ export default function DemoOverlay() {
     // PDF preview step: dock the tooltip just below the PDF panel so it sits
     // close to the itinerary instead of floating at the bottom of the screen.
     if (currentStep.id === 'preview-itinerary-pdf') {
-      // Desktop: dock to the LEFT of the centered PDF so the tooltip never
-      // overlaps the document. Mobile: keep it docked at the top, full width.
       return isMobile
-        ? { position: 'fixed', left: safeLeft, right: safeRight, top: safeTopDock, width: 'auto' }
-        : { position: 'fixed', left: 'max(16px, calc(50% - 360px - 200px))', top: safeTopDock, width: 320 };
+        ? { position: 'fixed', left: safeLeft, right: safeRight, top: safeTopDock, width: 'auto', maxHeight: '40vh', overflow: 'auto' }
+        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: safeTopDock, width: 360 };
     }
 
     // 'center' placement always centers tooltip on screen, regardless of target
