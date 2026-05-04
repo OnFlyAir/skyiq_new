@@ -67,6 +67,7 @@ export function useAuth() {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/login`,
         data: {
           first_name: firstName,
           last_name: lastName,
@@ -88,7 +89,9 @@ export function useAuth() {
   }
 
   async function resetPassword(email: string) {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     return { data, error };
   }
 
