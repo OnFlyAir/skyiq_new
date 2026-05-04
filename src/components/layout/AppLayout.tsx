@@ -60,12 +60,13 @@ export default function AppLayout() {
   const [recentTrips, setRecentTrips] = useState<{ id: number; itinerary_num: string | null; created_on: string | null }[]>([]);
   useEffect(() => {
     if (!profile) return;
-    supabase
+    (supabase
       .from('trips')
-      .select('id, itinerary_num, created_on')
+      .select('id, itinerary_num, created_on') as any)
+      .eq('is_demo', false)
       .order('created_on', { ascending: false })
       .limit(5)
-      .then(({ data }) => { if (data) setRecentTrips(data); });
+      .then(({ data }: { data: any }) => { if (data) setRecentTrips(data); });
   }, [profile]);
 
   // Admin: track unacknowledged billing email failures for sidebar badge
