@@ -26,11 +26,13 @@ export default function SignUpPage() {
 
     const { data: signUpData, error: signUpError } = await signUp(email, password, firstName, lastName);
     if (signUpError) {
-      // Supabase returns a clear error for already-registered emails when
-      // email confirmation is off. Surface a friendly message.
-      const msg = /already|registered|exists/i.test(signUpError.message)
-        ? 'An account with this email already exists. Please sign in instead.'
-        : signUpError.message;
+      const raw = signUpError.message || '';
+      let msg = raw;
+      if (/already|registered|exists/i.test(raw)) {
+        msg = 'An account with this email already exists. Please sign in instead.';
+      } else if (/weak|pwned|leaked|known|easy to guess|breach/i.test(raw)) {
+        msg = 'That password has appeared in a known data breach. Please choose a more unique password — try a longer passphrase or add uncommon words/symbols.';
+      }
       setError(msg);
       setLoading(false);
       return;
