@@ -137,6 +137,12 @@ export default function AdminOverviewTab() {
       return;
     }
     toast.success(c.billingExempt ? "Billing re-enabled" : "Billing disabled (exempt)");
+    void logAdminAction({
+      action: c.billingExempt ? "user.billing_exempt_off" : "user.billing_exempt_on",
+      targetUserId: c.userId,
+      targetLabel: c.email,
+      details: { company: c.company, previous: c.billingExempt, next: !c.billingExempt },
+    });
     setCompanies((prev) => prev.map((r) => r.userId === c.userId ? { ...r, billingExempt: !c.billingExempt } : r));
   }
 
