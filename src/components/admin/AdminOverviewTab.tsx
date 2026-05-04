@@ -136,18 +136,46 @@ export default function AdminOverviewTab() {
   async function confirmDelete() {
     if (!pendingDelete) return;
     const target = pendingDelete;
+    setDeleting(true);
     setBusyId(target.userId);
-    const { error } = await supabase.functions.invoke("admin-delete-user", {
-      body: { target_user_id: target.userId },
+    const toastId = toast.loading(`Deleting ${target.email}…`, {
+      description: "Removing profile, aircraft, trips, subscription, and login.",
     });
-    setBusyId(null);
-    setPendingDelete(null);
-    if (error) {
-      toast.error("Failed to delete user", { description: error.message });
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { target_user_id: target.userId },
+      });
+      // Edge function may return a non-2xx with an error payload — surface it.
+      const apiError = (data as any)?.error;
+      if (error || apiError) {
+        const message = apiError || error?.message || "Unknown error";
+        const ctx = (error as any)?.context;
+        const status = ctx?.status ? ` (HTTP ${ctx.status})` : "";
+        toast.error(`Failed to delete ${target.email}`, {
+          id: toastId,
+          description: `${message}${status}. No changes were saved.`,
+          duration: 8000,
+        });
+        return;
+      }
+      toast.success(`Deleted ${target.email}`, {
+        id: toastId,
+        description: "All associated data has been permanently removed.",
+      });
+      setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
+      setPendingDelete(null);
+      setConfirmText("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Network error";
+      toast.error(`Failed to delete ${target.email}`, {
+        id: toastId,
+        description: `${message}. Please try again.`,
+        duration: 8000,
+      });
+    } finally {
+      setDeleting(false);
+      setBusyId(null);
     }
-    toast.success(`Deleted ${target.email}`);
-    setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
   }
 
   return (
