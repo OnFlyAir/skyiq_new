@@ -77,32 +77,41 @@ export default function PdfScrollViewer({ src, title, className = "" }: PdfScrol
       for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
         if (cancelled) return;
 
-        const page = (await pdfDocument.getPage(pageNumber)) as {
-          getViewport: (options: { scale: number }) => { width: number; height: number };
-          render: (options: {
-            canvasContext: CanvasRenderingContext2D;
-            viewport: { width: number; height: number };
-          }) => { promise: Promise<unknown>; cancel?: () => void };
-        };
-        const canvas = canvasRefs.current[pageNumber];
-        const context = canvas?.getContext("2d");
-        if (!canvas || !context) continue;
+        try {
+          const page = (await pdfDocument.getPage(pageNumber)) as {
+            getViewport: (options: { scale: number }) => { width: number; height: number };
+            render: (options: {
+              canvasContext: CanvasRenderingContext2D;
+              viewport: { width: number; height: number };
+            }) => { promise: Promise<unknown>; cancel?: () => void };
+          };
+          const canvas = canvasRefs.current[pageNumber];
+          const context = canvas?.getContext("2d");
+          if (!canvas || !context) continue;
 
-        const baseViewport = page.getViewport({ scale: 1 });
-        const availableWidth = Math.max(120, containerWidth - 24);
-        const scale = availableWidth / baseViewport.width;
-        const viewport = page.getViewport({ scale });
-        const outputScale = window.devicePixelRatio || 1;
+          const baseViewport = page.getViewport({ scale: 1 });
+          const availableWidth = Math.max(120, containerWidth - 24);
+          const scale = availableWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale });
+          const outputScale = window.devicePixelRatio || 1;
 
-        canvas.width = Math.floor(viewport.width * outputScale);
-        canvas.height = Math.floor(viewport.height * outputScale);
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
 
-        context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
-        const renderTask = page.render({ canvasContext: context, viewport });
-        renderTasks.push(renderTask);
-        await renderTask.promise;
+          context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+          const renderTask = page.render({ canvasContext: context, viewport });
+          renderTasks.push(renderTask);
+          await renderTask.promise;
+
+          // Hide the loading overlay as soon as page 1 is ready so the
+          // remaining pages render visibly underneath.
+          if (pageNumber === 1 && !cancelled) setLoading(false);
+        } catch (err) {
+          // Don't abort the whole document if a single page fails.
+          console.warn(`[PdfScrollViewer] page ${pageNumber} failed`, err);
+        }
       }
 
       if (!cancelled) setLoading(false);
