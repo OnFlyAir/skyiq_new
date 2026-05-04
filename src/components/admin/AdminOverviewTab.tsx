@@ -41,6 +41,8 @@ export default function AdminOverviewTab() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [pendingDelete, setPendingDelete] = useState<CompanyRow | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function loadData() {
