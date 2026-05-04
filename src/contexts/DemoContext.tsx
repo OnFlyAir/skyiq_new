@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type DemoFlow = 'fleet' | 'trip' | 'public';
 
@@ -383,6 +384,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(DEMO_FLOW_KEY);
     sessionStorage.removeItem(PUBLIC_DEMO_SESSION_KEY);
     localStorage.setItem('skyiq_walkthrough_completed', 'true');
+
+    // Fire-and-forget cleanup of any demo trips this signed-in user created
+    // during the walkthrough. RLS scopes the delete to their own rows.
+    (async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) return;
+        await (supabase.from('trips') as any)
+          .delete()
+          .eq('user_company', uid)
+          .eq('is_demo', true);
+      } catch {
+        // Non-blocking: a stale demo trip will still be hidden by is_demo filters.
+      }
+    })();
   }, []);
 
   const goToStep = useCallback((index: number) => {
