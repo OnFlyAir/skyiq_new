@@ -160,7 +160,8 @@ export default function NewTripPage() {
           legs: [],
         },
         savings: 0,
-      })
+        is_demo: demoActive,
+      } as any)
       .select("id")
       .single();
 
