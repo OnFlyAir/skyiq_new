@@ -671,7 +671,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_delete_user_data: { Args: { _target: string }; Returns: undefined }
+      admin_delete_user_data:
+        | { Args: { _target: string }; Returns: undefined }
+        | { Args: { _caller?: string; _target: string }; Returns: undefined }
       calculate_subscription_price: {
         Args: { plane_count: number }
         Returns: number

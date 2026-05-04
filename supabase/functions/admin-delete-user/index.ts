@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     }
 
     // Wipe app data first (RPC also re-checks is_admin() server-side).
-    const { error: dataErr } = await admin.rpc('admin_delete_user_data', { _target: targetId });
+    const { error: dataErr } = await admin.rpc('admin_delete_user_data', { _target: targetId, _caller: callerId });
     if (dataErr) throw dataErr;
 
     const { error: authDeleteErr } = await admin.auth.admin.deleteUser(targetId);
@@ -120,11 +120,11 @@ Deno.serve(async (req) => {
     outcome = 'success';
     return json(200, { ok: true });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
     reason = message;
     outcome = 'error';
-    console.error('admin-delete-user error:', message);
-    return json(500, { error: 'Internal error' });
+    console.error('admin-delete-user error:', message, err);
+    return json(500, { error: message || 'Internal error' });
   } finally {
     // Best-effort audit log; never block the response on this.
     try {
