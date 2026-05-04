@@ -144,11 +144,34 @@ Deno.serve(async (req) => {
       };
     } else {
       // Returning user upgrading to a real recurring plan.
+      // Recurring subs MUST have aircraft on file — otherwise pricing is
+      // meaningless and Stripe would show a misleading $1/yr line item.
+      if (aircraftCount <= 0) {
+        return new Response(JSON.stringify({
+          error: 'Please add at least one aircraft to your fleet before activating a recurring subscription.',
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const intervalParams = cycle === 'annual'
         ? { 'line_items[0][price_data][recurring][interval]': 'year',
             'line_items[0][price_data][recurring][interval_count]': 1 }
         : { 'line_items[0][price_data][recurring][interval]': 'day',
             'line_items[0][price_data][recurring][interval_count]': 28 };
+
+      // Human-readable per-tail breakdown so the customer sees exactly how
+      // their monthly / annual price was calculated.
+      const dollars = (cents: number) => (cents / 100).toFixed(2);
+      const fourWeeklyCents = calcPriceCents(aircraftCount, 'four_weekly');
+      const annualCents = calcPriceCents(aircraftCount, 'annual');
+      const planName = cycle === 'annual'
+        ? `SkyIQ Annual — ${aircraftCount} aircraft`
+        : `SkyIQ 4-Weekly — ${aircraftCount} aircraft`;
+      const planDescription = cycle === 'annual'
+        ? `$${dollars(annualCents)} per year for ${aircraftCount} aircraft (20% annual discount). Equivalent to $${dollars(fourWeeklyCents)} every 4 weeks.`
+        : `$${dollars(fourWeeklyCents)} every 4 weeks for ${aircraftCount} aircraft. Switch to annual anytime to save 20%.`;
 
       sessionParams = {
         mode: 'subscription',
@@ -157,8 +180,8 @@ Deno.serve(async (req) => {
         return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
         'line_items[0][quantity]': 1,
         'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]':
-          cycle === 'annual' ? 'SkyIQ — Annual subscription' : 'SkyIQ — 4-Week subscription',
+        'line_items[0][price_data][product_data][name]': planName,
+        'line_items[0][price_data][product_data][description]': planDescription,
         'line_items[0][price_data][unit_amount]': amountCents,
         ...intervalParams,
         'metadata[user_id]': user.id,
@@ -166,6 +189,7 @@ Deno.serve(async (req) => {
         'metadata[aircraft_count]': aircraftCount,
         'subscription_data[metadata][user_id]': user.id,
         'subscription_data[metadata][cycle]': cycle,
+        'subscription_data[metadata][aircraft_count]': aircraftCount,
       };
     }
 
