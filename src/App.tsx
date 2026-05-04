@@ -33,6 +33,7 @@ import TripEmailPage from "@/pages/TripEmailPage";
 import SavingsPage from "@/pages/SavingsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminUserFleetPage from "@/pages/AdminUserFleetPage";
 import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
 import AdminDfyPage from "@/pages/AdminDfyPage";
 import AdminEmailLogPage from "@/pages/AdminEmailLogPage";
