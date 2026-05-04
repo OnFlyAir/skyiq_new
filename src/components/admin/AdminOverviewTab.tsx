@@ -175,6 +175,17 @@ export default function AdminOverviewTab() {
         id: toastId,
         description: "All associated data has been permanently removed.",
       });
+      void logAdminAction({
+        action: "user.delete",
+        targetUserId: target.userId,
+        targetLabel: target.email,
+        details: {
+          company: target.company,
+          name: target.name,
+          aircraft_count: target.tailNumbers,
+          trips_count: target.tripsRun,
+        },
+      });
       setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
       setPendingDelete(null);
       setConfirmText("");
