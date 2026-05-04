@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import AdminOverviewTab from "@/components/admin/AdminOverviewTab";
 import AdminOnflyTab from "@/components/admin/AdminOnflyTab";
+import AdminAuditLogTab from "@/components/admin/AdminAuditLogTab";
 import {
   Shield, Users, Plane, TrendingUp, CreditCard,
-  Wrench, Database, BarChart3,
+  Wrench, Database, BarChart3, ScrollText,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
