@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { Mail, Lock, Eye, EyeOff, User, Plane, MailCheck } from 'lucide-react';
 
@@ -52,19 +53,24 @@ export default function SignUpPage() {
     const { supabase } = await import('@/integrations/supabase/client');
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
-      const isUnconfirmed = /confirm|verify|not.*confirmed/i.test(signInError.message);
-      if (isUnconfirmed) {
-        setVerifyEmail(email);
-        setLoading(false);
-        return;
-      }
-      setError(signInError.message);
+      // Account was created but we can't sign in yet. The two common reasons
+      // are (1) email confirmation is required, or (2) the auth row hasn't
+      // propagated to the session endpoint yet. Either way, treat it as a
+      // successful signup that needs email verification — never dump the user
+      // on a silent login screen.
+      setVerifyEmail(email);
       setLoading(false);
+      toast.success('Account created!', {
+        description: `Check ${email} to verify your account, then sign in.`,
+      });
       return;
     }
 
     // Auto-confirmed: send the new user into onboarding so they hit the $1
     // checkout step before landing in the dashboard.
+    toast.success(`Welcome, ${firstName || 'pilot'}! Your account is ready.`, {
+      description: 'Let\'s get you set up.',
+    });
     navigate('/onboarding', { replace: true });
   }
 
