@@ -227,6 +227,58 @@ export default function AddAircraftPage() {
         <Card>
           <CardContent className="pt-5 space-y-4">
             <div className="space-y-1.5">
+        {/* Aircraft Selection */}
+        <Card>
+          <CardContent className="pt-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {customMode ? 'Custom Aircraft' : 'Aircraft'}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-primary hover:text-primary"
+                onClick={() => {
+                  setCustomMode((v) => !v);
+                  setSelectedMfg('');
+                  setSelectedPreset(null);
+                  setCustomMfg('');
+                  setCustomModel('');
+                  setDetailsOpen(true);
+                }}
+              >
+                {customMode ? 'Use preset list' : "Can't find it? Add custom"}
+              </Button>
+            </div>
+
+            {customMode ? (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Manufacturer</Label>
+                  <Input
+                    value={customMfg}
+                    onChange={(e) => setCustomMfg(e.target.value)}
+                    placeholder="e.g. Pilatus"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Model</Label>
+                  <Input
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                    placeholder="e.g. PC-24"
+                    className="h-11"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  You'll enter performance values manually below. Double-check against your AFM.
+                </p>
+              </>
+            ) : (
+              <>
+            <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Manufacturer</Label>
               <Popover open={mfgOpen} onOpenChange={setMfgOpen} data-demo="manufacturer-select">
                 <PopoverTrigger asChild>
@@ -250,7 +302,23 @@ export default function AddAircraftPage() {
                   <Command>
                     <CommandInput placeholder="Search…" />
                     <CommandList className="max-h-[min(50vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain">
-                      <CommandEmpty>No match.</CommandEmpty>
+                      <CommandEmpty>
+                        <div className="p-3 text-center space-y-2">
+                          <p className="text-sm text-muted-foreground">No match found.</p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setMfgOpen(false);
+                              setCustomMode(true);
+                              setDetailsOpen(true);
+                            }}
+                          >
+                            Add custom aircraft
+                          </Button>
+                        </div>
+                      </CommandEmpty>
                       <CommandGroup>
                         {manufacturers.map((mfg) => (
                           <CommandItem
@@ -302,7 +370,24 @@ export default function AddAircraftPage() {
                     <Command>
                       <CommandInput placeholder="Search…" />
                       <CommandList className="max-h-[min(50vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain">
-                        <CommandEmpty>No match.</CommandEmpty>
+                        <CommandEmpty>
+                          <div className="p-3 text-center space-y-2">
+                            <p className="text-sm text-muted-foreground">Model not listed.</p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setModelOpen(false);
+                                setCustomMode(true);
+                                setCustomMfg(selectedMfg);
+                                setDetailsOpen(true);
+                              }}
+                            >
+                              Add custom model
+                            </Button>
+                          </div>
+                        </CommandEmpty>
                         <CommandGroup>
                           {models.map((preset) => {
                             const isTarget = preset.model === 'Citation CJ3 (C525B)';
@@ -335,6 +420,8 @@ export default function AddAircraftPage() {
                   </PopoverContent>
                 </Popover>
               </div>
+            )}
+              </>
             )}
           </CardContent>
         </Card>
