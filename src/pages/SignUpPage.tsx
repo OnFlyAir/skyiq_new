@@ -66,6 +66,9 @@ export default function SignUpPage() {
 
     // Auto-confirmed: send the new user into onboarding so they hit the $1
     // checkout step before landing in the dashboard.
+    toast.success(`Welcome, ${firstName || 'pilot'}! Your account is ready.`, {
+      description: 'Let\'s get you set up.',
+    });
     navigate('/onboarding', { replace: true });
   }
 
