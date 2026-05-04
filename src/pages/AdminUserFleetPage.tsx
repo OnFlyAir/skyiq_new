@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Loader2, Plane, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { logAdminAction } from "@/lib/adminAudit";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -80,6 +81,12 @@ export default function AdminUserFleetPage() {
     }
     setAircraft((prev) => prev.map((r) => r.id === a.id ? { ...r, is_enabled: !a.is_enabled } : r));
     toast.success(a.is_enabled ? `${a.tail_number} disabled` : `${a.tail_number} enabled`);
+    void logAdminAction({
+      action: a.is_enabled ? "fleet.aircraft_disable" : "fleet.aircraft_enable",
+      targetUserId: userId ?? null,
+      targetLabel: target?.email ?? null,
+      details: { aircraft_id: a.id, tail_number: a.tail_number },
+    });
   }
 
   async function confirmDelete() {
@@ -95,6 +102,12 @@ export default function AdminUserFleetPage() {
     }
     setAircraft((prev) => prev.filter((r) => r.id !== a.id));
     toast.success(`${a.tail_number} removed`);
+    void logAdminAction({
+      action: "fleet.aircraft_delete",
+      targetUserId: userId ?? null,
+      targetLabel: target?.email ?? null,
+      details: { aircraft_id: a.id, tail_number: a.tail_number, manufacturer: a.manufacturer, type: a.type },
+    });
   }
 
   return (

@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import AdminOverviewTab from "@/components/admin/AdminOverviewTab";
 import AdminOnflyTab from "@/components/admin/AdminOnflyTab";
+import AdminAuditLogTab from "@/components/admin/AdminAuditLogTab";
 import {
   Shield, Users, Plane, TrendingUp, CreditCard,
-  Wrench, Database, BarChart3,
+  Wrench, Database, BarChart3, ScrollText,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
@@ -19,7 +20,8 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = profile?.role_name === "Admin";
-  const activeTab = searchParams.get("tab") === "onfly" ? "onfly" : "overview";
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "onfly" || tabParam === "audit" ? tabParam : "overview";
 
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -145,6 +147,9 @@ export default function AdminDashboardPage() {
           <TabsTrigger value="onfly">
             <Database className="h-4 w-4 mr-1" /> OnFly Data
           </TabsTrigger>
+          <TabsTrigger value="audit">
+            <ScrollText className="h-4 w-4 mr-1" /> Audit Log
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -153,6 +158,10 @@ export default function AdminDashboardPage() {
 
         <TabsContent value="onfly">
           <AdminOnflyTab />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <AdminAuditLogTab />
         </TabsContent>
       </Tabs>
     </div>
