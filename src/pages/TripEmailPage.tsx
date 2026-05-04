@@ -65,13 +65,22 @@ export default function TripEmailPage() {
         .eq("user_id", user.id)
         .single();
 
+      const userEmail = user.email ?? "";
+
       if (emailList?.emails) {
         const saved = (emailList.emails as unknown as EmailEntry[])
           .slice(0, 10)
-          .map((e) => ({ ...e, isChecked: false }));
-        if (saved.length > 0) {
-          setEmails([...saved, { email: "", isChecked: true }]);
-        }
+          .map((e) => ({ ...e, isChecked: e.email === userEmail }));
+        const hasUser = saved.some((e) => e.email === userEmail);
+        const rows = hasUser || !userEmail
+          ? saved
+          : [{ email: userEmail, isChecked: true }, ...saved];
+        setEmails([...rows, { email: "", isChecked: false }]);
+      } else if (userEmail) {
+        setEmails([
+          { email: userEmail, isChecked: true },
+          { email: "", isChecked: false },
+        ]);
       }
 
       setLoading(false);
