@@ -1,0 +1,2 @@
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS is_demo boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_trips_company_not_demo ON public.trips (user_company, created_on DESC) WHERE is_demo = false;
