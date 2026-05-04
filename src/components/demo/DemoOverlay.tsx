@@ -323,8 +323,8 @@ export default function DemoOverlay() {
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            // Reserve room for the top-docked tooltip (~250px incl. safe area).
-            top: 'calc(env(safe-area-inset-top, 0px) + 260px)',
+            // Reserve room for the top-docked tooltip (varies by content/safe area).
+            top: 'calc(env(safe-area-inset-top, 0px) + 320px)',
             width: 'min(720px, calc(100vw - 16px))',
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           }}
