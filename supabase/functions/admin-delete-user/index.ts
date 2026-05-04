@@ -120,11 +120,11 @@ Deno.serve(async (req) => {
     outcome = 'success';
     return json(200, { ok: true });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
     reason = message;
     outcome = 'error';
-    console.error('admin-delete-user error:', message);
-    return json(500, { error: 'Internal error' });
+    console.error('admin-delete-user error:', message, err);
+    return json(500, { error: message || 'Internal error' });
   } finally {
     // Best-effort audit log; never block the response on this.
     try {
