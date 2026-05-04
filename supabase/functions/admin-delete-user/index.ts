@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     }
 
     // Wipe app data first (RPC also re-checks is_admin() server-side).
-    const { error: dataErr } = await admin.rpc('admin_delete_user_data', { _target: targetId });
+    const { error: dataErr } = await admin.rpc('admin_delete_user_data', { _target: targetId, _caller: callerId });
     if (dataErr) throw dataErr;
 
     const { error: authDeleteErr } = await admin.auth.admin.deleteUser(targetId);
