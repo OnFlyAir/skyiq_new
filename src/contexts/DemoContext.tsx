@@ -95,6 +95,7 @@ export const FLEET_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'aircraft-saved',
@@ -133,6 +134,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'wait-for-parse',
@@ -192,6 +194,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'review-starting-fuel',
@@ -226,6 +229,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'explain-strategy',
@@ -252,6 +256,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'demo-complete',
@@ -291,6 +296,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-data-pulled',
@@ -317,6 +323,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-optimizer',
@@ -335,6 +342,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-complete',
