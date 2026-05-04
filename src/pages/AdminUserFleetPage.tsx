@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Loader2, Plane, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { logAdminAction } from "@/lib/adminAudit";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
