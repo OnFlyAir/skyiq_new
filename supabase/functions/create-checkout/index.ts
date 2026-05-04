@@ -121,7 +121,11 @@ Deno.serve(async (req) => {
       'line_items[0][quantity]': 1,
       'line_items[0][price_data][currency]': 'usd',
       'line_items[0][price_data][product_data][name]':
-        cycle === 'annual' ? 'SkyIQ — Annual' : 'SkyIQ — 4-Week',
+        cycle === 'annual'
+          ? 'SkyIQ — Annual subscription'
+          : (isFirstTrial
+              ? 'SkyIQ — subscription (after $1 trial)'
+              : 'SkyIQ — 4-Week subscription'),
       'line_items[0][price_data][unit_amount]': amountCents,
       ...intervalParams,
       'metadata[user_id]': user.id,
@@ -140,7 +144,7 @@ Deno.serve(async (req) => {
       sessionParams['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
       sessionParams['line_items[1][quantity]'] = 1;
       sessionParams['line_items[1][price_data][currency]'] = 'usd';
-      sessionParams['line_items[1][price_data][product_data][name]'] = 'SkyIQ — 4-week trial access';
+      sessionParams['line_items[1][price_data][product_data][name]'] = 'SkyIQ — $1 for the first 4 weeks';
       sessionParams['line_items[1][price_data][unit_amount]'] = 100;
     }
 
