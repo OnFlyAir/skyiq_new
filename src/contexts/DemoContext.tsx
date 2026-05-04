@@ -17,6 +17,8 @@ export interface DemoStep {
   requireAction?: boolean;
   /** When user clicks Next on the tooltip, also click this data-demo target (e.g. to advance the page). */
   clickOnNext?: string;
+  /** When user clicks Back, skip over this step (it performed a side-effect like creating a trip). */
+  skipOnBack?: boolean;
 }
 
 interface DemoContextType {
