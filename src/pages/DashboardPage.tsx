@@ -94,35 +94,45 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Card
-          className="cursor-pointer border-primary/30 bg-primary/5 transition-all hover:border-primary/60 hover:bg-primary/10"
-          onClick={() => { startDemo('fleet'); navigate('/fleet'); }}
-        >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Play className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Add an Aircraft Demo</p>
-              <p className="text-xs text-muted-foreground">~1 min · guided</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card
-          className="cursor-pointer border-primary/30 bg-primary/5 transition-all hover:border-primary/60 hover:bg-primary/10"
-          onClick={() => { startDemo('trip'); navigate('/trips/new'); }}
-        >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Play className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Plan a Trip Demo</p>
-              <p className="text-xs text-muted-foreground">~1 min · guided</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Try a guided demo — see SkyIQ in action
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Card
+            className="group relative cursor-pointer overflow-hidden border-2 border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-primary/30"
+            onClick={() => { startDemo('fleet'); navigate('/fleet'); }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
+            <CardContent className="relative flex items-center gap-3 p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30">
+                <Play className="h-6 w-6 fill-current" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-foreground">Add an Aircraft Demo</p>
+                <p className="text-xs text-primary/80 font-medium">▶ Start tour · ~1 min</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card
+            className="group relative cursor-pointer overflow-hidden border-2 border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 shadow-lg shadow-primary/10 transition-all hover:scale-[1.02] hover:border-primary hover:shadow-primary/30"
+            onClick={() => { startDemo('trip'); navigate('/trips/new'); }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
+            <CardContent className="relative flex items-center gap-3 p-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30">
+                <Play className="h-6 w-6 fill-current" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-foreground">Plan a Trip Demo</p>
+                <p className="text-xs text-primary/80 font-medium">▶ Start tour · ~1 min</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {isFirstRun ? (
