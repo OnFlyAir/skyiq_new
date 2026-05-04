@@ -302,6 +302,7 @@ export default function DemoOverlay() {
   return (
     <div className={`fixed inset-0 ${containerZ} pointer-events-none`}>
       {renderOverlay()}
+      <DemoProgressIndicator />
 
       {/* Spotlight ring — smooth transition + soft glow instead of pulse to avoid wobble */}
       {hasTarget && (
