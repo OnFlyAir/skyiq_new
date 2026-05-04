@@ -171,7 +171,7 @@ export default function DemoOverlay() {
     // close to the itinerary instead of floating at the bottom of the screen.
     if (currentStep.id === 'preview-itinerary-pdf') {
       return isMobile
-        ? { position: 'fixed', left: safeLeft, right: safeRight, top: safeTopDock, width: 'auto' }
+        ? { position: 'fixed', left: safeLeft, right: safeRight, top: safeTopDock, width: 'auto', maxHeight: '40vh', overflow: 'auto' }
         : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: safeTopDock, width: 360 };
     }
 
@@ -323,8 +323,8 @@ export default function DemoOverlay() {
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            // Reserve room for the top-docked tooltip (~250px incl. safe area).
-            top: 'calc(env(safe-area-inset-top, 0px) + 260px)',
+            // Reserve room for the top-docked tooltip (varies by content/safe area).
+            top: 'calc(env(safe-area-inset-top, 0px) + 320px)',
             width: 'min(720px, calc(100vw - 16px))',
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           }}
