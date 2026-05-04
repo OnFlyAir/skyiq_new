@@ -365,24 +365,24 @@ function LegEditor({
 
           {/* Weight Limits */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end">
-            <div className="flex flex-col">
-              <Label className="text-xs whitespace-nowrap truncate mb-1 h-4">Max Takeoff (lbs)</Label>
+            <div className="flex flex-col min-w-0">
+              <Label className="text-xs leading-tight mb-1 min-h-[2rem] flex items-end">Max Takeoff (lbs)</Label>
               <Input
                 type="number"
                 value={leg.maxTakeoffWeight || ""}
                 onChange={(e) => updateField("maxTakeoffWeight", parseFloat(e.target.value) || 0)}
               />
             </div>
-            <div className="flex flex-col">
-              <Label className="text-xs whitespace-nowrap truncate mb-1 h-4">Max Landing (lbs)</Label>
+            <div className="flex flex-col min-w-0">
+              <Label className="text-xs leading-tight mb-1 min-h-[2rem] flex items-end">Max Landing (lbs)</Label>
               <Input
                 type="number"
                 value={leg.maxLandingWeight || ""}
                 onChange={(e) => updateField("maxLandingWeight", parseFloat(e.target.value) || 0)}
               />
             </div>
-            <div className="flex flex-col">
-              <Label className="text-xs whitespace-nowrap truncate mb-1 h-4">Max Ramp (lbs)</Label>
+            <div className="flex flex-col min-w-0">
+              <Label className="text-xs leading-tight mb-1 min-h-[2rem] flex items-end">Max Ramp (lbs)</Label>
               <Input
                 type="number"
                 value={leg.maxRampWeight || ""}
