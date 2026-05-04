@@ -122,9 +122,14 @@ export default function ItineraryViewer({ tripId, children }: Props) {
           minimized
             ? "bottom-4 right-4 w-12 h-12"
             : isMobile
-              ? "inset-2 top-14"
+              ? "left-2 right-2 top-14"
               : "top-16 right-4 w-[560px] h-[calc(100vh-5rem)]"
         } flex flex-col rounded-xl border bg-card shadow-2xl overflow-hidden`}
+        style={
+          minimized || !isMobile
+            ? undefined
+            : { bottom: `calc(env(safe-area-inset-bottom, 0px) + 0.5rem)` }
+        }
       >
         {minimized ? (
           <button
