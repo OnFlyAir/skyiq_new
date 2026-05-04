@@ -319,8 +319,9 @@ function LegEditor({
                 onChange={(v) => updateField("crewWeight", v)}
                 slotLabels={["PIC", "SIC", "FA"]}
                 defaultWeight={180}
-                allowAddRemove={false}
-                addLabel="Crew"
+                slotMode
+                requiredSlotIndex={0}
+                addLabel="Add crew"
               />
             </div>
             <div>
