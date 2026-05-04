@@ -88,11 +88,24 @@ export default {
           "50%": { transform: "translateX(60%)", width: "60%" },
           "100%": { transform: "translateX(200%)", width: "40%" },
         },
+        // Subliminal attention pulse for the public Try Demo CTA.
+        // Slow, low-intensity glow — meant to be felt rather than seen.
+        "subtle-attention": {
+          "0%, 100%": {
+            boxShadow: "0 0 0 0 hsl(var(--primary) / 0)",
+            backgroundColor: "hsl(var(--primary) / 0.10)",
+          },
+          "50%": {
+            boxShadow: "0 0 0 6px hsl(var(--primary) / 0.10)",
+            backgroundColor: "hsl(var(--primary) / 0.18)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         indeterminate: "indeterminate 1.5s ease-in-out infinite",
+        "subtle-attention": "subtle-attention 3.2s ease-in-out infinite",
       },
     },
   },
