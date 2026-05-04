@@ -37,6 +37,7 @@ export default function DashboardPage() {
           .from("trips")
           .select("id, itinerary_num, created_on, savings, details")
           .eq("user_company", user.id)
+          .eq("is_demo" as any, false)
           .order("created_on", { ascending: false })
           .limit(10),
         supabase
