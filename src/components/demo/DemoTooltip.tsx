@@ -60,7 +60,7 @@ export const DemoTooltip = forwardRef<HTMLDivElement, DemoTooltipProps>(function
         {/* Progress bar hidden — keeps demo length feeling light */}
 
         {/* Actions */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 shrink-0 border-t border-border/50">
           <button
             onClick={onSkip}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors"
