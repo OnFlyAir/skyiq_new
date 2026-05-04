@@ -317,18 +317,16 @@ export default function DemoOverlay() {
         />
       )}
 
-      {/* Inline PDF preview for the "this is a trip itinerary" step */}
+      {/* Inline PDF preview for the "this is a trip itinerary" step.
+          The tooltip docks at the top, so the PDF panel starts below it. */}
       {isPdfPreviewStep && (
         <div
           className="fixed left-1/2 -translate-x-1/2 pointer-events-auto bg-card border border-border rounded-lg shadow-2xl overflow-hidden"
           style={{
-            top: 'max(16px, env(safe-area-inset-top, 0px))',
+            // Reserve room for the top-docked tooltip (~250px incl. safe area).
+            top: 'calc(env(safe-area-inset-top, 0px) + 260px)',
             width: 'min(720px, calc(100vw - 16px))',
-            // On mobile, reserve only enough room for the compact tooltip dock
-            // (~230px) so the itinerary itself stays as tall as possible.
-            // On desktop the tooltip sits ~250px from the bottom.
-            height: 'calc(100vh - 240px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-            maxHeight: 'calc(100vh - 220px)',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           }}
         >
           {isMobile ? (
