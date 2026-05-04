@@ -81,7 +81,7 @@ export default function ProfilePage() {
       setStatsLoading(true);
       const [profilesRes, tripsRes, subsRes, onflyRes] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('trips').select('id', { count: 'exact', head: true }),
+        (supabase.from('trips').select('id', { count: 'exact', head: true }) as any).eq('is_demo', false),
         supabase.from('subscriptions').select('status'),
         supabase.from('onfly_data').select('id', { count: 'exact', head: true }),
       ]);
