@@ -19,13 +19,29 @@ export default function PdfScrollViewer({ src, title, className = "" }: PdfScrol
     const el = containerRef.current;
     if (!el) return;
 
-    const updateWidth = () => setContainerWidth(Math.floor(el.clientWidth));
+    let raf = 0;
+    const updateWidth = () => {
+      const next = Math.floor(el.clientWidth);
+      setContainerWidth((prev) => {
+        // Ignore sub-pixel / scrollbar-induced jitter that would
+        // otherwise cancel an in-flight render and leave only page 1.
+        if (prev > 0 && Math.abs(next - prev) < 8) return prev;
+        return next;
+      });
+    };
+
     updateWidth();
 
-    const observer = new ResizeObserver(updateWidth);
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(updateWidth);
+    });
     observer.observe(el);
 
-    return () => observer.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
