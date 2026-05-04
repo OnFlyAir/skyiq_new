@@ -82,7 +82,13 @@ export default function StripeEmbeddedCheckout({ cycle, onBypass, onError, retur
   if (!clientSecret) return null;
 
   return (
-    <div className="rounded-xl overflow-hidden border border-border bg-card">
+    <div
+      className="rounded-xl overflow-y-auto overflow-x-hidden border border-border bg-card"
+      // Cap the embedded Stripe iframe so it always fits the viewport on
+      // laptops and short windows. The iframe inside grows to its natural
+      // height; we scroll within this container instead of pushing the page.
+      style={{ maxHeight: 'min(720px, calc(100vh - 220px))' }}
+    >
       <EmbeddedCheckoutProvider
         // Re-mount provider when secret changes (retry).
         key={clientSecret}
