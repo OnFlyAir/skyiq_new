@@ -451,7 +451,7 @@ export default function AddAircraftPage() {
         </Card>
 
         {/* Auto-filled details — collapsible */}
-        {selectedPreset && (
+        {(selectedPreset || customMode) && (
           <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
             <CollapsibleTrigger asChild>
               <button
@@ -461,7 +461,9 @@ export default function AddAircraftPage() {
               >
                 <span className="text-sm text-muted-foreground">
                   Performance & defaults
-                  <span className="ml-1.5 text-xs opacity-60">(auto-filled)</span>
+                  <span className="ml-1.5 text-xs opacity-60">
+                    {customMode ? '(enter manually)' : '(auto-filled)'}
+                  </span>
                 </span>
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", detailsOpen && "rotate-180")} />
               </button>
