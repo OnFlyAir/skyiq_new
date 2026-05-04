@@ -94,7 +94,7 @@ export default function SubscriptionPage() {
         .select('amount_cents')
         .eq('user_id', profile.id)
         .eq('status', 'pending_invoice'),
-      supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_company', profile.id),
+      (supabase.from('trips').select('id', { count: 'exact', head: true }).eq('user_company', profile.id) as any).eq('is_demo', false),
     ]);
     setSub(subRes.data as unknown as Subscription);
     setAircraftCount(acRes.data?.length ?? 0);
