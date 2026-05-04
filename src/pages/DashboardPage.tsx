@@ -33,11 +33,11 @@ export default function DashboardPage() {
       }
 
       const [{ data: tripsData }, { count }] = await Promise.all([
-        supabase
+        (supabase
           .from("trips")
           .select("id, itinerary_num, created_on, savings, details")
-          .eq("user_company", user.id)
-          .eq("is_demo" as any, false)
+          .eq("user_company", user.id) as any)
+          .eq("is_demo", false)
           .order("created_on", { ascending: false })
           .limit(10),
         supabase
