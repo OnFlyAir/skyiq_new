@@ -101,6 +101,7 @@ function App() {
 
                   {/* Admin — role-gated inside the component */}
                   <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin/users/:userId/fleet" element={<AdminUserFleetPage />} />
                   <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
                   <Route path="/admin/dfy" element={<AdminDfyPage />} />
                   <Route path="/admin/email-log" element={<AdminEmailLogPage />} />
