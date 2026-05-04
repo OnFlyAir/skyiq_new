@@ -428,10 +428,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [currentStepIndex, steps.length, goToStep, endDemo]);
 
   const prevStep = useCallback(() => {
-    if (currentStepIndex > 0) {
-      goToStep(currentStepIndex - 1);
+    // Walk backwards past any steps that performed a side-effect on Next
+    // (e.g. created a trip, navigated forward via clickOnNext, or are a
+    // transient "wait" step). Land on the previous logical screen.
+    let i = currentStepIndex - 1;
+    while (i > 0) {
+      const s = steps[i];
+      if (s?.skipOnBack || s?.action === 'wait') {
+        i -= 1;
+        continue;
+      }
+      break;
     }
-  }, [currentStepIndex, goToStep]);
+    if (i >= 0 && i !== currentStepIndex) {
+      goToStep(i);
+    }
+  }, [currentStepIndex, goToStep, steps]);
 
   return (
     <DemoContext.Provider
