@@ -289,11 +289,11 @@ export default function AddAircraftPage() {
                     align="start"
                     side="bottom"
                     sideOffset={4}
-                    avoidCollisions={false}
+                    collisionPadding={12}
                   >
                     <Command>
                       <CommandInput placeholder="Search…" />
-                      <CommandList className="max-h-[50vh] overflow-y-auto overscroll-contain">
+                      <CommandList className="max-h-[min(50vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain">
                         <CommandEmpty>No match.</CommandEmpty>
                         <CommandGroup>
                           {models.map((preset) => {
