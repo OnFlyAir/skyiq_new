@@ -33,6 +33,7 @@ import TripEmailPage from "@/pages/TripEmailPage";
 import SavingsPage from "@/pages/SavingsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import AdminUserFleetPage from "@/pages/AdminUserFleetPage";
 import AdminSubscriptionsPage from "@/pages/AdminSubscriptionsPage";
 import AdminDfyPage from "@/pages/AdminDfyPage";
 import AdminEmailLogPage from "@/pages/AdminEmailLogPage";
@@ -100,6 +101,7 @@ function App() {
 
                   {/* Admin — role-gated inside the component */}
                   <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin/users/:userId/fleet" element={<AdminUserFleetPage />} />
                   <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
                   <Route path="/admin/dfy" element={<AdminDfyPage />} />
                   <Route path="/admin/email-log" element={<AdminEmailLogPage />} />

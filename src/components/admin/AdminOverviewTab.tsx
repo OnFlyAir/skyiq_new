@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Loader2, Plane, Search, TrendingUp, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Building2, Loader2, Plane, Search, TrendingUp, CreditCard,
+  MoreHorizontal, UserCheck, UserX, Trash2, DollarSign,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface CompanyRow {
   userId: string;
@@ -15,6 +30,8 @@ interface CompanyRow {
   tailNumbers: number;
   savings: number;
   isEnabled: boolean;
+  billingExempt: boolean;
+  roleName: string;
   subscriptionStatus: string;
   subscriptionTier: string;
 }
@@ -23,45 +40,49 @@ export default function AdminOverviewTab() {
   const [companies, setCompanies] = useState<CompanyRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<CompanyRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadData() {
-      const [profilesRes, tripsRes, aircraftRes, subsRes] = await Promise.all([
-        supabase.from("profiles").select("id, first_name, last_name, company, is_enabled, email"),
-        supabase.from("trips").select("user_company, savings"),
-        supabase.from("aircrafts").select("user_company").eq("is_enabled", true),
-        supabase.from("subscriptions").select("user_id, status, billing_cycle"),
-      ]);
+  async function loadData() {
+    setLoading(true);
+    const [profilesRes, tripsRes, aircraftRes, subsRes] = await Promise.all([
+      supabase.from("profiles").select("id, first_name, last_name, company, is_enabled, email, role_name, billing_exempt" as any),
+      supabase.from("trips").select("user_company, savings"),
+      supabase.from("aircrafts").select("user_company").eq("is_enabled", true),
+      supabase.from("subscriptions").select("user_id, status, billing_cycle"),
+    ]);
 
-      const profiles = profilesRes.data ?? [];
-      const trips = tripsRes.data ?? [];
-      const aircraft = aircraftRes.data ?? [];
-      const subs = subsRes.data ?? [];
+    const profiles = (profilesRes.data ?? []) as any[];
+    const trips = tripsRes.data ?? [];
+    const aircraft = aircraftRes.data ?? [];
+    const subs = subsRes.data ?? [];
 
-      const rows: CompanyRow[] = profiles.map((p) => {
-        const userTrips = trips.filter((t) => t.user_company === p.id);
-        const userAircraft = aircraft.filter((a) => a.user_company === p.id);
-        const sub = subs.find((s) => s.user_id === p.id);
+    const rows: CompanyRow[] = profiles.map((p) => {
+      const userTrips = trips.filter((t) => t.user_company === p.id);
+      const userAircraft = aircraft.filter((a) => a.user_company === p.id);
+      const sub = subs.find((s) => s.user_id === p.id);
 
-        return {
-          userId: p.id,
-          company: p.company || "—",
-          name: `${p.first_name} ${p.last_name}`.trim() || "—",
-          email: p.email,
-          tripsRun: userTrips.length,
-          tailNumbers: userAircraft.length,
-          savings: userTrips.reduce((sum, t) => sum + (t.savings ?? 0), 0),
-          isEnabled: p.is_enabled ?? true,
-          subscriptionStatus: sub?.status ?? "none",
-          subscriptionTier: sub?.billing_cycle ?? "—",
-        };
-      });
+      return {
+        userId: p.id,
+        company: p.company || "—",
+        name: `${p.first_name} ${p.last_name}`.trim() || "—",
+        email: p.email,
+        tripsRun: userTrips.length,
+        tailNumbers: userAircraft.length,
+        savings: userTrips.reduce((sum, t) => sum + (t.savings ?? 0), 0),
+        isEnabled: p.is_enabled ?? true,
+        billingExempt: !!p.billing_exempt,
+        roleName: p.role_name ?? "User",
+        subscriptionStatus: sub?.status ?? "none",
+        subscriptionTier: sub?.billing_cycle ?? "—",
+      };
+    });
 
-      setCompanies(rows);
-      setLoading(false);
-    }
-    loadData();
-  }, []);
+    setCompanies(rows);
+    setLoading(false);
+  }
+
+  useEffect(() => { loadData(); }, []);
 
   const filtered = companies.filter(
     (c) =>
@@ -79,6 +100,53 @@ export default function AdminOverviewTab() {
     if (status === "canceled" || status === "expired") return "destructive" as const;
     return "secondary" as const;
   };
+
+  async function toggleEnabled(c: CompanyRow) {
+    setBusyId(c.userId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_enabled: !c.isEnabled } as any)
+      .eq("id", c.userId);
+    setBusyId(null);
+    if (error) {
+      toast.error("Failed to update account", { description: error.message });
+      return;
+    }
+    toast.success(c.isEnabled ? "Account deactivated" : "Account activated");
+    setCompanies((prev) => prev.map((r) => r.userId === c.userId ? { ...r, isEnabled: !c.isEnabled } : r));
+  }
+
+  async function toggleBillingExempt(c: CompanyRow) {
+    setBusyId(c.userId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ billing_exempt: !c.billingExempt } as any)
+      .eq("id", c.userId);
+    setBusyId(null);
+    if (error) {
+      toast.error("Failed to update billing", { description: error.message });
+      return;
+    }
+    toast.success(c.billingExempt ? "Billing re-enabled" : "Billing disabled (exempt)");
+    setCompanies((prev) => prev.map((r) => r.userId === c.userId ? { ...r, billingExempt: !c.billingExempt } : r));
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setBusyId(target.userId);
+    const { error } = await supabase.functions.invoke("admin-delete-user", {
+      body: { target_user_id: target.userId },
+    });
+    setBusyId(null);
+    setPendingDelete(null);
+    if (error) {
+      toast.error("Failed to delete user", { description: error.message });
+      return;
+    }
+    toast.success(`Deleted ${target.email}`);
+    setCompanies((prev) => prev.filter((r) => r.userId !== target.userId));
+  }
 
   return (
     <div className="space-y-6 mt-4">
@@ -130,7 +198,7 @@ export default function AdminOverviewTab() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-secondary">
               <tr>
@@ -141,7 +209,9 @@ export default function AdminOverviewTab() {
                 <th className="text-center px-4 py-2 font-medium">Tails</th>
                 <th className="text-right px-4 py-2 font-medium">Savings</th>
                 <th className="text-center px-4 py-2 font-medium">Subscription</th>
+                <th className="text-center px-4 py-2 font-medium">Billing</th>
                 <th className="text-center px-4 py-2 font-medium">Status</th>
+                <th className="text-center px-4 py-2 font-medium w-12">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -151,7 +221,11 @@ export default function AdminOverviewTab() {
                   <td className="px-4 py-2 text-muted-foreground">{c.name}</td>
                   <td className="px-4 py-2 text-muted-foreground text-xs">{c.email}</td>
                   <td className="px-4 py-2 text-center">{c.tripsRun}</td>
-                  <td className="px-4 py-2 text-center">{c.tailNumbers}</td>
+                  <td className="px-4 py-2 text-center">
+                    <Link to={`/admin/users/${c.userId}/fleet`} className="text-primary hover:underline">
+                      {c.tailNumbers}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-right text-green-600 font-medium">
                     {formatCurrency(c.savings)}
                   </td>
@@ -161,21 +235,95 @@ export default function AdminOverviewTab() {
                     </Badge>
                   </td>
                   <td className="px-4 py-2 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Switch
+                        checked={!c.billingExempt}
+                        onCheckedChange={() => toggleBillingExempt(c)}
+                        disabled={busyId === c.userId || c.roleName === "Admin" || c.roleName === "Dev"}
+                        aria-label="Bill this user"
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {c.billingExempt || c.roleName === "Admin" || c.roleName === "Dev" ? "Exempt" : "On"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 text-center">
                     <Badge variant={c.isEnabled ? "default" : "secondary"}>
                       {c.isEnabled ? "Active" : "Disabled"}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busyId === c.userId}>
+                          {busyId === c.userId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreHorizontal className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => toggleEnabled(c)}>
+                          {c.isEnabled ? (
+                            <><UserX className="h-4 w-4 mr-2" /> Deactivate account</>
+                          ) : (
+                            <><UserCheck className="h-4 w-4 mr-2" /> Activate account</>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toggleBillingExempt(c)}
+                          disabled={c.roleName === "Admin" || c.roleName === "Dev"}>
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          {c.billingExempt ? "Resume billing" : "Mark billing-exempt"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/users/${c.userId}/fleet`}>
+                            <Plane className="h-4 w-4 mr-2" /> Manage aircraft fleet
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setPendingDelete(c)}
+                          className="text-destructive focus:text-destructive"
+                          disabled={c.roleName === "Admin"}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete user
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">No users found</td>
+                  <td colSpan={10} className="px-4 py-6 text-center text-muted-foreground">No users found</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes <strong>{pendingDelete?.email}</strong> and all of their
+              data — profile, aircraft, trips, subscription, and login. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete user
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

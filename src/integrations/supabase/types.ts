@@ -422,6 +422,7 @@ export type Database = {
       profiles: {
         Row: {
           billing_email_preference: Database["public"]["Enums"]["billing_email_preference"]
+          billing_exempt: boolean
           company: string | null
           created_on: string
           email: string
@@ -434,6 +435,7 @@ export type Database = {
         }
         Insert: {
           billing_email_preference?: Database["public"]["Enums"]["billing_email_preference"]
+          billing_exempt?: boolean
           company?: string | null
           created_on?: string
           email: string
@@ -446,6 +448,7 @@ export type Database = {
         }
         Update: {
           billing_email_preference?: Database["public"]["Enums"]["billing_email_preference"]
+          billing_exempt?: boolean
           company?: string | null
           created_on?: string
           email?: string
@@ -632,6 +635,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user_data: { Args: { _target: string }; Returns: undefined }
       calculate_subscription_price: {
         Args: { plane_count: number }
         Returns: number
