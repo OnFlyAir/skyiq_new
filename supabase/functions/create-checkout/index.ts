@@ -107,45 +107,64 @@ Deno.serve(async (req) => {
     }
 
     const isFirstTrial = !existingSub || existingSub.status === 'trial' || existingSub.status === 'canceled';
-    const intervalParams = cycle === 'annual'
-      ? { 'line_items[0][price_data][recurring][interval]': 'year',
-          'line_items[0][price_data][recurring][interval_count]': 1 }
-      : { 'line_items[0][price_data][recurring][interval]': 'day',
-          'line_items[0][price_data][recurring][interval_count]': 28 };
 
-    const sessionParams: Record<string, string | number> = {
-      mode: 'subscription',
-      ui_mode: 'embedded_page',
-      customer: customerId!,
-      return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
-      'line_items[0][quantity]': 1,
-      'line_items[0][price_data][currency]': 'usd',
-      'line_items[0][price_data][product_data][name]':
-        cycle === 'annual'
-          ? 'SkyIQ — Annual subscription'
-          : (isFirstTrial
-              ? 'SkyIQ — subscription (after $1 trial)'
-              : 'SkyIQ — 4-Week subscription'),
-      'line_items[0][price_data][unit_amount]': amountCents,
-      ...intervalParams,
-      'metadata[user_id]': user.id,
-      'metadata[cycle]': cycle,
-      'metadata[aircraft_count]': aircraftCount,
-      'subscription_data[metadata][user_id]': user.id,
-      'subscription_data[metadata][cycle]': cycle,
-    };
+    let sessionParams: Record<string, string | number>;
 
     if (isFirstTrial) {
-      // 4-week paid trial: charge $1 now via a one-time line item, and start
-      // the real subscription with a 28-day free trial so the first full
-      // billing cycle hits after week 4.
-      sessionParams['subscription_data[trial_period_days]'] = 28;
-      sessionParams['payment_method_collection'] = 'always';
-      sessionParams['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
-      sessionParams['line_items[1][quantity]'] = 1;
-      sessionParams['line_items[1][price_data][currency]'] = 'usd';
-      sessionParams['line_items[1][price_data][product_data][name]'] = 'SkyIQ — $1 for the first 4 weeks';
-      sessionParams['line_items[1][price_data][unit_amount]'] = 100;
+      // First-time trial: ONE-TIME $1 charge only.
+      // We deliberately do NOT create a Stripe subscription here. Creating
+      // both a one-time line item AND a recurring subscription in the same
+      // Checkout session caused customers to see TWO separate charges /
+      // bank descriptors (e.g. "skyIQ LLC $1.00" and "LLC $1") for what
+      // is supposed to be a single $1 trial activation.
+      //
+      // The recurring subscription is created later — inside the app —
+      // once the user has added aircraft and chosen a billing cycle. The
+      // payment method collected here is saved on the customer
+      // (setup_future_usage=off_session) so we can charge the subscription
+      // off-session at trial end without prompting again.
+      sessionParams = {
+        mode: 'payment',
+        ui_mode: 'embedded_page',
+        customer: customerId!,
+        return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+        'line_items[0][quantity]': 1,
+        'line_items[0][price_data][currency]': 'usd',
+        'line_items[0][price_data][product_data][name]': 'SkyIQ — $1 for the first 4 weeks',
+        'line_items[0][price_data][unit_amount]': 100,
+        'payment_intent_data[setup_future_usage]': 'off_session',
+        'payment_intent_data[metadata][user_id]': user.id,
+        'payment_intent_data[metadata][purpose]': 'trial_activation',
+        'metadata[user_id]': user.id,
+        'metadata[cycle]': cycle,
+        'metadata[aircraft_count]': aircraftCount,
+        'metadata[purpose]': 'trial_activation',
+      };
+    } else {
+      // Returning user upgrading to a real recurring plan.
+      const intervalParams = cycle === 'annual'
+        ? { 'line_items[0][price_data][recurring][interval]': 'year',
+            'line_items[0][price_data][recurring][interval_count]': 1 }
+        : { 'line_items[0][price_data][recurring][interval]': 'day',
+            'line_items[0][price_data][recurring][interval_count]': 28 };
+
+      sessionParams = {
+        mode: 'subscription',
+        ui_mode: 'embedded_page',
+        customer: customerId!,
+        return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+        'line_items[0][quantity]': 1,
+        'line_items[0][price_data][currency]': 'usd',
+        'line_items[0][price_data][product_data][name]':
+          cycle === 'annual' ? 'SkyIQ — Annual subscription' : 'SkyIQ — 4-Week subscription',
+        'line_items[0][price_data][unit_amount]': amountCents,
+        ...intervalParams,
+        'metadata[user_id]': user.id,
+        'metadata[cycle]': cycle,
+        'metadata[aircraft_count]': aircraftCount,
+        'subscription_data[metadata][user_id]': user.id,
+        'subscription_data[metadata][cycle]': cycle,
+      };
     }
 
     const session = await stripeFetch('/v1/checkout/sessions', {
