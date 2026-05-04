@@ -342,20 +342,18 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Try the demo — public access */}
+      {/* Try the demo — public access. Subtle, slow attention pulse to draw
+          the eye without feeling like a flashing ad. */}
       <div className="mt-5 pt-5 border-t border-border">
         <button
           type="button"
           disabled={loading}
           onClick={handleTryDemo}
-          className="w-full py-2.5 bg-primary/10 border border-primary/30 text-primary font-medium rounded-lg hover:bg-primary/15 disabled:opacity-50 transition-all text-sm active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full py-2.5 border border-primary/30 text-primary font-medium rounded-lg hover:bg-primary/20 disabled:opacity-50 transition-colors text-sm active:scale-[0.98] flex items-center justify-center gap-2 motion-safe:animate-subtle-attention motion-reduce:bg-primary/10"
         >
           <PlayCircle className="w-4 h-4" />
           {loading ? 'Loading demo…' : 'Try the Trip Planning Demo'}
         </button>
-        <p className="mt-2 text-xs text-center text-muted-foreground">
-          No signup needed — see how SkyIQ optimizes fuel in 60 seconds.
-        </p>
       </div>
 
       {/* Sign up today for $1 — primary conversion CTA */}
