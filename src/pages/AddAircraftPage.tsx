@@ -65,6 +65,9 @@ export default function AddAircraftPage() {
   const [selectedMfg, setSelectedMfg] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<AircraftPreset | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [customMode, setCustomMode] = useState(false);
+  const [customMfg, setCustomMfg] = useState('');
+  const [customModel, setCustomModel] = useState('');
 
   const [tailNumber, setTailNumber] = useState('');
   const [basicEmptyWeight, setBasicEmptyWeight] = useState('');
