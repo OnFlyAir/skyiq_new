@@ -305,7 +305,6 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     description: "Routes, fuel prices, passengers, weights, fees — every detail is extracted from the trip sheet. You just confirm each leg looks right. Click Next to continue to fuel burns.",
     placement: 'center',
     clickOnNext: 'next-fuel-burns-btn',
-    skipOnBack: true,
   },
   {
     id: 'public-fuel-burns',
