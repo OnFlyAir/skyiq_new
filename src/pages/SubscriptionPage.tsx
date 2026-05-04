@@ -204,29 +204,7 @@ export default function SubscriptionPage() {
 
   // Non-billing user view
   if (!canManageBilling) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
-        {isBlocked && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-            <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5" />
-            <div>
-              <p className="font-medium text-red-900">Account access paused</p>
-              <p className="text-sm text-red-700 mt-1">Your account has been disabled due to a billing issue. Please contact your billing administrator.</p>
-            </div>
-          </div>
-        )}
-        <Card><CardContent className="pt-6">
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border">
-            <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium text-foreground">Billing is managed by your account administrator</p>
-              <p className="text-sm text-muted-foreground mt-1">Reach out to your admin for plan or payment changes.</p>
-            </div>
-          </div>
-        </CardContent></Card>
-      </div>
-    );
+    return <NonBillingView profile={profile} isBlocked={isBlocked} />;
   }
 
   // Checkout overlay
