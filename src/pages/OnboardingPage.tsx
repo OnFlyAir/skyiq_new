@@ -167,16 +167,29 @@ export default function OnboardingPage() {
                     <p className="text-xs text-muted-foreground">
                       {isExempt
                         ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
-                        : '$1 today · 4 weeks of access · cancel anytime'}
+                        : '$1 for your initial 4-week trial · cancel anytime'}
                     </p>
                   </div>
                 </div>
 
                 {!isExempt && (
-                  <p className="text-xs text-muted-foreground">
-                    After your trial, billing scales with your active aircraft. You'll choose
-                    4-weekly or annual (save 20%) inside the app — nothing more is charged today.
-                  </p>
+                  <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-foreground">
+                      How billing works
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
+                      <li>
+                        <span className="text-foreground font-medium">$1 today</span> for your initial trial period of 4 weeks.
+                      </li>
+                      <li>
+                        After the trial, <span className="text-foreground font-medium">$100–$200 per tail/month</span> based on the number of aircraft in your fleet.
+                      </li>
+                      <li>
+                        You'll choose 4-weekly or annual billing (save 20%) inside the app — nothing more is charged today.
+                      </li>
+                      <li>Cancel anytime before the trial ends and you won't be charged again.</li>
+                    </ul>
+                  </div>
                 )}
 
                 {isExempt ? (
