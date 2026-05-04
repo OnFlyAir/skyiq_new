@@ -147,6 +147,9 @@ export default function AdminDashboardPage() {
           <TabsTrigger value="onfly">
             <Database className="h-4 w-4 mr-1" /> OnFly Data
           </TabsTrigger>
+          <TabsTrigger value="audit">
+            <ScrollText className="h-4 w-4 mr-1" /> Audit Log
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -155,6 +158,10 @@ export default function AdminDashboardPage() {
 
         <TabsContent value="onfly">
           <AdminOnflyTab />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <AdminAuditLogTab />
         </TabsContent>
       </Tabs>
     </div>
