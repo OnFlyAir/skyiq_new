@@ -42,18 +42,17 @@ Deno.serve(async (req) => {
       return json(401, { error: 'Missing auth' });
     }
 
-    // Verify JWT cryptographically via getClaims (no trust in raw header).
+    // Verify the JWT by calling getUser with the bearer token.
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user?.id) {
       reason = 'invalid_token';
       outcome = 'denied';
       return json(401, { error: 'Invalid session' });
     }
-    callerId = claimsData.claims.sub as string;
+    callerId = userData.user.id;
 
     // Caller must be Admin AND have an enabled account.
     const { data: callerProfile, error: cpErr } = await admin
