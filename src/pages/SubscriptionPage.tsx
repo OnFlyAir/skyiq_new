@@ -8,6 +8,8 @@ import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, 
 import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { getStripeEnvironment } from '@/lib/stripe';
 import { track } from '@/lib/analytics';
 
@@ -204,29 +206,7 @@ export default function SubscriptionPage() {
 
   // Non-billing user view
   if (!canManageBilling) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
-        {isBlocked && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-            <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5" />
-            <div>
-              <p className="font-medium text-red-900">Account access paused</p>
-              <p className="text-sm text-red-700 mt-1">Your account has been disabled due to a billing issue. Please contact your billing administrator.</p>
-            </div>
-          </div>
-        )}
-        <Card><CardContent className="pt-6">
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border">
-            <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
-            <div>
-              <p className="font-medium text-foreground">Billing is managed by your account administrator</p>
-              <p className="text-sm text-muted-foreground mt-1">Reach out to your admin for plan or payment changes.</p>
-            </div>
-          </div>
-        </CardContent></Card>
-      </div>
-    );
+    return <NonBillingView profile={profile} isBlocked={isBlocked} />;
   }
 
   // Checkout overlay
@@ -525,6 +505,133 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="font-semibold">{value}</p>
       </div>
+    </div>
+  );
+}
+
+type RequestKind = 'cancel' | 'cycle' | 'other';
+
+function NonBillingView({ profile, isBlocked }: { profile: any; isBlocked: boolean }) {
+  const [openKind, setOpenKind] = useState<RequestKind | null>(null);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  const userEmail = profile?.email ?? '';
+  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || userEmail;
+  const company = profile?.company ? ` (${profile.company})` : '';
+
+  function openRequest(kind: RequestKind) {
+    let s = '';
+    let b = '';
+    if (kind === 'cancel') {
+      s = `Request to cancel account — ${fullName}`;
+      b = `Hi SkyIQ team,\n\nI'd like to request cancellation of my SkyIQ account.\n\nAccount email: ${userEmail}\nName: ${fullName}${company}\n\nPlease confirm once the cancellation has been processed and let me know the effective end date.\n\nThanks,\n${fullName}`;
+    } else if (kind === 'cycle') {
+      s = `Request to change billing cycle — ${fullName}`;
+      b = `Hi SkyIQ team,\n\nI'd like to change the billing cycle on my SkyIQ account.\n\nAccount email: ${userEmail}\nName: ${fullName}${company}\n\nPlease switch my plan from my current billing cycle (monthly / 4-weekly) to annual — or vice versa. Feel free to confirm the new amount and effective date before applying.\n\nThanks,\n${fullName}`;
+    } else {
+      s = `SkyIQ account question — ${fullName}`;
+      b = `Hi SkyIQ team,\n\nAccount email: ${userEmail}\nName: ${fullName}${company}\n\n[Write your message here]\n\nThanks,\n${fullName}`;
+    }
+    setSubject(s);
+    setBody(b);
+    setOpenKind(kind);
+  }
+
+  function sendEmail() {
+    const url = `mailto:info@skyiq.net?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+  }
+
+  const title =
+    openKind === 'cancel' ? 'Request to cancel account'
+    : openKind === 'cycle' ? 'Request to change billing cycle'
+    : 'Send a message to SkyIQ';
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-foreground">Subscription</h1>
+      {isBlocked && (
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+          <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900">Account access paused</p>
+            <p className="text-sm text-red-700 mt-1">Your account has been disabled due to a billing issue. Please contact your billing administrator.</p>
+          </div>
+        </div>
+      )}
+      <Card><CardContent className="pt-6">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-secondary/50 border">
+          <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
+          <div>
+            <p className="font-medium text-foreground">Billing is managed by your account administrator</p>
+            <p className="text-sm text-muted-foreground mt-1">Reach out to your admin for plan or payment changes.</p>
+          </div>
+        </div>
+      </CardContent></Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Need to reach SkyIQ directly?</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Send a pre-written email from <span className="font-medium text-foreground">{userEmail || 'your account email'}</span> to{' '}
+            <span className="font-medium text-foreground">info@skyiq.net</span>. You can review and edit before sending.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-2">
+            <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => openRequest('cancel')}>
+              <Mail className="h-4 w-4" /> Cancel account
+            </Button>
+            <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => openRequest('cycle')}>
+              <Mail className="h-4 w-4" /> Change billing cycle
+            </Button>
+            <Button variant="outline" className="justify-start gap-2 h-auto py-3" onClick={() => openRequest('other')}>
+              <Mail className="h-4 w-4" /> Something else
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog open={openKind !== null} onOpenChange={(o) => !o && setOpenKind(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>
+              Review and edit, then click Send to open this in your email app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <div><span className="font-medium text-foreground">From:</span> {userEmail}</div>
+              <div><span className="font-medium text-foreground">To:</span> info@skyiq.net</div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Subject</label>
+              <input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">Message</label>
+              <Textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={12}
+                className="text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenKind(null)}>Cancel</Button>
+            <Button onClick={sendEmail} className="gap-1.5">
+              <Mail className="h-4 w-4" /> Send email
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
