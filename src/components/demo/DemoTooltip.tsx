@@ -21,9 +21,9 @@ export const DemoTooltip = forwardRef<HTMLDivElement, DemoTooltipProps>(function
 ) {
   return (
     <div ref={ref} className="pointer-events-auto sm:max-w-sm sm:w-80" style={style}>
-      <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4">
+        <div className="flex items-center justify-between px-4 pt-4 shrink-0">
           <div className="flex items-center gap-2">
             <Play className="h-3.5 w-3.5 text-primary" />
             <span className="text-xs font-medium text-muted-foreground">
@@ -32,14 +32,15 @@ export const DemoTooltip = forwardRef<HTMLDivElement, DemoTooltipProps>(function
           </div>
           <button
             onClick={onSkip}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Close demo"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 overflow-y-auto">
           <h3 className="text-sm font-semibold text-foreground mb-1">{step.title}</h3>
           <p className="text-xs text-muted-foreground leading-relaxed">{step.description}</p>
         </div>
