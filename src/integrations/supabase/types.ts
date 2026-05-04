@@ -630,6 +630,7 @@ export type Database = {
           created_on: string | null
           details: Json | null
           id: number
+          is_demo: boolean
           itinerary_details: Json | null
           itinerary_num: string | null
           savings: number | null
@@ -639,6 +640,7 @@ export type Database = {
           created_on?: string | null
           details?: Json | null
           id?: number
+          is_demo?: boolean
           itinerary_details?: Json | null
           itinerary_num?: string | null
           savings?: number | null
@@ -648,6 +650,7 @@ export type Database = {
           created_on?: string | null
           details?: Json | null
           id?: number
+          is_demo?: boolean
           itinerary_details?: Json | null
           itinerary_num?: string | null
           savings?: number | null

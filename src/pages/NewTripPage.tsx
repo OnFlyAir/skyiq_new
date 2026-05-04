@@ -114,7 +114,8 @@ export default function NewTripPage() {
         details: {},
         itinerary_details: { legs: [] },
         savings: 0,
-      })
+        is_demo: demoActive,
+      } as any)
       .select("id")
       .single();
 
@@ -159,7 +160,8 @@ export default function NewTripPage() {
           legs: [],
         },
         savings: 0,
-      })
+        is_demo: demoActive,
+      } as any)
       .select("id")
       .single();
 
