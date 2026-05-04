@@ -144,8 +144,13 @@ export default function AddAircraftPage() {
     // Collect all missing required fields so we can tell the user exactly
     // what's blocking the save instead of failing silently or one at a time.
     const missing: string[] = [];
-    if (!selectedMfg) missing.push('Manufacturer');
-    if (!selectedPreset) missing.push('Model');
+    if (customMode) {
+      if (!customMfg.trim()) missing.push('Manufacturer');
+      if (!customModel.trim()) missing.push('Model');
+    } else {
+      if (!selectedMfg) missing.push('Manufacturer');
+      if (!selectedPreset) missing.push('Model');
+    }
     if (!tailNumber.trim()) missing.push('Tail Number');
     const bew = parseFloat(basicEmptyWeight);
     if (!basicEmptyWeight.trim() || isNaN(bew) || bew <= 0) missing.push('Empty Weight');
@@ -181,8 +186,8 @@ export default function AddAircraftPage() {
       ...formData,
       tail_number: tailNumber.trim().toUpperCase(),
       basic_empty_weight: bew,
-      manufacturer: selectedMfg,
-      type: selectedPreset?.model ?? '',
+      manufacturer: customMode ? customMfg.trim() : selectedMfg,
+      type: customMode ? customModel.trim() : (selectedPreset?.model ?? ''),
       user_company: user.id,
     };
 
