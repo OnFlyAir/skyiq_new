@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import PdfScrollViewer from '@/components/PdfScrollViewer';
+import DemoProgressIndicator from './DemoProgressIndicator';
 
 const DEV_DEMO_EMAIL = 'dev@skyiq.test';
 
