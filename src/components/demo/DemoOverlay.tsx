@@ -68,10 +68,29 @@ export default function DemoOverlay() {
     // Capture flow BEFORE endDemo() resets it — otherwise the branch below
     // always sees null and falls through to the public-demo logout path.
     const wasPublic = flow === 'public';
+    const wasFleet = flow === 'fleet';
     // Extra safety: only ever sign out if the active session is the public
     // sandbox account. A real logged-in user must never be signed out by
     // closing an in-app demo, regardless of how `flow` was set.
     const isSandboxUser = profile?.email === DEV_DEMO_EMAIL;
+
+    // Fleet demo cleanup: the demo creates a real NSKYIQ aircraft so the
+    // walkthrough feels authentic. We don't want to leave that test aircraft
+    // sitting in the user's real fleet, so remove it on completion. The trip
+    // demo injects the same aircraft on the fly (see TripLegsPage), so the
+    // plan-a-trip demo keeps working even after this deletion.
+    if (wasFleet && profile?.id && !isSandboxUser) {
+      try {
+        await supabase
+          .from('aircrafts')
+          .delete()
+          .eq('user_company', profile.id)
+          .eq('tail_number', 'NSKYIQ');
+      } catch {
+        /* best-effort cleanup; don't block the user */
+      }
+    }
+
     endDemo();
     if (wasPublic && isSandboxUser) {
       sessionStorage.setItem(POST_DEMO_HIGHLIGHT_KEY, '1');
