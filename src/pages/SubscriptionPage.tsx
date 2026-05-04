@@ -8,6 +8,8 @@ import { CreditCard, Plane, Calendar, AlertCircle, Lock, CheckCircle2, Loader2, 
 import { formatCurrency, formatCurrencyCents } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 import StripeEmbeddedCheckout from '@/components/StripeEmbeddedCheckout';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { getStripeEnvironment } from '@/lib/stripe';
 import { track } from '@/lib/analytics';
 
