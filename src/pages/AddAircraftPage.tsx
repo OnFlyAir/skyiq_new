@@ -226,10 +226,6 @@ export default function AddAircraftPage() {
         {/* Aircraft Selection */}
         <Card>
           <CardContent className="pt-5 space-y-4">
-            <div className="space-y-1.5">
-        {/* Aircraft Selection */}
-        <Card>
-          <CardContent className="pt-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {customMode ? 'Custom Aircraft' : 'Aircraft'}
