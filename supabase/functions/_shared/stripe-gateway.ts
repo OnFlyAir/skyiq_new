@@ -104,11 +104,17 @@ export async function verifyAndParseWebhook(
 
 // Compute our tiered price (cents per cycle) server-side.
 // Mirrors SubscriptionPage.calcPrice and create-checkout.calcPriceCents.
+//
+// IMPORTANT: callers MUST pass a real aircraft count for recurring
+// subscriptions. We default count<=0 to a 1-aircraft Starter tier so a
+// caller bug can never accidentally bill someone $1/year — but the
+// create-checkout function blocks recurring checkouts with 0 aircraft
+// outright so users see a clear "add aircraft first" message instead.
 export function calcPriceCents(count: number, cycle: 'four_weekly' | 'annual'): number {
-  if (count <= 0) return 100;
+  const safeCount = count > 0 ? count : 1;
   let perCycle = 0;
-  perCycle += Math.min(count, 4) * 20000;
-  if (count > 4) perCycle += Math.min(count - 4, 5) * 15000;
-  if (count > 9) perCycle += (count - 9) * 10000;
+  perCycle += Math.min(safeCount, 4) * 20000;
+  if (safeCount > 4) perCycle += Math.min(safeCount - 4, 5) * 15000;
+  if (safeCount > 9) perCycle += (safeCount - 9) * 10000;
   return cycle === 'annual' ? Math.round(perCycle * 13 * 0.8) : perCycle;
 }
