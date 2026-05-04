@@ -1046,7 +1046,7 @@ export default function TripLegsPage() {
   return (
     <>
     {parsing && <ParsingLoader />}
-    <div className="max-w-2xl mx-auto space-y-4 px-3 sm:p-4">
+    <div className="max-w-2xl mx-auto space-y-4 px-3 sm:p-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
       {/* Header with Trip ID */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/trips/new")}>
