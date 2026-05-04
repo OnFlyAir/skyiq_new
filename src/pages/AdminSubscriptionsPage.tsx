@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  ArrowLeft, Search, Loader2, Users, DollarSign, AlertTriangle, Shield,
+  CheckCircle2, XCircle, MoreHorizontal, UserCheck, UserX, Plane, Trash2,
+  RefreshCw, Ban, CalendarClock,
+} from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { formatCurrencyCents } from '@/lib/format';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { logAdminAction } from '@/lib/adminAudit';
 
 interface SubRow {
   id: string;
@@ -26,9 +40,9 @@ interface SubRow {
   is_billing_manager: boolean;
   role_name: string;
   is_enabled: boolean;
+  billing_exempt: boolean;
 }
 
-// Statuses that automatically disable the user's account access (per billing logic).
 const AUTO_DISABLE_STATUSES = new Set(['canceled', 'past_due', 'expired', 'unpaid']);
 
 function accountBadge(isEnabled: boolean, status: string) {
@@ -71,6 +85,10 @@ export default function AdminSubscriptionsPage() {
   const [rows, setRows] = useState<SubRow[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SubRow | null>(null);
+  const [confirmText, setConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const isAdmin = profile?.role_name === 'Admin';
 
@@ -80,7 +98,7 @@ export default function AdminSubscriptionsPage() {
       const { data: subs } = await supabase.from('subscriptions').select('*');
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, company, email, role_name, is_billing_manager, is_enabled');
+        .select('id, first_name, last_name, company, email, role_name, is_billing_manager, is_enabled, billing_exempt' as any);
 
       const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
 
@@ -101,6 +119,7 @@ export default function AdminSubscriptionsPage() {
           is_billing_manager: !!p?.is_billing_manager,
           role_name: p?.role_name || 'User',
           is_enabled: p?.is_enabled !== false,
+          billing_exempt: !!p?.billing_exempt,
         };
       });
 
@@ -110,66 +129,171 @@ export default function AdminSubscriptionsPage() {
     load();
   }, [isAdmin]);
 
-  async function handleCancel(subId: string) {
+  async function handleCancel(r: SubRow) {
+    setBusyId(r.userId);
     const { error } = await supabase.functions.invoke('admin-subscription-action', {
-      body: { action: 'cancel', subscription_id: subId },
+      body: { action: 'cancel', subscription_id: r.id },
     });
+    setBusyId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.id === subId ? { ...r, status: 'canceled' } : r));
+      setRows(prev => prev.map(x => x.id === r.id ? { ...x, status: 'canceled' } : x));
       toast({ title: 'Subscription canceled', description: 'Access continues until end of current period.' });
+      void logAdminAction({
+        action: 'subscription.cancel',
+        targetUserId: r.userId, targetLabel: r.email,
+        details: { company: r.company, subscription_id: r.id },
+      });
     }
   }
 
-  async function handleReactivate(subId: string) {
+  async function handleReactivate(r: SubRow) {
+    setBusyId(r.userId);
     const { error } = await supabase.functions.invoke('admin-subscription-action', {
-      body: { action: 'reactivate', subscription_id: subId },
+      body: { action: 'reactivate', subscription_id: r.id },
     });
+    setBusyId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.id === subId ? { ...r, status: 'active', is_enabled: true } : r));
+      setRows(prev => prev.map(x => x.id === r.id ? { ...x, status: 'active', is_enabled: true } : x));
       toast({ title: 'Subscription reactivated' });
+      void logAdminAction({
+        action: 'subscription.reactivate',
+        targetUserId: r.userId, targetLabel: r.email,
+        details: { company: r.company, subscription_id: r.id },
+      });
     }
   }
 
-  async function toggleBillingManager(userId: string, current: boolean) {
+  async function toggleBillingManager(r: SubRow) {
+    setBusyId(r.userId);
+    const next = !r.is_billing_manager;
     const { error } = await supabase
       .from('profiles')
-      .update({ is_billing_manager: !current } as any)
-      .eq('id', userId);
+      .update({ is_billing_manager: next } as any)
+      .eq('id', r.userId);
+    setBusyId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_billing_manager: !current } : r));
-      toast({ title: !current ? 'Billing access granted' : 'Billing access revoked' });
+      setRows(prev => prev.map(x => x.userId === r.userId ? { ...x, is_billing_manager: next } : x));
+      toast({ title: next ? 'Billing access granted' : 'Billing access revoked' });
+      void logAdminAction({
+        action: next ? 'user.billing_manager_on' : 'user.billing_manager_off',
+        targetUserId: r.userId, targetLabel: r.email,
+        details: { company: r.company, previous: r.is_billing_manager, next },
+      });
     }
   }
 
-  async function setCycle(subId: string, cycle: 'four_weekly' | 'annual') {
+  async function setCycle(r: SubRow, cycle: 'four_weekly' | 'annual') {
+    setBusyId(r.userId);
     const { error } = await supabase.functions.invoke('admin-subscription-action', {
-      body: { action: 'change_cycle', subscription_id: subId, cycle },
+      body: { action: 'change_cycle', subscription_id: r.id, cycle },
     });
+    setBusyId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.id === subId ? { ...r, billing_cycle: cycle } : r));
+      setRows(prev => prev.map(x => x.id === r.id ? { ...x, billing_cycle: cycle } : x));
       toast({ title: 'Cycle change scheduled', description: 'Applies at next renewal.' });
+      void logAdminAction({
+        action: 'subscription.change_cycle',
+        targetUserId: r.userId, targetLabel: r.email,
+        details: { company: r.company, subscription_id: r.id, cycle },
+      });
     }
   }
 
-  async function toggleAccountEnabled(userId: string, current: boolean) {
-    const next = !current;
+  async function toggleAccountEnabled(r: SubRow) {
+    setBusyId(r.userId);
+    const next = !r.is_enabled;
     const { error } = await supabase
       .from('profiles')
       .update({ is_enabled: next } as any)
-      .eq('id', userId);
+      .eq('id', r.userId);
+    setBusyId(null);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      setRows(prev => prev.map(r => r.userId === userId ? { ...r, is_enabled: next } : r));
+      setRows(prev => prev.map(x => x.userId === r.userId ? { ...x, is_enabled: next } : x));
       toast({ title: next ? 'Account enabled' : 'Account disabled' });
+      void logAdminAction({
+        action: next ? 'user.activate' : 'user.deactivate',
+        targetUserId: r.userId, targetLabel: r.email,
+        details: { company: r.company, previous: r.is_enabled, next },
+      });
+    }
+  }
+
+  async function toggleBillingExempt(r: SubRow) {
+    setBusyId(r.userId);
+    const next = !r.billing_exempt;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ billing_exempt: next } as any)
+      .eq('id', r.userId);
+    setBusyId(null);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setRows(prev => prev.map(x => x.userId === r.userId ? { ...x, billing_exempt: next } : x));
+    toast({ title: next ? 'Marked billing-exempt' : 'Billing resumed' });
+    void logAdminAction({
+      action: next ? 'user.billing_exempt_on' : 'user.billing_exempt_off',
+      targetUserId: r.userId, targetLabel: r.email,
+      details: { company: r.company, previous: r.billing_exempt, next },
+    });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    setBusyId(target.userId);
+    const toastId = sonnerToast.loading(`Deleting ${target.email}…`, {
+      description: 'Removing profile, aircraft, trips, subscription, and login.',
+    });
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { target_user_id: target.userId },
+      });
+      const apiError = (data as any)?.error;
+      if (error || apiError) {
+        const message = apiError || error?.message || 'Unknown error';
+        sonnerToast.error(`Failed to delete ${target.email}`, {
+          id: toastId,
+          description: `${message}. No changes were saved.`,
+          duration: 8000,
+        });
+        return;
+      }
+      sonnerToast.success(`Deleted ${target.email}`, {
+        id: toastId,
+        description: 'All associated data has been permanently removed.',
+      });
+      void logAdminAction({
+        action: 'user.delete',
+        targetUserId: target.userId, targetLabel: target.email,
+        details: {
+          company: target.company, name: target.name,
+          aircraft_count: target.aircraft_count,
+        },
+      });
+      setRows(prev => prev.filter(r => r.userId !== target.userId));
+      setPendingDelete(null);
+      setConfirmText('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Network error';
+      sonnerToast.error(`Failed to delete ${target.email}`, {
+        id: toastId, description: `${message}. Please try again.`, duration: 8000,
+      });
+    } finally {
+      setDeleting(false);
+      setBusyId(null);
     }
   }
 
@@ -195,7 +319,7 @@ export default function AdminSubscriptionsPage() {
   const autoDisabledCount = rows.filter(r => !r.is_enabled && AUTO_DISABLE_STATUSES.has(r.status)).length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
           <ArrowLeft className="h-5 w-5" />
@@ -255,89 +379,223 @@ export default function AdminSubscriptionsPage() {
                 <th className="text-left px-4 py-2.5 font-medium">Contact</th>
                 <th className="text-center px-4 py-2.5 font-medium">Status</th>
                 <th className="text-center px-4 py-2.5 font-medium">Account</th>
-                <th className="text-center px-4 py-2.5 font-medium">Aircraft</th>
+                <th className="text-center px-4 py-2.5 font-medium">Billing</th>
+                <th className="text-center px-4 py-2.5 font-medium">Fleet</th>
                 <th className="text-center px-4 py-2.5 font-medium">Cycle</th>
                 <th className="text-right px-4 py-2.5 font-medium">Amount</th>
                 <th className="text-center px-4 py-2.5 font-medium">Ends</th>
                 <th className="text-center px-4 py-2.5 font-medium">
                   <span className="inline-flex items-center gap-1"><Shield className="h-3 w-3" />Billing Mgr</span>
                 </th>
-                <th className="text-center px-4 py-2.5 font-medium">Actions</th>
+                <th className="text-center px-4 py-2.5 font-medium w-12">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(r => (
-                <tr key={r.id} className="border-t hover:bg-secondary/30 transition-colors">
-                  <td className="px-4 py-2.5 font-medium">{r.company}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    <div>{r.name} <span className="text-[10px] uppercase tracking-wide text-muted-foreground">({r.role_name})</span></div>
-                    <div className="text-xs">{r.email}</div>
-                  </td>
-                  <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
-                  <td className="px-4 py-2.5 text-center">
-                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
-                      <Badge variant="outline" className="bg-secondary text-muted-foreground gap-1">
-                        <Shield className="h-3 w-3" /> Exempt
-                      </Badge>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => toggleAccountEnabled(r.userId, r.is_enabled)}
-                        title={r.is_enabled ? 'Click to disable account' : 'Click to enable account'}
-                        className="hover:opacity-80 transition-opacity"
+              {filtered.map(r => {
+                const isProtected = r.role_name === 'Admin' || r.role_name === 'Dev';
+                return (
+                  <tr key={r.id} className="border-t hover:bg-secondary/30 transition-colors">
+                    <td className="px-4 py-2.5 font-medium">{r.company}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      <div>{r.name} <span className="text-[10px] uppercase tracking-wide text-muted-foreground">({r.role_name})</span></div>
+                      <div className="text-xs">{r.email}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">{statusBadge(r.status)}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      {isProtected ? (
+                        <Badge variant="outline" className="bg-secondary text-muted-foreground gap-1">
+                          <Shield className="h-3 w-3" /> Exempt
+                        </Badge>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleAccountEnabled(r)}
+                          title={r.is_enabled ? 'Click to disable account' : 'Click to enable account'}
+                          className="hover:opacity-80 transition-opacity"
+                        >
+                          {accountBadge(r.is_enabled, r.status)}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={!r.billing_exempt}
+                          onCheckedChange={() => toggleBillingExempt(r)}
+                          disabled={busyId === r.userId || isProtected}
+                          aria-label="Bill this user"
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {r.billing_exempt || isProtected ? 'Exempt' : 'On'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Link to={`/admin/users/${r.userId}/fleet`} className="text-primary hover:underline">
+                        {r.aircraft_count}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2.5 text-center text-xs">
+                      <select
+                        value={r.billing_cycle}
+                        onChange={(e) => setCycle(r, e.target.value as 'four_weekly' | 'annual')}
+                        className="bg-background border border-border rounded px-1.5 py-0.5 text-xs"
+                        disabled={busyId === r.userId}
                       >
-                        {accountBadge(r.is_enabled, r.status)}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-center">{r.aircraft_count}</td>
-                  <td className="px-4 py-2.5 text-center text-xs">
-                    <select
-                      value={r.billing_cycle}
-                      onChange={(e) => setCycle(r.id, e.target.value as 'four_weekly' | 'annual')}
-                      className="bg-background border border-border rounded px-1.5 py-0.5 text-xs"
-                    >
-                      <option value="four_weekly">4-week</option>
-                      <option value="annual">Annual</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-2.5 text-right font-medium">
-                    {formatCurrencyCents(r.monthly_amount_cents)}
-                  </td>
-                  <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">
-                    {r.status === 'trial' ? formatDate(r.trial_ends_at) : formatDate(r.current_period_end)}
-                  </td>
-                  <td className="px-4 py-2.5 text-center">
-                    {r.role_name === 'Admin' || r.role_name === 'Dev' ? (
-                      <span className="text-[10px] text-muted-foreground">auto</span>
-                    ) : (
-                      <Switch
-                        checked={r.is_billing_manager}
-                        onCheckedChange={() => toggleBillingManager(r.userId, r.is_billing_manager)}
-                      />
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-center">
-                    {(r.status === 'active' || r.status === 'trial') && (
-                      <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => handleCancel(r.id)}>
-                        Cancel
-                      </Button>
-                    )}
-                    {(r.status === 'canceled' || r.status === 'expired') && (
-                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => handleReactivate(r.id)}>
-                        Reactivate
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        <option value="four_weekly">4-week</option>
+                        <option value="annual">Annual</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-medium">
+                      {formatCurrencyCents(r.monthly_amount_cents)}
+                    </td>
+                    <td className="px-4 py-2.5 text-center text-xs text-muted-foreground">
+                      {r.status === 'trial' ? formatDate(r.trial_ends_at) : formatDate(r.current_period_end)}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      {isProtected ? (
+                        <span className="text-[10px] text-muted-foreground">auto</span>
+                      ) : (
+                        <Switch
+                          checked={r.is_billing_manager}
+                          onCheckedChange={() => toggleBillingManager(r)}
+                          disabled={busyId === r.userId}
+                        />
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" disabled={busyId === r.userId}>
+                            {busyId === r.userId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreHorizontal className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-60">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Account</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => toggleAccountEnabled(r)} disabled={isProtected}>
+                            {r.is_enabled ? (
+                              <><UserX className="h-4 w-4 mr-2" /> Deactivate account</>
+                            ) : (
+                              <><UserCheck className="h-4 w-4 mr-2" /> Activate account</>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleBillingExempt(r)} disabled={isProtected}>
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            {r.billing_exempt ? 'Resume billing' : 'Mark billing-exempt'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleBillingManager(r)} disabled={isProtected}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            {r.is_billing_manager ? 'Revoke billing manager' : 'Grant billing manager'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={`/admin/users/${r.userId}/fleet`}>
+                              <Plane className="h-4 w-4 mr-2" /> Manage aircraft fleet
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Subscription</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={() => setCycle(r, r.billing_cycle === 'annual' ? 'four_weekly' : 'annual')}
+                          >
+                            <CalendarClock className="h-4 w-4 mr-2" />
+                            Switch to {r.billing_cycle === 'annual' ? '4-week' : 'annual'} cycle
+                          </DropdownMenuItem>
+                          {(r.status === 'active' || r.status === 'trial') && (
+                            <DropdownMenuItem onClick={() => handleCancel(r)} className="text-destructive focus:text-destructive">
+                              <Ban className="h-4 w-4 mr-2" /> Cancel subscription
+                            </DropdownMenuItem>
+                          )}
+                          {(r.status === 'canceled' || r.status === 'expired') && (
+                            <DropdownMenuItem onClick={() => handleReactivate(r)}>
+                              <RefreshCw className="h-4 w-4 mr-2" /> Reactivate subscription
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setPendingDelete(r)}
+                            className="text-destructive focus:text-destructive"
+                            disabled={r.role_name === 'Admin'}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete user
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
+                <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">No subscriptions found</td></tr>
               )}
             </tbody>
           </table>
         </div>
       )}
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => {
+          if (deleting) return;
+          if (!o) { setPendingDelete(null); setConfirmText(''); }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">
+              Permanently delete {pendingDelete?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will <strong>permanently remove</strong> the account for{' '}
+                  <strong>{pendingDelete?.name || pendingDelete?.email}</strong>
+                  {pendingDelete?.company ? <> at <strong>{pendingDelete.company}</strong></> : null}.
+                  This action cannot be undone.
+                </p>
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <div className="font-medium mb-1 text-destructive">The following will be deleted:</div>
+                  <ul className="list-disc pl-5 space-y-0.5 text-muted-foreground">
+                    <li>Login &amp; profile</li>
+                    <li>{pendingDelete?.aircraft_count ?? 0} aircraft in fleet</li>
+                    <li>All saved trips</li>
+                    <li>Subscription &amp; billing history</li>
+                  </ul>
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Type <code className="px-1 py-0.5 bg-muted rounded">DELETE</code> to confirm
+                  </label>
+                  <Input
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    autoComplete="off"
+                    disabled={deleting}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deleting || confirmText !== 'DELETE'}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <span className="inline-flex items-center"><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Deleting…</span>
+              ) : 'Delete permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

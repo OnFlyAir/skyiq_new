@@ -9,7 +9,12 @@ export type AdminAuditAction =
   | "fleet.aircraft_update"
   | "fleet.aircraft_enable"
   | "fleet.aircraft_disable"
-  | "fleet.aircraft_delete";
+  | "fleet.aircraft_delete"
+  | "user.billing_manager_on"
+  | "user.billing_manager_off"
+  | "subscription.cancel"
+  | "subscription.reactivate"
+  | "subscription.change_cycle";
 
 interface LogParams {
   action: AdminAuditAction;
