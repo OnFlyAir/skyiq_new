@@ -116,6 +116,12 @@ export default function AdminOverviewTab() {
       return;
     }
     toast.success(c.isEnabled ? "Account deactivated" : "Account activated");
+    void logAdminAction({
+      action: c.isEnabled ? "user.deactivate" : "user.activate",
+      targetUserId: c.userId,
+      targetLabel: c.email,
+      details: { company: c.company, previous: c.isEnabled, next: !c.isEnabled },
+    });
     setCompanies((prev) => prev.map((r) => r.userId === c.userId ? { ...r, isEnabled: !c.isEnabled } : r));
   }
 
