@@ -26,11 +26,13 @@ export default function SignUpPage() {
 
     const { data: signUpData, error: signUpError } = await signUp(email, password, firstName, lastName);
     if (signUpError) {
-      // Supabase returns a clear error for already-registered emails when
-      // email confirmation is off. Surface a friendly message.
-      const msg = /already|registered|exists/i.test(signUpError.message)
-        ? 'An account with this email already exists. Please sign in instead.'
-        : signUpError.message;
+      const raw = signUpError.message || '';
+      let msg = raw;
+      if (/already|registered|exists/i.test(raw)) {
+        msg = 'An account with this email already exists. Please sign in instead.';
+      } else if (/weak|pwned|leaked|known|easy to guess|breach/i.test(raw)) {
+        msg = 'That password has appeared in a known data breach. Please choose a more unique password — try a longer passphrase or add uncommon words/symbols.';
+      }
       setError(msg);
       setLoading(false);
       return;
@@ -157,26 +159,28 @@ export default function SignUpPage() {
           <label htmlFor="signup-password" className="block text-sm font-medium text-foreground/80 mb-1.5">Password</label>
           <div className="relative">
             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="Min. 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all" />
+            <input id="signup-password" type={showPassword ? 'text' : 'password'} placeholder="Create a strong password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg text-sm bg-secondary/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all" />
             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {password.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {[
-                { label: 'At least 8 characters', met: password.length >= 8 },
-                { label: 'Contains a number', met: /\d/.test(password) },
-                { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
-                { label: 'Contains special character', met: /[^A-Za-z0-9]/.test(password) },
-              ].map((req) => (
-                <div key={req.label} className="flex items-center gap-2 text-xs">
-                  <div className={`w-1.5 h-1.5 rounded-full transition-colors ${req.met ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
-                  <span className={`transition-colors ${req.met ? 'text-emerald-500' : 'text-muted-foreground'}`}>{req.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="mt-2 space-y-1">
+            {[
+              { label: 'At least 8 characters', met: password.length >= 8 },
+              { label: 'Contains a number', met: /\d/.test(password) },
+              { label: 'Contains an uppercase letter', met: /[A-Z]/.test(password) },
+              { label: 'Contains a lowercase letter', met: /[a-z]/.test(password) },
+              { label: 'Contains a special character (e.g. ! @ # $)', met: /[^A-Za-z0-9]/.test(password) },
+            ].map((req) => (
+              <div key={req.label} className="flex items-center gap-2 text-xs">
+                <div className={`w-1.5 h-1.5 rounded-full transition-colors ${req.met ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
+                <span className={`transition-colors ${req.met ? 'text-emerald-500' : 'text-muted-foreground'}`}>{req.label}</span>
+              </div>
+            ))}
+            <p className="text-[11px] text-muted-foreground pt-1 leading-snug">
+              Avoid common passwords like <span className="font-mono">Hello1234!</span> or <span className="font-mono">Password1!</span> — they're checked against known data breaches and will be rejected. A short passphrase of 3–4 random words works great.
+            </p>
+          </div>
         </div>
 
         <div>
