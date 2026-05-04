@@ -171,8 +171,8 @@ export default function DemoOverlay() {
     // close to the itinerary instead of floating at the bottom of the screen.
     if (currentStep.id === 'preview-itinerary-pdf') {
       return isMobile
-        ? { position: 'fixed', left: safeLeft, right: safeRight, bottom: safeBottom, width: 'auto' }
-        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: 'calc(100vh - 230px)', width: 360 };
+        ? { position: 'fixed', left: safeLeft, right: safeRight, top: safeTopDock, width: 'auto' }
+        : { position: 'fixed', left: '50%', transform: 'translateX(-50%)', top: safeTopDock, width: 360 };
     }
 
     // 'center' placement always centers tooltip on screen, regardless of target
