@@ -17,6 +17,8 @@ export interface DemoStep {
   requireAction?: boolean;
   /** When user clicks Next on the tooltip, also click this data-demo target (e.g. to advance the page). */
   clickOnNext?: string;
+  /** When user clicks Back, skip over this step (it performed a side-effect like creating a trip). */
+  skipOnBack?: boolean;
 }
 
 interface DemoContextType {
@@ -93,6 +95,7 @@ export const FLEET_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'aircraft-saved',
@@ -131,6 +134,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'wait-for-parse',
@@ -190,6 +194,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'review-starting-fuel',
@@ -224,6 +229,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'explain-strategy',
@@ -250,6 +256,7 @@ export const TRIP_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'demo-complete',
@@ -289,6 +296,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'bottom',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-data-pulled',
@@ -315,6 +323,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-optimizer',
@@ -333,6 +342,7 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     placement: 'top',
     action: 'click',
     autoAdvance: true,
+    skipOnBack: true,
   },
   {
     id: 'public-complete',
@@ -418,10 +428,22 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [currentStepIndex, steps.length, goToStep, endDemo]);
 
   const prevStep = useCallback(() => {
-    if (currentStepIndex > 0) {
-      goToStep(currentStepIndex - 1);
+    // Walk backwards past any steps that performed a side-effect on Next
+    // (e.g. created a trip, navigated forward via clickOnNext, or are a
+    // transient "wait" step). Land on the previous logical screen.
+    let i = currentStepIndex - 1;
+    while (i > 0) {
+      const s = steps[i];
+      if (s?.skipOnBack || s?.action === 'wait') {
+        i -= 1;
+        continue;
+      }
+      break;
     }
-  }, [currentStepIndex, goToStep]);
+    if (i >= 0 && i !== currentStepIndex) {
+      goToStep(i);
+    }
+  }, [currentStepIndex, goToStep, steps]);
 
   return (
     <DemoContext.Provider
