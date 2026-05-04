@@ -20,7 +20,8 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = profile?.role_name === "Admin";
-  const activeTab = searchParams.get("tab") === "onfly" ? "onfly" : "overview";
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "onfly" || tabParam === "audit" ? tabParam : "overview";
 
   const [stats, setStats] = useState({
     totalUsers: 0,
