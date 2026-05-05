@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { DemoProvider } from "@/contexts/DemoContext";
 import { Toaster } from "@/components/ui/toaster";
 import DemoOverlay from "@/components/demo/DemoOverlay";
+import PostHogTracker from "@/components/PostHogTracker";
 
 // Layouts
 import AppLayout from "@/components/layout/AppLayout";
@@ -52,6 +53,7 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <DemoProvider>
+              <PostHogTracker />
               <Routes>
                 {/* Auth routes — no sidebar, centered card layout */}
                 <Route element={<AuthLayout />}>
