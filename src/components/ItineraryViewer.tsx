@@ -32,46 +32,30 @@ export default function ItineraryViewer({ tripId, children }: Props) {
 
   async function loadPdf() {
     setLoading(true);
+    setPdfUrl(null);
 
-    // First check onfly_data for a stored PDF path
+    // Only show the PDF tied to THIS trip. We previously had a fallback that
+    // listed all PDFs in the user's storage folder and picked one — that
+    // could surface the wrong itinerary (e.g. the first failed upload) after
+    // a retry. Scope strictly to the current trip's onfly_data row.
     const { data: onflyRow } = await supabase
       .from("onfly_data")
       .select("pdf_storage_path")
       .eq("trip_id", parseInt(tripId))
+      .order("parsed_at", { ascending: false })
       .limit(1);
 
-    if (onflyRow && onflyRow.length > 0 && (onflyRow[0] as any).pdf_storage_path) {
-      const path = (onflyRow[0] as any).pdf_storage_path as string;
+    const path = onflyRow && onflyRow.length > 0
+      ? ((onflyRow[0] as any).pdf_storage_path as string | null)
+      : null;
+
+    if (path) {
       const { data: blob, error } = await supabase.storage
         .from("itinerary-pdfs")
         .download(path);
 
       if (!error && blob) {
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Fallback: check if there's a PDF in itinerary-pdfs for this user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: files } = await supabase.storage
-        .from("itinerary-pdfs")
-        .list(user.id, { limit: 20, sortBy: { column: "created_at", order: "desc" } });
-
-      if (files && files.length > 0) {
-        // Find the most recent file
-        const latest = files[0];
-        const { data: blob, error } = await supabase.storage
-          .from("itinerary-pdfs")
-          .download(`${user.id}/${latest.name}`);
-
-        if (!error && blob) {
-          const url = URL.createObjectURL(blob);
-          setPdfUrl(url);
-        }
+        setPdfUrl(URL.createObjectURL(blob));
       }
     }
 
