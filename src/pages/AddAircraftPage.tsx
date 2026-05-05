@@ -179,6 +179,29 @@ export default function AddAircraftPage() {
       return;
     }
 
+    // Sanity-check Basic Empty Weight against structural limits. An aircraft
+    // can never weigh more empty than its certified max takeoff/landing/ramp
+    // weight — that would mean it can't legally carry fuel or pax.
+    const sanityErrors: string[] = [];
+    if (bew >= formData.max_takeoff_weight) {
+      sanityErrors.push(`Empty Weight (${bew} lbs) must be less than MTOW (${formData.max_takeoff_weight} lbs)`);
+    }
+    if (bew >= formData.max_landing_weight) {
+      sanityErrors.push(`Empty Weight (${bew} lbs) must be less than MLW (${formData.max_landing_weight} lbs)`);
+    }
+    if (formData.max_ramp_weight > 0 && bew >= formData.max_ramp_weight) {
+      sanityErrors.push(`Empty Weight (${bew} lbs) must be less than MRW (${formData.max_ramp_weight} lbs)`);
+    }
+    if (bew < 500 || bew > 200000) {
+      sanityErrors.push(`Empty Weight (${bew} lbs) is outside a realistic range (500–200,000 lbs)`);
+    }
+    if (sanityErrors.length > 0) {
+      setDetailsOpen(true);
+      setError(sanityErrors.join('. ') + '.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setError('');
     setLoading(true);
 
