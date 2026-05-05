@@ -169,12 +169,34 @@ export default function AircraftEditPage() {
 
   const handleSave = async () => {
     if (!id) return;
+
+    const bew = parseFloat(basicEmptyWeight) || 0;
+    const sanityErrors: string[] = [];
+    if (bew <= 0) sanityErrors.push("Empty Weight must be greater than 0");
+    if (formData.max_takeoff_weight > 0 && bew >= formData.max_takeoff_weight) {
+      sanityErrors.push(`Empty Weight (${bew}) must be less than MTOW (${formData.max_takeoff_weight})`);
+    }
+    if (formData.max_landing_weight > 0 && bew >= formData.max_landing_weight) {
+      sanityErrors.push(`Empty Weight (${bew}) must be less than MLW (${formData.max_landing_weight})`);
+    }
+    if (formData.max_ramp_weight > 0 && bew >= formData.max_ramp_weight) {
+      sanityErrors.push(`Empty Weight (${bew}) must be less than MRW (${formData.max_ramp_weight})`);
+    }
+    if (bew > 0 && (bew < 500 || bew > 200000)) {
+      sanityErrors.push(`Empty Weight (${bew}) is outside a realistic range (500–200,000 lbs)`);
+    }
+    if (sanityErrors.length > 0) {
+      setDetailsOpen(true);
+      toast({ title: "Invalid Empty Weight", description: sanityErrors.join('. '), variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
 
     const payload: Record<string, any> = {
       ...formData,
       tail_number: tailNumber.trim().toUpperCase(),
-      basic_empty_weight: parseFloat(basicEmptyWeight) || 0,
+      basic_empty_weight: bew,
       manufacturer: selectedMfg,
       type: selectedPreset?.model ?? "",
     };
