@@ -230,10 +230,18 @@ export function useDemoTarget(active: boolean, currentStep: DemoStep | null): DO
           scrollSettled = true;
         }
       } else {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        // Desktop: do ONE corrective scroll per step. We previously kept firing
+        // scrollIntoView every poll whenever the target appeared "out of bounds"
+        // (e.g. partially obscured by the floating itinerary PDF panel on the
+        // right), which produced the wonky back-and-forth scrolling. Use
+        // `inline: 'nearest'` so we don't jitter horizontally when the element
+        // is wider than the visible (non-panel) area, and immediately mark
+        // settled so subsequent polls only update the spotlight rect.
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
         activeScrollers.add(findScrollParent(el));
         activeScrollers.add(document.scrollingElement || document.documentElement);
         scrollLockUntil = Date.now() + 500;
+        scrollSettled = true;
       }
     };
 
