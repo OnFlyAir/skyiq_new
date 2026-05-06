@@ -48,8 +48,9 @@ export default function DemoOverlay() {
       return;
     }
     // No declared page (dynamic route). If we've seen this step before on a
-    // different path, jump back to it.
-    if (!stepPage) {
+    // different path, jump back to it. Skip 'wait' steps — they often render
+    // mid-navigation and shouldn't pin themselves to the in-flight path.
+    if (!stepPage && currentStep.action !== 'wait') {
       const remembered = stepPathsRef.current[currentStep.id];
       if (remembered && remembered !== location.pathname) {
         navigate(remembered);
