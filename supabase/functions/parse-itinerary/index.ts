@@ -375,8 +375,9 @@ async function saveToOnflyAndStorage(
   parsed: ParsedData,
   trip: ParsedTrip,
   userId: string,
-  tripId?: number,
+  tripIdInput?: number,
 ) {
+  let tripId = tripIdInput;
   const supabaseAdmin = getSupabaseAdmin();
 
   // Save PDF to storage
