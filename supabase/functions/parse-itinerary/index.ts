@@ -403,12 +403,28 @@ async function saveToOnflyAndStorage(
     pdf_storage_path: uploadError ? null : storagePath,
   };
 
+  // Verify trip ownership before trusting the supplied tripId — prevents
+  // a caller from overwriting another user's onfly_data row by guessing IDs.
+  if (tripId) {
+    const { data: ownedTrip } = await supabaseAdmin
+      .from("trips")
+      .select("id")
+      .eq("id", tripId)
+      .eq("user_company", userId)
+      .maybeSingle();
+    if (!ownedTrip) {
+      console.warn("[parse-itinerary] tripId", tripId, "not owned by", userId, "— ignoring");
+      tripId = undefined;
+    }
+  }
+
   // Upsert: update if trip_id already exists, insert otherwise
   if (tripId) {
     const { data: existing } = await supabaseAdmin
       .from("onfly_data")
       .select("id")
       .eq("trip_id", tripId)
+      .eq("user_id", userId)
       .limit(1);
 
     if (existing && existing.length > 0) {
