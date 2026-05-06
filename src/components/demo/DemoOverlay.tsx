@@ -181,6 +181,11 @@ export default function DemoOverlay() {
       if (isMobile) {
         return { position: 'fixed', left: safeLeft, right: safeRight, bottom: safeBottom, width: 'auto' };
       }
+      // Public-demo "all data is pulled" step: dock the tooltip to the left
+      // edge so the highlighted leg card stays fully visible to the right.
+      if (currentStep.id === 'public-data-pulled' && targetRect) {
+        return { position: 'fixed', top: '50%', left: 24, transform: 'translateY(-50%)', width: 320 };
+      }
       return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
     }
 
