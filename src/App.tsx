@@ -42,6 +42,7 @@ import AdminWebhookEventsPage from "@/pages/AdminWebhookEventsPage";
 import DfyPortalPage from "@/pages/DfyPortalPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
+import SecurityPage from "@/pages/SecurityPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,9 @@ function App() {
             <DemoProvider>
               <PostHogTracker />
               <Routes>
+                {/* Public security/trust page */}
+                <Route path="/security" element={<SecurityPage />} />
+
                 {/* Auth routes — no sidebar, centered card layout */}
                 <Route element={<AuthLayout />}>
                   <Route path="/login" element={<LoginPage />} />
