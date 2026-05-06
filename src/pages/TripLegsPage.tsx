@@ -1132,7 +1132,7 @@ export default function TripLegsPage() {
 
       {/* Leg Editors */}
       <div className="space-y-3">
-        {tripForm.legs.map((leg, index) => (
+        {tripForm.legs.map((leg, index) => (demoActive && currentStep?.id === 'public-data-pulled' && index > 0) ? null : (
           <div key={`${leg.legNum}-${index}`} id={`leg-${index}`}>
             <LegEditor
               leg={leg}
