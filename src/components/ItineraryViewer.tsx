@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, X, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PdfScrollViewer from "@/components/PdfScrollViewer";
+import { useDemo } from "@/contexts/DemoContext";
 
 interface Props {
   tripId: string;
@@ -15,6 +16,7 @@ interface Props {
 
 export default function ItineraryViewer({ tripId, children }: Props) {
   const isMobile = useIsMobile();
+  const { active: demoActive } = useDemo();
   const [open, setOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,11 @@ export default function ItineraryViewer({ tripId, children }: Props) {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [open, tripId]);
+
+  // Hide the floating Check Itinerary trigger during any active demo —
+  // there is no real PDF to load, and it overlaps the demo CTAs (Send Email,
+  // tooltip Next button) on the summary/email steps.
+  if (demoActive && !open) return null;
 
   async function loadPdf() {
     setLoading(true);
