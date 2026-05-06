@@ -646,11 +646,14 @@ export default function TripLegsPage() {
   }, [parsing, demoActive, currentStep, nextStep, tripForm]);
 
   // Demo: auto-confirm all legs when reaching a step that needs the (otherwise
-  // disabled) "Next: Fuel Burns" button to be clickable.
+  // disabled) "Next: Fuel Burns" button to be clickable. Note: we intentionally
+  // do NOT auto-confirm on 'public-data-pulled' — confirming collapses the leg
+  // card, and that step needs the full leg details visible. We'll confirm on
+  // click instead (see Next-button onClick / clickOnNext handler).
   useEffect(() => {
     if (!demoActive) return;
     const stepId = currentStep?.id;
-    if (stepId !== 'click-fuel-burns' && stepId !== 'public-data-pulled' && stepId !== 'public-fuel-burns-nav') return;
+    if (stepId !== 'click-fuel-burns' && stepId !== 'public-fuel-burns-nav') return;
     setTripForm((prev) => {
       if (!prev) return prev;
       if (prev.legs.every((l) => l.isConfirmed)) return prev;
@@ -1129,7 +1132,7 @@ export default function TripLegsPage() {
 
       {/* Leg Editors */}
       <div className="space-y-3">
-        {tripForm.legs.map((leg, index) => (
+        {tripForm.legs.map((leg, index) => (demoActive && currentStep?.id === 'public-data-pulled' && index > 0) ? null : (
           <div key={`${leg.legNum}-${index}`} id={`leg-${index}`}>
             <LegEditor
               leg={leg}
@@ -1236,7 +1239,7 @@ export default function TripLegsPage() {
         <Button
           data-demo="next-fuel-burns-btn"
           onClick={handleNext}
-          disabled={!allConfirmed || saving || tripForm.legs.length === 0}
+          disabled={(!allConfirmed && !(demoActive && currentStep?.id === 'public-data-pulled')) || saving || tripForm.legs.length === 0}
           className="flex-1 bg-primary hover:bg-primary/90"
         >
           {saving ? (
