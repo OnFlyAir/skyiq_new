@@ -646,11 +646,14 @@ export default function TripLegsPage() {
   }, [parsing, demoActive, currentStep, nextStep, tripForm]);
 
   // Demo: auto-confirm all legs when reaching a step that needs the (otherwise
-  // disabled) "Next: Fuel Burns" button to be clickable.
+  // disabled) "Next: Fuel Burns" button to be clickable. Note: we intentionally
+  // do NOT auto-confirm on 'public-data-pulled' — confirming collapses the leg
+  // card, and that step needs the full leg details visible. We'll confirm on
+  // click instead (see Next-button onClick / clickOnNext handler).
   useEffect(() => {
     if (!demoActive) return;
     const stepId = currentStep?.id;
-    if (stepId !== 'click-fuel-burns' && stepId !== 'public-data-pulled' && stepId !== 'public-fuel-burns-nav') return;
+    if (stepId !== 'click-fuel-burns' && stepId !== 'public-fuel-burns-nav') return;
     setTripForm((prev) => {
       if (!prev) return prev;
       if (prev.legs.every((l) => l.isConfirmed)) return prev;
