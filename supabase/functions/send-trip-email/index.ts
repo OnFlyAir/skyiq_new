@@ -232,6 +232,25 @@ serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller and verify ownership
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authErr } = await userClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authErr || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { tripId, emails, senderName }: EmailRequest = await req.json();
 
     if (!emails || emails.length === 0) {
@@ -241,11 +260,32 @@ serve(async (req) => {
       );
     }
 
+    // Validate recipients against caller's saved email list
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: emailList } = await supabase
+      .from("email_lists")
+      .select("emails")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const allowed = new Set(
+      ((emailList?.emails as Array<{ email: string }> | null) ?? [])
+        .map((e) => (e?.email ?? "").toLowerCase().trim())
+        .filter(Boolean),
+    );
+    const invalid = emails.filter((e) => !allowed.has((e.email ?? "").toLowerCase().trim()));
+    if (invalid.length > 0) {
+      return new Response(
+        JSON.stringify({ error: "One or more recipients are not in your saved email list" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Verify trip ownership
     const { data: trip, error } = await supabase
       .from("trips")
-      .select("details, itinerary_num")
+      .select("details, itinerary_num, user_company")
       .eq("id", tripId)
+      .eq("user_company", user.id)
       .single();
 
     if (error || !trip) {
