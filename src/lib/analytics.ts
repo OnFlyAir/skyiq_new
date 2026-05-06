@@ -16,8 +16,10 @@ export async function track(
 ) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
+    // RLS requires user_id = auth.uid(); skip if no signed-in user.
+    if (!user?.id) return;
     await (supabase.from('analytics_events' as any) as any).insert({
-      user_id: user?.id ?? null,
+      user_id: user.id,
       event_name: event,
       properties,
     });
