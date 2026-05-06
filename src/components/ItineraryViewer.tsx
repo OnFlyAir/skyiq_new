@@ -22,11 +22,6 @@ export default function ItineraryViewer({ tripId, children }: Props) {
   const [loading, setLoading] = useState(false);
   const [minimized, setMinimized] = useState(false);
 
-  // Hide the floating Check Itinerary trigger during any active demo —
-  // there is no real PDF to load, and it overlaps the demo CTAs (Send Email,
-  // tooltip Next button) on the summary/email steps.
-  if (demoActive && !open) return null;
-
   useEffect(() => {
     if (!open) return;
     loadPdf();
@@ -36,6 +31,11 @@ export default function ItineraryViewer({ tripId, children }: Props) {
       if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
   }, [open, tripId]);
+
+  // Hide the floating Check Itinerary trigger during any active demo —
+  // there is no real PDF to load, and it overlaps the demo CTAs (Send Email,
+  // tooltip Next button) on the summary/email steps.
+  if (demoActive && !open) return null;
 
   async function loadPdf() {
     setLoading(true);
