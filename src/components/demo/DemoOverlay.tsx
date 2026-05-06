@@ -38,32 +38,33 @@ export default function DemoOverlay() {
   // whose `page` is empty (dynamic routes like /trips/:id/fuel) returns the
   // user to the right screen instead of leaving them on the next step's page.
   const stepPathsRef = useRef<Record<string, string>>({});
+  // Only restore a remembered path when going BACKWARD. When stepping forward,
+  // async navigations from the previous step may still be in flight — restoring
+  // would yank the user back to the stale path.
+  const maxStepIndexRef = useRef<number>(0);
 
   // Navigate to the step's page if needed
   useEffect(() => {
     if (!active || !currentStep) return;
-    // While a clickOnNext is in flight, don't fight the page navigation.
     if (pendingRouteAdvanceFrom) return;
     const stepPage = currentStep.page;
     if (stepPage && !location.pathname.startsWith(stepPage)) {
       navigate(stepPage);
       return;
     }
-    // No declared page (dynamic route). If we've seen this step before on a
-    // different path, jump back to it. Skip 'wait' steps — they often render
-    // mid-navigation and shouldn't pin themselves to the in-flight path.
     if (!stepPage && currentStep.action !== 'wait') {
       const remembered = stepPathsRef.current[currentStep.id];
-      if (remembered && remembered !== location.pathname) {
+      const isBackward = currentStepIndex < maxStepIndexRef.current;
+      if (isBackward && remembered && remembered !== location.pathname) {
         navigate(remembered);
         return;
       }
-      // First time on this step — record the path so Back can return here.
-      if (!remembered) {
+      if (!isBackward) {
         stepPathsRef.current[currentStep.id] = location.pathname;
+        maxStepIndexRef.current = Math.max(maxStepIndexRef.current, currentStepIndex);
       }
     }
-  }, [active, currentStep, location.pathname, navigate, pendingRouteAdvanceFrom]);
+  }, [active, currentStep, currentStepIndex, location.pathname, navigate, pendingRouteAdvanceFrom]);
 
   // Reset locks whenever the step changes (or the demo is closed).
   useEffect(() => {
