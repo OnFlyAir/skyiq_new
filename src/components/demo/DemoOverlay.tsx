@@ -42,6 +42,8 @@ export default function DemoOverlay() {
   // Navigate to the step's page if needed
   useEffect(() => {
     if (!active || !currentStep) return;
+    // While a clickOnNext is in flight, don't fight the page navigation.
+    if (pendingRouteAdvanceFrom) return;
     const stepPage = currentStep.page;
     if (stepPage && !location.pathname.startsWith(stepPage)) {
       navigate(stepPage);
@@ -61,7 +63,7 @@ export default function DemoOverlay() {
         stepPathsRef.current[currentStep.id] = location.pathname;
       }
     }
-  }, [active, currentStep, location.pathname, navigate]);
+  }, [active, currentStep, location.pathname, navigate, pendingRouteAdvanceFrom]);
 
   // Reset locks whenever the step changes (or the demo is closed).
   useEffect(() => {
