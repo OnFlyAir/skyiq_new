@@ -434,22 +434,33 @@ serve(async (req) => {
   }
 
   try {
-    // Extract user from JWT
+    // Require authenticated caller
     const authHeader = req.headers.get("authorization") ?? "";
     let userId = "";
     let tripId: number | undefined;
 
-    if (authHeader.startsWith("Bearer ")) {
-      try {
-        const supabaseAdmin = getSupabaseAdmin();
-        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-        console.log("Auth result:", user?.id ?? "no user", authError?.message ?? "no error");
-        userId = user?.id ?? "";
-      } catch (e) {
-        console.error("Auth extraction failed:", e);
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
-    } else {
-      console.log("No Bearer token found in authorization header");
+      userId = user.id;
+    } catch (e) {
+      console.error("Auth extraction failed:", e);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const contentType = req.headers.get("content-type") ?? "";
