@@ -1239,7 +1239,7 @@ export default function TripLegsPage() {
         <Button
           data-demo="next-fuel-burns-btn"
           onClick={handleNext}
-          disabled={!allConfirmed || saving || tripForm.legs.length === 0}
+          disabled={(!allConfirmed && !(demoActive && currentStep?.id === 'public-data-pulled')) || saving || tripForm.legs.length === 0}
           className="flex-1 bg-primary hover:bg-primary/90"
         >
           {saving ? (
