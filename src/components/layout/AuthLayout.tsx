@@ -18,11 +18,16 @@ export default function AuthLayout() {
       </div>
 
       {/* Footer */}
-      <footer className="mt-6 mb-2 text-center text-sm text-muted-foreground relative z-10">
+      <footer className="mt-6 mb-2 text-center text-sm text-muted-foreground relative z-10 space-y-1">
         <p>
           Need help?{' '}
           <a href="mailto:info@skyiq.net" className="text-primary hover:underline font-medium">
             info@skyiq.net
+          </a>
+        </p>
+        <p>
+          <a href="/security" className="text-primary hover:underline font-medium">
+            Security &amp; data protection
           </a>
         </p>
       </footer>
