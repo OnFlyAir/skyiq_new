@@ -69,23 +69,6 @@ const SECTIONS: Section[] = [
     ),
   },
   {
-    id: 'ownership',
-    icon: Download,
-    title: 'You own your data',
-    body: (
-      <>
-        Your trips, aircraft, parsed itineraries, and client contacts belong to you. On
-        request we will export everything we hold for your account in a machine-readable format,
-        or permanently delete your account and all associated data — including stored PDFs,
-        email lists, and analytics — within 30 days. Contact{' '}
-        <a className="text-primary hover:underline" href="mailto:info@skyiq.net">
-          info@skyiq.net
-        </a>{' '}
-        to start either request.
-      </>
-    ),
-  },
-  {
     id: 'hosting',
     icon: Cloud,
     title: 'Hosted on hardened cloud infrastructure',
