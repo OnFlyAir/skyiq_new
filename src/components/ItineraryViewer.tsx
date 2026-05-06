@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, X, Minimize2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PdfScrollViewer from "@/components/PdfScrollViewer";
+import { useDemo } from "@/contexts/DemoContext";
 
 interface Props {
   tripId: string;
