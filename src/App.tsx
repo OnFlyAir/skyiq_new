@@ -105,14 +105,14 @@ function App() {
 
                   <Route path="/subscription" element={<SubscriptionPage />} />
 
-                  {/* Admin — role-gated inside the component */}
-                  <Route path="/admin" element={<AdminDashboardPage />} />
-                  <Route path="/admin/users/:userId/fleet" element={<AdminUserFleetPage />} />
-                  <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
-                  <Route path="/admin/dfy" element={<AdminDfyPage />} />
-                  <Route path="/admin/email-log" element={<AdminEmailLogPage />} />
-                  <Route path="/admin/webhook-events" element={<AdminWebhookEventsPage />} />
-                  <Route path="/admin/transaction-history" element={<AdminWebhookEventsPage />} />
+                  {/* Admin — route-level role gating + in-component checks */}
+                  <Route path="/admin" element={<ProtectedRoute requireRole={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
+                  <Route path="/admin/users/:userId/fleet" element={<ProtectedRoute requireRole={['Admin']}><AdminUserFleetPage /></ProtectedRoute>} />
+                  <Route path="/admin/subscriptions" element={<ProtectedRoute requireRole={['Admin']}><AdminSubscriptionsPage /></ProtectedRoute>} />
+                  <Route path="/admin/dfy" element={<ProtectedRoute requireRole={['Admin']}><AdminDfyPage /></ProtectedRoute>} />
+                  <Route path="/admin/email-log" element={<ProtectedRoute requireRole={['Admin']}><AdminEmailLogPage /></ProtectedRoute>} />
+                  <Route path="/admin/webhook-events" element={<ProtectedRoute requireRole={['Admin']}><AdminWebhookEventsPage /></ProtectedRoute>} />
+                  <Route path="/admin/transaction-history" element={<ProtectedRoute requireRole={['Admin']}><AdminWebhookEventsPage /></ProtectedRoute>} />
 
                   {/* DFY Client Portal */}
                   <Route path="/dfy" element={<DfyPortalPage />} />
