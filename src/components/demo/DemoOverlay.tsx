@@ -34,12 +34,31 @@ export default function DemoOverlay() {
   const [lockedMobileDock, setLockedMobileDock] = useState<'top' | 'bottom' | null>(null);
   const [pendingRouteAdvanceFrom, setPendingRouteAdvanceFrom] = useState<string | null>(null);
 
+  // Remember which path each step was first seen on, so going Back into a step
+  // whose `page` is empty (dynamic routes like /trips/:id/fuel) returns the
+  // user to the right screen instead of leaving them on the next step's page.
+  const stepPathsRef = useRef<Record<string, string>>({});
+
   // Navigate to the step's page if needed
   useEffect(() => {
     if (!active || !currentStep) return;
     const stepPage = currentStep.page;
     if (stepPage && !location.pathname.startsWith(stepPage)) {
       navigate(stepPage);
+      return;
+    }
+    // No declared page (dynamic route). If we've seen this step before on a
+    // different path, jump back to it.
+    if (!stepPage) {
+      const remembered = stepPathsRef.current[currentStep.id];
+      if (remembered && remembered !== location.pathname) {
+        navigate(remembered);
+        return;
+      }
+      // First time on this step — record the path so Back can return here.
+      if (!remembered) {
+        stepPathsRef.current[currentStep.id] = location.pathname;
+      }
     }
   }, [active, currentStep, location.pathname, navigate]);
 
