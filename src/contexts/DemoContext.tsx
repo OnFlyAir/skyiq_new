@@ -299,6 +299,15 @@ export const PUBLIC_DEMO_STEPS: DemoStep[] = [
     skipOnBack: true,
   },
   {
+    id: 'wait-for-parse',
+    page: '',
+    title: 'Parsing Your Itinerary',
+    description: "SkyIQ is reading the trip sheet. This usually takes a few seconds…",
+    placement: 'center',
+    action: 'wait',
+    requireAction: true,
+  },
+  {
     id: 'public-data-pulled',
     page: '',
     target: 'leg-1-card',
