@@ -62,10 +62,9 @@ export async function verifyAndParseWebhook(
   const rawBody = await req.text();
   const signatureHeader = req.headers.get('stripe-signature');
 
-  // If no secret configured, log and accept (dev-only fallback) — but warn loudly.
+  // Fail closed: never accept unverified webhook events.
   if (!secret) {
-    console.warn(`[webhook] no ${env} webhook secret configured — accepting without verification`);
-    return { event: JSON.parse(rawBody), rawBody };
+    throw new Error(`${env} webhook secret is not configured`);
   }
   if (!signatureHeader) throw new Error('missing stripe-signature header');
 
