@@ -63,13 +63,14 @@ function validateLeg(
   const maxFuelForLanding = leg.maxLandingWeight - fixedWeights;
   const maxFuelForRamp = leg.maxRampWeight - fixedWeights;
 
-  // Check: fuel burn + reserve exceeds what the aircraft can carry
-  const minRequiredFuel = fuelBurn + leg.reserve + leg.taxiFuelBurn;
+  // Takeoff fuel = burn + reserve (taxi is consumed BEFORE takeoff, so not in takeoff fuel)
+  const takeoffFuelNeeded = fuelBurn + leg.reserve;
+  const rampFuelNeeded = takeoffFuelNeeded + leg.taxiFuelBurn;
   const effectiveTakeoffCap = Math.min(maxFuelForTakeoff, maxFuelLbs);
 
-  if (minRequiredFuel > effectiveTakeoffCap) {
+  if (takeoffFuelNeeded > effectiveTakeoffCap) {
     errors.push(
-      `Fuel burn (${fuelBurn}) + reserve (${leg.reserve}) + taxi (${leg.taxiFuelBurn}) = ${minRequiredFuel} lbs exceeds max takeoff fuel capacity of ${Math.floor(effectiveTakeoffCap)} lbs`
+      `Fuel burn (${fuelBurn}) + reserve (${leg.reserve}) = ${takeoffFuelNeeded} lbs exceeds max takeoff fuel capacity of ${Math.floor(effectiveTakeoffCap)} lbs`
     );
   }
 
