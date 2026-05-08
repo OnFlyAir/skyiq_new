@@ -82,9 +82,9 @@ function validateLeg(
   }
 
   // Check: ramp weight
-  if (maxFuelForRamp < minRequiredFuel) {
+  if (maxFuelForRamp < rampFuelNeeded) {
     errors.push(
-      `Required fuel (${minRequiredFuel} lbs) exceeds max ramp fuel capacity of ${Math.floor(maxFuelForRamp)} lbs`
+      `Required fuel (${rampFuelNeeded} lbs) exceeds max ramp fuel capacity of ${Math.floor(maxFuelForRamp)} lbs`
     );
   }
 
