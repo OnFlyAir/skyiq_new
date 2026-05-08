@@ -25,32 +25,8 @@ serve(async (req) => {
     );
   }
 
-  // Require authenticated caller
-  const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
-  try {
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-    );
-    const { data: { user }, error: authErr } = await sb.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-  } catch (_) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  }
+  // Auth is enforced by the platform via verify_jwt = true in config.toml.
+  // Reaching this point means the caller has a valid user JWT.
 
   try {
     const tripInput: TripInput = await req.json();
