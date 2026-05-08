@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.admin-subscription-action]
 verify_jwt = false
+
+[functions.optimize-fuel]
+verify_jwt = true
