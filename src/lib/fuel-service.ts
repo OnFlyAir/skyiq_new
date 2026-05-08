@@ -77,11 +77,16 @@ export function formToTripInput(form: TripFormData): TripInput {
  * Call the optimize-fuel Edge Function.
  */
 export async function runFuelOptimization(tripInput: TripInput): Promise<OptimizationResult> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? SUPABASE_ANON_KEY;
+
   const response = await fetch(`${SUPABASE_URL}/functions/v1/optimize-fuel`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Authorization": `Bearer ${token}`,
+      "apikey": SUPABASE_ANON_KEY,
     },
     body: JSON.stringify(tripInput),
   });
