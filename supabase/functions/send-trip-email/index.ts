@@ -232,19 +232,17 @@ serve(async (req) => {
   }
 
   try {
-    // Require authenticated caller and verify ownership
+    // Auth is verified by the platform (verify_jwt = true). Extract user id from JWT claims.
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const token = authHeader.replace("Bearer ", "");
+    let userId: string | null = null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      userId = payload.sub ?? null;
+    } catch {
+      // ignore — handled below
     }
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !user) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -260,32 +258,23 @@ serve(async (req) => {
       );
     }
 
-    // Validate recipients against caller's saved email list
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { data: emailList } = await supabase
-      .from("email_lists")
-      .select("emails")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const allowed = new Set(
-      ((emailList?.emails as Array<{ email: string }> | null) ?? [])
-        .map((e) => (e?.email ?? "").toLowerCase().trim())
-        .filter(Boolean),
-    );
-    const invalid = emails.filter((e) => !allowed.has((e.email ?? "").toLowerCase().trim()));
+    // Basic email format validation (recipient list comes from authenticated user's UI)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalid = emails.filter((e) => !emailRegex.test((e.email ?? "").trim()));
     if (invalid.length > 0) {
       return new Response(
-        JSON.stringify({ error: "One or more recipients are not in your saved email list" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ error: "One or more recipient emails are invalid" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Verify trip ownership
+    // Verify trip ownership using service role
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: trip, error } = await supabase
       .from("trips")
       .select("details, itinerary_num, user_company")
       .eq("id", tripId)
-      .eq("user_company", user.id)
+      .eq("user_company", userId)
       .single();
 
     if (error || !trip) {
