@@ -76,23 +76,37 @@ export function formToTripInput(form: TripFormData): TripInput {
 /**
  * Call the optimize-fuel Edge Function.
  */
+export class AuthRequiredError extends Error {
+  constructor(message = "Your session has expired. Please log in again.") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}
+
 export async function runFuelOptimization(tripInput: TripInput): Promise<OptimizationResult> {
   const { supabase } = await import("@/integrations/supabase/client");
   const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token ?? SUPABASE_ANON_KEY;
+
+  if (!session?.access_token) {
+    throw new AuthRequiredError();
+  }
 
   const response = await fetch(`${SUPABASE_URL}/functions/v1/optimize-fuel`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      "Authorization": `Bearer ${session.access_token}`,
       "apikey": SUPABASE_ANON_KEY,
     },
     body: JSON.stringify(tripInput),
   });
 
+  if (response.status === 401 || response.status === 403) {
+    throw new AuthRequiredError();
+  }
+
   if (!response.ok) {
-    const error = await response.json();
+    const error = await response.json().catch(() => ({}));
     throw new Error(error.error || `Optimization failed with status ${response.status}`);
   }
 

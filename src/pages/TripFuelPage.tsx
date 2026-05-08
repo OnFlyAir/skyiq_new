@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { ArrowLeft, Loader2, Plane, AlertTriangle, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -265,8 +266,22 @@ export default function TripFuelPage() {
       toast({ title: "Optimization complete", description: `Potential savings: ${formatCurrency(summary.savings)}` });
       navigate(`/trips/${tripId}/summary`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Optimization failed";
-      toast({ title: "Error", description: message, variant: "destructive" });
+      const { AuthRequiredError } = await import("@/lib/fuel-service");
+      if (err instanceof AuthRequiredError) {
+        toast({
+          title: "Session expired",
+          description: "Please log in again to run the optimizer.",
+          variant: "destructive",
+          action: (
+            <ToastAction altText="Log in" onClick={() => navigate("/login")}>
+              Log in
+            </ToastAction>
+          ),
+        });
+      } else {
+        const message = err instanceof Error ? err.message : "Optimization failed";
+        toast({ title: "Error", description: message, variant: "destructive" });
+      }
     } finally {
       setOptimizing(false);
     }
