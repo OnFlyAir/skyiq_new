@@ -22,7 +22,10 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   const location = useLocation();
   const [subStatus, setSubStatus] = useState<string | null | undefined>(undefined);
 
-  const exempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
+  const exempt =
+    profile?.role_name === 'Admin' ||
+    profile?.role_name === 'Dev' ||
+    (profile as any)?.billing_exempt === true;
 
   // Fetch the user's subscription status once the profile is loaded.
   useEffect(() => {
