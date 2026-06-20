@@ -51,6 +51,68 @@ export default function AdminOverviewTab() {
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: "", first_name: "", last_name: "", company: "",
+    password: "", billing_exempt: false,
+  });
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCreateUser() {
+    if (!newUser.email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          email: newUser.email.trim(),
+          first_name: newUser.first_name.trim() || undefined,
+          last_name: newUser.last_name.trim() || undefined,
+          company: newUser.company.trim() || undefined,
+          password: newUser.password.trim() || undefined,
+          billing_exempt: newUser.billing_exempt,
+        },
+      });
+      const apiError = (data as any)?.error;
+      if (error || apiError) {
+        const message = apiError || error?.message || "Unknown error";
+        toast.error("Could not create user", { description: message });
+        return;
+      }
+      toast.success(`Created ${newUser.email}`, {
+        description: "Account is ready. You can now set up their fleet.",
+      });
+      void logAdminAction({
+        action: "user.create",
+        targetUserId: (data as any)?.user_id,
+        targetLabel: newUser.email,
+        details: { company: newUser.company, billing_exempt: newUser.billing_exempt },
+      });
+      if ((data as any)?.temporary_password) {
+        setTempPassword((data as any).temporary_password as string);
+      } else {
+        setCreateOpen(false);
+        resetNewUser();
+      }
+      await loadData();
+    } catch (err) {
+      toast.error("Could not create user", {
+        description: err instanceof Error ? err.message : "Network error",
+      });
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function resetNewUser() {
+    setNewUser({ email: "", first_name: "", last_name: "", company: "", password: "", billing_exempt: false });
+    setTempPassword(null);
+    setCopied(false);
+  }
 
   async function loadData() {
     setLoading(true);
