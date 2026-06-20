@@ -308,10 +308,18 @@ export default function AdminOverviewTab() {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search by company, name, or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      {/* Search + Create */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by company, name, or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        </div>
+        <Button
+          onClick={() => { resetNewUser(); setCreateOpen(true); }}
+          className="shrink-0"
+        >
+          <UserPlus className="h-4 w-4 mr-2" /> Create user
+        </Button>
       </div>
 
       {/* Table */}
