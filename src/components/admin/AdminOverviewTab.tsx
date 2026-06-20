@@ -497,6 +497,98 @@ export default function AdminOverviewTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          if (creating) return;
+          setCreateOpen(o);
+          if (!o) resetNewUser();
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create user account</DialogTitle>
+            <DialogDescription>
+              Create a login for a friend or pilot. You can set up their fleet right after, and enable billing later.
+            </DialogDescription>
+          </DialogHeader>
+
+          {tempPassword ? (
+            <div className="space-y-3">
+              <p className="text-sm">
+                Account created for <strong>{newUser.email}</strong>. Share this temporary password — they can change it after signing in.
+              </p>
+              <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2 font-mono text-sm">
+                <span className="flex-1 break-all">{tempPassword}</span>
+                <Button
+                  variant="ghost" size="icon" className="h-8 w-8"
+                  onClick={() => {
+                    navigator.clipboard.writeText(tempPassword);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  }}
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => { setCreateOpen(false); resetNewUser(); }}>Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">First name</Label>
+                  <Input value={newUser.first_name} onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Last name</Label>
+                  <Input value={newUser.last_name} onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
+                <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="pilot@example.com" />
+              </div>
+              <div>
+                <Label className="text-xs">Company</Label>
+                <Input value={newUser.company} onChange={(e) => setNewUser({ ...newUser, company: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">Password (optional)</Label>
+                <Input
+                  type="text"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="Leave blank to auto-generate"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Min 8 characters. If blank, we'll generate one to share.</p>
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={newUser.billing_exempt}
+                  onChange={(e) => setNewUser({ ...newUser, billing_exempt: e.target.checked })}
+                  className="rounded border-input"
+                />
+                Billing exempt (free account — you can enable billing later)
+              </label>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>
+                <Button onClick={handleCreateUser} disabled={creating || !newUser.email.trim()}>
+                  {creating ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating…</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4 mr-2" /> Create account</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
