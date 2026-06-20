@@ -30,7 +30,7 @@ const TIERS = [
 
 export default function PricingTour({ onFinish }: Props) {
   const [step, setStep] = useState(0);
-  const totalSteps = 3;
+  const totalSteps = 2;
 
   const next = () => (step < totalSteps - 1 ? setStep(step + 1) : onFinish());
   const prev = () => step > 0 && setStep(step - 1);
