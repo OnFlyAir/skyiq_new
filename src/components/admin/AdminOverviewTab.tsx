@@ -9,8 +9,14 @@ import { Switch } from "@/components/ui/switch";
 import {
   Building2, Loader2, Plane, Search, TrendingUp, CreditCard,
   MoreHorizontal, UserCheck, UserX, Trash2, DollarSign,
+  UserPlus, Copy, Check,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
