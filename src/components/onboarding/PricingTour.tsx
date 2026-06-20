@@ -30,7 +30,7 @@ const TIERS = [
 
 export default function PricingTour({ onFinish }: Props) {
   const [step, setStep] = useState(0);
-  const totalSteps = 3;
+  const totalSteps = 2;
 
   const next = () => (step < totalSteps - 1 ? setStep(step + 1) : onFinish());
   const prev = () => step > 0 && setStep(step - 1);
@@ -143,40 +143,6 @@ export default function PricingTour({ onFinish }: Props) {
           </div>
         )}
 
-        {step === 2 && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
-                <Wrench className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground">Want us to do it for you?</h3>
-                <p className="text-xs text-muted-foreground">Done-For-You · $25 per plan · billed monthly</p>
-              </div>
-            </div>
-            <p className="text-sm text-foreground/90">
-              Don't have time to build fuel plans? Upload your trip sheet and our team delivers a
-              fully optimized plan to your inbox. <strong>Nothing to pay up front</strong> —
-              we add <strong>$25 per plan</strong> to your end-of-month invoice, only for the plans you actually request.
-            </p>
-            <ul className="space-y-1.5 text-sm">
-              {[
-                'Upload any trip itinerary (PDF or doc)',
-                'Our team builds the optimized fuel plan',
-                'Delivered ready-to-file, usually within hours',
-                'No upfront charge — billed at the end of the month',
-              ].map((it) => (
-                <li key={it} className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                  <span className="text-foreground">{it}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs text-muted-foreground">
-              You can request DFY plans anytime from the DFY tab inside the app — your monthly invoice will include only the plans you used.
-            </p>
-          </div>
-        )}
 
         {/* Footer nav */}
         <div className="flex items-center justify-between pt-2">
