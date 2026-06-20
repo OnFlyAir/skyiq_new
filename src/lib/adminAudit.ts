@@ -6,6 +6,7 @@ export type AdminAuditAction =
   | "user.billing_exempt_on"
   | "user.billing_exempt_off"
   | "user.delete"
+  | "user.create"
   | "fleet.aircraft_update"
   | "fleet.aircraft_enable"
   | "fleet.aircraft_disable"
