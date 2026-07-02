@@ -136,9 +136,11 @@ export function resultToSummary(
         feeAmount = fee.amount;
         const didWaive = leg.total_fuel_purchased_gallons >= fee.waived_at;
         hasWaivedFee = didWaive;
+        // Optimizer adds fee.amount to total_cost ONLY when the fee is NOT waived.
+        // Strip it out so fuelCost represents pure fuel spend (used for per-gal display).
         fuelCost = didWaive
-          ? leg.total_cost - fee.amount
-          : leg.total_cost;
+          ? leg.total_cost
+          : leg.total_cost - fee.amount;
       }
     }
 
