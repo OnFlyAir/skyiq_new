@@ -12,9 +12,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   // Require shared secret to prevent external triggering of trial reminder emails.
-  const cronSecret = Deno.env.get('CRON_SECRET');
-  if (!cronSecret) {
-    return new Response(JSON.stringify({ error: 'CRON_SECRET not configured' }), {
+  const accepted = [Deno.env.get('CRON_JOB_KEY'), Deno.env.get('CRON_SECRET')]
+    .filter((v): v is string => !!v);
+  if (accepted.length === 0) {
+    return new Response(JSON.stringify({ error: 'cron key not configured' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
   const provided =
     req.headers.get('x-cron-secret') ||
     (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (provided !== cronSecret) {
+  if (!accepted.includes(provided)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

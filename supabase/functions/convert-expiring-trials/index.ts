@@ -125,12 +125,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  const cronSecret = Deno.env.get('CRON_SECRET');
-  if (!cronSecret) return json({ error: 'CRON_SECRET not configured' }, 500);
+  const accepted = [Deno.env.get('CRON_JOB_KEY'), Deno.env.get('CRON_SECRET')]
+    .filter((v): v is string => !!v);
+  if (accepted.length === 0) return json({ error: 'cron key not configured' }, 500);
   const provided =
     req.headers.get('x-cron-secret') ||
     (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (provided !== cronSecret) return json({ error: 'Unauthorized' }, 401);
+  if (!accepted.includes(provided)) return json({ error: 'Unauthorized' }, 401);
 
   try {
     const body = (await req.json().catch(() => ({}))) as Body;
