@@ -19,6 +19,101 @@ interface Body {
   environment?: StripeEnv;
   user_id?: string; // optional: convert a single account now
   dry_run?: boolean;
+  repair_pricing?: boolean; // reprice live subs that don't match their fleet
+}
+
+// Brings an existing Stripe subscription in line with the account's fleet and
+// the current tier table. Used to fix legacy $1 recurring plans.
+async function repairPricing(
+  supabase: any,
+  env: StripeEnv,
+  dryRun: boolean,
+  onlyUser?: string,
+) {
+  let q = supabase
+    .from('subscriptions')
+    .select('user_id, billing_cycle, monthly_amount_cents, stripe_subscription_id, status')
+    .not('stripe_subscription_id', 'is', null)
+    .in('status', ['active', 'past_due']);
+  if (onlyUser) q = q.eq('user_id', onlyUser);
+
+  const { data, error } = await q;
+  if (error) throw error;
+
+  const out: Array<Record<string, unknown>> = [];
+  for (const row of (data ?? []) as any[]) {
+    const userId = row.user_id as string;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles').select('role_name, billing_exempt').eq('id', userId).maybeSingle();
+      if (profile && (['Admin', 'Dev'].includes(profile.role_name) || profile.billing_exempt)) {
+        out.push({ userId, outcome: 'skipped_exempt' });
+        continue;
+      }
+
+      const { data: aircraft } = await supabase
+        .from('aircrafts').select('id').eq('user_company', userId).eq('is_enabled', true);
+      const count = aircraft?.length ?? 0;
+      if (count <= 0) {
+        out.push({ userId, outcome: 'skipped_no_aircraft' });
+        continue;
+      }
+
+      const cycle = (row.billing_cycle === 'annual' ? 'annual' : 'four_weekly') as
+        'four_weekly' | 'annual';
+      const expected = calcPriceCents(count, cycle);
+      if (expected === row.monthly_amount_cents) {
+        out.push({ userId, outcome: 'already_correct', amount: expected });
+        continue;
+      }
+
+      if (dryRun) {
+        out.push({ userId, outcome: 'would_reprice', from: row.monthly_amount_cents, to: expected, count });
+        continue;
+      }
+
+      const current = await stripeFetch(
+        `/v1/subscriptions/${row.stripe_subscription_id}`, { method: 'GET' }, env,
+      );
+      const itemId = current.items?.data?.[0]?.id;
+      if (!itemId) {
+        out.push({ userId, outcome: 'error', error: 'subscription has no items' });
+        continue;
+      }
+
+      const intervalParams = cycle === 'annual'
+        ? { 'items[0][price_data][recurring][interval]': 'year',
+            'items[0][price_data][recurring][interval_count]': 1 }
+        : { 'items[0][price_data][recurring][interval]': 'day',
+            'items[0][price_data][recurring][interval_count]': 28 };
+
+      await stripeFetch(`/v1/subscriptions/${row.stripe_subscription_id}`, {
+        method: 'POST',
+        body: form({
+          'items[0][id]': itemId,
+          'items[0][price_data][currency]': 'usd',
+          'items[0][price_data][product_data][name]':
+            cycle === 'annual' ? `SkyIQ Annual — ${count} aircraft` : `SkyIQ 4-Weekly — ${count} aircraft`,
+          'items[0][price_data][unit_amount]': expected,
+          ...intervalParams,
+          proration_behavior: 'none',
+          'metadata[aircraft_count]': String(count),
+          'metadata[user_id]': userId,
+          'metadata[cycle]': cycle,
+        }),
+      }, env);
+
+      await supabase.from('subscriptions').update({
+        aircraft_count: count,
+        monthly_amount_cents: expected,
+      }).eq('user_id', userId);
+
+      out.push({ userId, outcome: 'repriced', from: row.monthly_amount_cents, to: expected, count });
+    } catch (e) {
+      out.push({ userId, outcome: 'error', error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return out;
 }
 
 Deno.serve(async (req) => {
