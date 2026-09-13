@@ -130,9 +130,9 @@ Deno.serve(async (req) => {
         return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
         'line_items[0][quantity]': 1,
         'line_items[0][price_data][currency]': 'usd',
-        'line_items[0][price_data][product_data][name]': 'SkyIQ — $1 trial (4 weeks)',
+        'line_items[0][price_data][product_data][name]': 'SkyIQ — $1 trial (30 days)',
         'line_items[0][price_data][product_data][description]':
-          'One-time $1 charge for your 4-week trial. After the trial, billing is $100–$200 per tail/month based on the number of aircraft in your fleet. Cancel anytime.',
+          'One-time $1 charge for your 30-day trial. After the trial your plan starts automatically on this card: $200 per tail for 1–3 aircraft, $150 for 4–6, $100 for 7+. Cancel anytime.',
         'line_items[0][price_data][unit_amount]': 100,
         'payment_intent_data[setup_future_usage]': 'off_session',
         'payment_intent_data[metadata][user_id]': user.id,
@@ -198,13 +198,18 @@ Deno.serve(async (req) => {
       body: form(sessionParams),
     }, env);
 
+    // Record the customer + intended cycle, but do NOT grant trial access
+    // here — the session may be abandoned. The `checkout.session.completed`
+    // webhook starts the 30-day trial clock once the $1 actually clears.
+    const nowIso = new Date().toISOString();
     await admin.from('subscriptions').upsert({
       user_id: user.id,
       stripe_customer_id: customerId,
-      status: existingSub?.status ?? 'trial',
+      status: existingSub?.status ?? 'expired',
       billing_cycle: cycle,
       aircraft_count: aircraftCount,
       monthly_amount_cents: amountCents,
+      ...(existingSub ? {} : { trial_starts_at: nowIso, trial_ends_at: nowIso }),
     } as any, { onConflict: 'user_id' });
 
     return new Response(JSON.stringify({

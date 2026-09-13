@@ -29,17 +29,17 @@ interface Subscription {
 }
 
 const PRICING_TIERS = [
-  { range: '1–4 aircraft', perPlane: 200 },
-  { range: '5–9 aircraft', perPlane: 150 },
-  { range: '10+ aircraft', perPlane: 100 },
+  { range: '1–3 aircraft', perPlane: 200 },
+  { range: '4–6 aircraft', perPlane: 150 },
+  { range: '7+ aircraft', perPlane: 100 },
 ];
 
 function calcPrice(count: number): number {
   if (count <= 0) return 0;
   let total = 0;
-  total += Math.min(count, 4) * 200;
-  if (count > 4) total += Math.min(count - 4, 5) * 150;
-  if (count > 9) total += (count - 9) * 100;
+  total += Math.min(count, 3) * 200;
+  if (count > 3) total += Math.min(count - 3, 3) * 150;
+  if (count > 6) total += (count - 6) * 100;
   return total;
 }
 

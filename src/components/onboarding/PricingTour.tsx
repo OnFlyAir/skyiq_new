@@ -23,9 +23,9 @@ interface Props {
 }
 
 const TIERS = [
-  { range: '1–4 aircraft', perPlane: 200, badge: 'Starter' },
-  { range: '5–9 aircraft', perPlane: 150, badge: 'Growing fleet', save: '25% cheaper' },
-  { range: '10+ aircraft', perPlane: 100, badge: 'Enterprise', save: '50% cheaper' },
+  { range: '1–3 aircraft', perPlane: 200, badge: 'Starter' },
+  { range: '4–6 aircraft', perPlane: 150, badge: 'Growing fleet', save: '25% cheaper' },
+  { range: '7+ aircraft', perPlane: 100, badge: 'Enterprise', save: '50% cheaper' },
 ];
 
 export default function PricingTour({ onFinish }: Props) {
