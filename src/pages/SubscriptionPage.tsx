@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import { getStripeEnvironment } from '@/lib/stripe';
 import { track } from '@/lib/analytics';
+import CancelSubscriptionDialog from '@/components/subscription/CancelSubscriptionDialog';
 
 interface Subscription {
   id: string;
@@ -26,6 +27,7 @@ interface Subscription {
   monthly_amount_cents: number;
   canceled_at: string | null;
   stripe_customer_id: string | null;
+  retention_discount_percent?: number | null;
 }
 
 const PRICING_TIERS = [
@@ -75,6 +77,7 @@ export default function SubscriptionPage() {
     pdf_url: string | null; hosted_url: string | null;
   }>>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const canManageBilling = profile?.role_name === 'Admin'
     || profile?.role_name === 'Dev'
