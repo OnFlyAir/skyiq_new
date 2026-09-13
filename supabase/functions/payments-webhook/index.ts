@@ -244,6 +244,62 @@ Deno.serve(async (req) => {
         break;
       }
 
+      // $1 trial activation. Only once money actually clears do we start the
+      // 30-day trial clock and enable the account. The card collected here is
+      // stored as the customer's default so `convert-expiring-trials` can
+      // start the real recurring plan off-session when the trial ends.
+      case 'checkout.session.completed': {
+        const userId = obj.metadata?.user_id;
+        if (!userId) break;
+        if (obj.payment_status === 'unpaid') break;
+        // Recurring-plan checkouts are handled by subscription.* events.
+        if (obj.mode === 'subscription') break;
+
+        const customerId = obj.customer ?? null;
+        let defaultPm: string | null = null;
+        if (obj.payment_intent) {
+          try {
+            const pi = await stripeFetch(
+              `/v1/payment_intents/${obj.payment_intent}`, { method: 'GET' }, env,
+            );
+            defaultPm = pi?.payment_method ?? null;
+          } catch (e) {
+            console.error('[webhook] payment_intent lookup failed', e);
+          }
+        }
+        if (customerId && defaultPm) {
+          try {
+            await stripeFetch(`/v1/customers/${customerId}`, {
+              method: 'POST',
+              body: form({ 'invoice_settings[default_payment_method]': defaultPm }),
+            }, env);
+          } catch (e) {
+            console.error('[webhook] set default payment method failed', e);
+          }
+        }
+
+        const startedAt = new Date();
+        const endsAt = new Date(startedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const cycle = obj.metadata?.cycle === 'annual' ? 'annual' : 'four_weekly';
+
+        await supabase.from('subscriptions').upsert({
+          user_id: userId,
+          stripe_customer_id: customerId,
+          status: 'trial',
+          billing_cycle: cycle,
+          trial_starts_at: startedAt.toISOString(),
+          trial_ends_at: endsAt.toISOString(),
+          trial_reminder_sent: false,
+        } as any, { onConflict: 'user_id' });
+
+        await setUserEnabled(supabase, userId, true);
+        await safeSendEmail(supabase, userId, 'trial_started', {
+          trialEndsAt: endsAt.toLocaleDateString(),
+        });
+        break;
+      }
+
+
       case 'invoice.paid':
       case 'invoice.payment_succeeded': {
         // Renewal: apply pending cycle switch if any.
