@@ -203,6 +203,62 @@ export type Database = {
         }
         Relationships: []
       }
+      cancellation_requests: {
+        Row: {
+          attempts: number
+          code_expires_at: string | null
+          code_hash: string | null
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          offer_accepted: boolean
+          offer_shown: boolean
+          reason: string
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          code_expires_at?: string | null
+          code_hash?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_accepted?: boolean
+          offer_shown?: boolean
+          reason?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          code_expires_at?: string | null
+          code_hash?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_accepted?: boolean
+          offer_shown?: boolean
+          reason?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancellation_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carry_types: {
         Row: {
           cruise_fuel_burn: number | null
@@ -557,6 +613,8 @@ export type Database = {
             | null
           quickbooks_customer_id: string | null
           quickbooks_invoice_id: string | null
+          retention_discount_applied_at: string | null
+          retention_discount_percent: number | null
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
           stripe_price_id: string | null
@@ -581,6 +639,8 @@ export type Database = {
             | null
           quickbooks_customer_id?: string | null
           quickbooks_invoice_id?: string | null
+          retention_discount_applied_at?: string | null
+          retention_discount_percent?: number | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -605,6 +665,8 @@ export type Database = {
             | null
           quickbooks_customer_id?: string | null
           quickbooks_invoice_id?: string | null
+          retention_discount_applied_at?: string | null
+          retention_discount_percent?: number | null
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
           stripe_price_id?: string | null

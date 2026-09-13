@@ -9,6 +9,7 @@ export type BillingEmailType =
   | 'trial_ending'
   | 'payment_failed'
   | 'subscription_canceled'
+  | 'cancel_code'
   | 'plan_changed';
 
 interface SendArgs {
@@ -79,6 +80,16 @@ function build(type: BillingEmailType, data: Record<string, any> = {}): { subjec
           <a class="btn" href="${subscriptionUrl}">Reactivate subscription</a>
         `),
       };
+    case 'cancel_code':
+      return {
+        subject: `${data.code || ''} is your SkyIQ cancellation code`,
+        html: wrap(`
+          <h1 class="h1">Confirm your cancellation</h1>
+          <p class="p">Hi${data.firstName ? ` ${data.firstName}` : ''} — use this code to confirm you want to cancel your SkyIQ subscription.</p>
+          <p style="font-size:32px;font-weight:700;letter-spacing:6px;color:#0f172a;margin:8px 0 16px;">${data.code || ''}</p>
+          <p class="p">The code expires in 10 minutes. If you didn't request this, you can ignore this email — nothing will change.</p>
+        `),
+      };
     case 'plan_changed':
       return {
         subject: 'Your SkyIQ plan has been updated',
@@ -130,6 +141,7 @@ const TYPE_CATEGORY: Record<BillingEmailType, 'critical' | 'changes' | 'lifecycl
   trial_ending: 'lifecycle',
   payment_failed: 'critical',
   subscription_canceled: 'critical',
+  cancel_code: 'critical',
   plan_changed: 'changes',
 };
 
