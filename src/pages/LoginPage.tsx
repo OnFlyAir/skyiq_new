@@ -4,6 +4,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { useDemo, PUBLIC_DEMO_SESSION_KEY } from '@/contexts/DemoContext';
 import { POST_DEMO_HIGHLIGHT_KEY } from '@/components/demo/DemoOverlay';
 import { supabase } from '@/integrations/supabase/client';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { Mail, Lock, Eye, EyeOff, Shield, PlayCircle, Sparkles } from 'lucide-react';
 
 const DEMO_PENDING_KEY = 'skyiq_demo_pending_trip';
@@ -262,6 +263,14 @@ export default function LoginPage() {
         </div>
       )}
 
+      <GoogleSignInButton onError={setError} />
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or with email</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-foreground/80 mb-1.5">Email</label>
@@ -367,7 +376,7 @@ export default function LoginPage() {
           Sign up today for $1
         </Link>
         <p className="mt-2 text-xs text-center text-muted-foreground">
-          {postDemoHighlight ? '👆 Loved the demo? Get 4 weeks of access for $1 — cancel anytime.' : '$1 today · 4 weeks of access · cancel anytime'}
+          {postDemoHighlight ? '👆 Loved the demo? Get 30 days of access for $1 — cancel anytime.' : '$1 today · 30 days of access · cancel anytime'}
         </p>
       </div>
 

@@ -129,8 +129,8 @@ export default function OnboardingPage() {
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-foreground">4 weeks of SkyIQ for $1</h2>
-                    <p className="text-xs text-muted-foreground">28 days · cancel anytime</p>
+                    <h2 className="text-xl font-bold text-foreground">30 days of SkyIQ for $1</h2>
+                    <p className="text-xs text-muted-foreground">30 days · cancel anytime</p>
                   </div>
                 </div>
                 <p className="text-sm text-foreground/90">
@@ -179,7 +179,7 @@ export default function OnboardingPage() {
                     </p>
                     <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
                       <li>
-                        <span className="text-foreground font-medium">$1 today</span> for your initial trial period of 4 weeks.
+                        <span className="text-foreground font-medium">$1 today</span> for your initial trial period of 30 days.
                       </li>
                       <li>
                         After the trial, <span className="text-foreground font-medium">$100–$200 per tail/month</span> based on the number of aircraft in your fleet.

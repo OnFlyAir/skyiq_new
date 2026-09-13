@@ -43,6 +43,8 @@ import DfyPortalPage from "@/pages/DfyPortalPage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import OnboardingPage from "@/pages/OnboardingPage";
 import SecurityPage from "@/pages/SecurityPage";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +60,8 @@ function App() {
               <Routes>
                 {/* Public security/trust page */}
                 <Route path="/security" element={<SecurityPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
 
                 {/* Auth routes — no sidebar, centered card layout */}
                 <Route element={<AuthLayout />}>
