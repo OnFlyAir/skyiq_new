@@ -1,84 +1,55 @@
-# Security & Trust — implementation plan
+# Turn on real Stripe billing after the $1 trial
 
-Goal: give SkyIQ a credible, defensible security story so operators feel safe uploading trip itineraries (PII, client emails/phones, tail numbers, fuel quotes). Three deliverables:
+## What I found
 
-1. A public `/security` trust page that explains **how** we protect data — not just what we claim.
-2. A backend tenant-isolation audit so the "your data is never visible to other operators" claim is provably true.
-3. A downloadable PDF one-pager you can send to prospects / attach to NDAs.
+I traced the full billing chain (checkout → Stripe → webhook → database → access control) and checked live account data. **Right now, paid billing never starts.** Everyone who signs up stays on a free trial forever.
 
----
+Evidence from the live data: every trial account has a Stripe customer but **no Stripe subscription**, and trials from May, June and July are still marked "trial" today — still with full access, never billed.
 
-## 1. Public `/security` trust page
+The specific gaps:
 
-New route `/security` (public, no auth required), linked from the landing page footer and from the upload screen ("How is my data protected?").
+1. **Nothing creates the recurring plan.** The $1 signup is a one-time charge only (deliberately, to avoid the old double-charge problem). The card is saved for later, but no code ever uses it to start the real plan. The comment in the checkout code says the subscription is "created later inside the app" — that part was never built.
+2. **Trial end does nothing.** The daily job emails "your trial is ending", then the trial end date simply passes. Access is never cut off and no charge is attempted.
+3. **Payment is never confirmed.** The trial row is written when checkout *opens*, not when the $1 actually clears. Someone can open checkout, close it, and still get a full trial.
+4. **Trial length is inconsistent.** Sign-up copy says 4 weeks; the database default gives 30 days.
+5. **Legacy $1 plans.** Three older accounts have a real Stripe subscription charging $1 per cycle instead of their true fleet price.
 
-Sections, each with a short plain-English explanation of **how** it works under the hood:
+## What I'll build
 
-- **Encryption in transit & at rest**
-  How: All traffic is HTTPS (TLS 1.2+) terminated at our cloud provider's edge. Trip PDFs and database rows are stored encrypted at rest with AES-256 managed by the cloud platform.
+### 1. Confirm the $1 payment properly
+Add handling for the checkout-completed event from Stripe. Only when the $1 actually clears do we:
+- mark the account as on trial, starting *then*,
+- set the trial end to exactly 28 days out,
+- store the saved card so it can be charged later,
+- enable the account.
 
-- **Per-operator data isolation**
-  How: Every table that holds your data (trips, aircraft, parsed itineraries, client contacts, email lists) is protected by row-level security policies in the database itself. Each row is stamped with the owning user's ID, and the database refuses to return rows that don't match the requester's authenticated session — even if application code had a bug.
+### 2. New job: start the real plan at trial end
+A daily job that finds trials whose end date has arrived and, for each one:
+- counts the account's active aircraft and computes the tiered price (unchanged pricing: $200/$150/$100 per tail, 20% off annual),
+- creates the real recurring Stripe subscription on the saved card, on their chosen cycle,
+- marks the account active and emails a confirmation.
 
-- **We never train AI on your data, never sell it, never share it**
-  How: Itineraries are sent to our AI parsing provider only for the seconds needed to extract the structured fields, with training/retention disabled by contract. We do not sell, rent, or share operator data with third parties for marketing or analytics.
+Edge cases handled explicitly:
+- **No aircraft on file** → don't guess a price. Move the account to a "needs setup" state: access blocked with a clear prompt to add aircraft and activate, plus an email. No surprise charge.
+- **Card declines** → account goes past-due, the existing past-due email and access block kick in, Stripe retries.
+- **Billing-exempt / Admin / Dev** → skipped entirely.
+- Safe to run repeatedly; it will never double-charge or create two subscriptions.
 
-- **Strict internal access**
-  How: Production data access is limited to engineers who need it for support. Access is role-based, audited (every admin action is written to an immutable audit log), and protected by MFA on the underlying cloud accounts.
+### 3. Close the "free forever" hole
+Account access currently treats "trial" as valid regardless of date. It will additionally require the trial end date to still be in the future.
 
-- **You own your data**
-  How: From your profile you can export every trip, aircraft, and itinerary we hold for you, or permanently delete your account and all associated data. Deletes cascade across trips, aircraft, parsed PDFs, email lists, and analytics within 30 days.
+### 4. Clean up existing accounts
+- The four expired trials (May–July) get flagged for your review in the admin area rather than being silently charged — you decide whether to activate or close them.
+- The three $1 legacy subscriptions get corrected to their true fleet price at their next renewal, with a plan-change email.
 
-- **Hosted on hardened cloud infrastructure**
-  How: SkyIQ runs on a managed cloud platform (Supabase on AWS, US region) that holds SOC 2 Type 2 and ISO 27001 certifications. We inherit their physical security, network controls, backup, and disaster-recovery posture.
-  *(You confirmed you'd like the accurate Supabase-on-AWS phrasing rather than something vaguer.)*
+### 5. Admin visibility
+Add a "Trial conversions" panel to the admin subscriptions page: upcoming conversions, conversions that failed, and accounts stuck without aircraft — with a manual "convert now" button.
 
-- **NDA / DPA on request**
-  How: Contact link / mailto for legal@skyiq.net (or whatever address you prefer) to sign an NDA or Data Processing Agreement before pilot/PII data is uploaded.
+## Technical notes
 
-- **Reporting a vulnerability**
-  How: security@skyiq.net with PGP/responsible-disclosure note.
-
-Design: matches existing aviation aesthetic (primary blue `#1a7ade`, clean cards, no marketing fluff). Add anchor links so a sales email can deep-link to e.g. `/security#isolation`.
-
-SEO: `<title>Security & Data Protection — SkyIQ</title>`, meta description under 160 chars, single H1, JSON-LD `Organization` block.
-
----
-
-## 2. Tenant-isolation audit (so the page isn't lying)
-
-Run a read-only RLS review of every table that holds operator data and confirm:
-
-- `trips`, `aircrafts`, `email_lists` — already user-scoped via `auth.uid() = user_company / user_id`. ✅ verify no policy gap on UPDATE/DELETE.
-- `onfly_data` (parsed itineraries with client name/email/phone) — currently has admin policies + user INSERT, but **no user SELECT policy**. That means today users can insert their parsed PDFs but cannot read them back via the client. Confirm this is intentional (everything is read server-side via service role) or add a `Users can view own onfly_data` SELECT policy. **This is the highest-priority finding.**
-- `dfy_clients`, `dfy_requests`, `dfy_usage_charges` — verify owner-scoped SELECT.
-- `analytics_events` — owner-scoped, ok.
-- `itinerary-pdfs` storage bucket — confirm storage policies restrict objects to `auth.uid()::text = (storage.foldername(name))[1]` so one operator can never download another's PDF.
-- `profiles`, `subscriptions` — owner-scoped, ok.
-
-Output: a short internal report listing each table, the policy in place, and any fix migration needed. Any fixes will be presented as a separate migration for your approval before running.
-
-No new tables. No schema redesign. Just verification + at most 1–2 small policy patches.
-
----
-
-## 3. Downloadable PDF one-pager
-
-`/mnt/documents/skyiq-security-overview.pdf` — 1–2 pages, same content as the trust page condensed, branded with SkyIQ blue, suitable for emailing to a prospect's IT/legal team alongside an NDA. Generated with reportlab, QA'd by rendering to images and visually checking every page before delivery.
-
----
-
-## What this plan deliberately does NOT include
-
-- MFA for end users / HIBP password check (you didn't pick those — can add later).
-- Self-serve "Export my data" / "Delete my account" UI (you didn't pick that — the trust page will still claim it because admins can fulfill the request manually; let me know if you'd rather soften that wording or add the UI).
-- Any new compliance certification (SOC 2 for SkyIQ itself) — we only inherit the platform's.
-
----
-
-## Technical section (for reference)
-
-- Files added: `src/pages/SecurityPage.tsx`, route in `src/App.tsx` (public, outside `ProtectedRoute`), footer link.
-- Audit: read-only via existing schema context + `supabase--linter`. Any policy fix goes through `supabase--migration` with your approval.
-- PDF: reportlab script in `/tmp/`, output to `/mnt/documents/skyiq-security-overview.pdf`, served back via `<lov-artifact>`.
-- No edge function changes, no new dependencies, no schema changes unless the audit finds a gap.
+- New edge function `convert-expiring-trials`, scheduled daily via pg_cron using the existing `CRON_SECRET` header pattern.
+- `payments-webhook` gains a `checkout.session.completed` case; it reads `payment_intent.payment_method` and stores it as the customer's default payment method (`invoice_settings.default_payment_method`) so off-session subscription creation succeeds.
+- Subscription creation uses the same inline `price_data` shape already used in `sync-subscription-billing`, so cycle switching and aircraft-count syncing keep working unchanged.
+- Idempotency: conversion only runs when `status = 'trial'` and `stripe_subscription_id is null`, and the row is stamped inside the same call.
+- `ProtectedRoute` gains a trial-expiry date check alongside the existing status check.
+- No pricing logic changes; `calcPriceCents` remains the single source of truth.
