@@ -9,6 +9,7 @@ export type BillingEmailType =
   | 'trial_ending'
   | 'payment_failed'
   | 'subscription_canceled'
+  | 'cancel_code'
   | 'plan_changed';
 
 interface SendArgs {
