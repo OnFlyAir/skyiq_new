@@ -237,7 +237,7 @@ export default function SubscriptionPage() {
   const needsReactivate = sub && (sub.status === 'canceled' || sub.status === 'expired' || sub.status === 'past_due');
 
   // Trial / next billing dates derived from sub if available, otherwise from
-  // a fresh "today + 28 days" calculation right after returning from Stripe.
+  // a fresh "today + 30 days" calculation right after returning from Stripe.
   const trialEndsAt = sub?.trial_ends_at
     ? new Date(sub.trial_ends_at)
     : new Date(Date.now() + 28 * 86400000);
