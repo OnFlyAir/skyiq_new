@@ -70,13 +70,13 @@ export default function PricingTour({ onFinish }: Props) {
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-foreground">4 weeks of SkyIQ for $1</h3>
-                <p className="text-xs text-muted-foreground">28 days · cancel anytime</p>
+                <h3 className="text-lg font-bold text-foreground">30 days of SkyIQ for $1</h3>
+                <p className="text-xs text-muted-foreground">30 days · cancel anytime</p>
               </div>
             </div>
             <p className="text-sm text-foreground/90">
               Pay <strong>$1 today</strong> and get <strong>4 full weeks</strong> of SkyIQ.
-              Your regular subscription only starts after the 4 weeks end — cancel any time
+              Your regular subscription only starts after the 30 days end — cancel any time
               before and pay nothing more.
             </p>
             <ul className="space-y-1.5 text-sm">

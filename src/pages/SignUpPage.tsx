@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { Mail, Lock, Eye, EyeOff, User, Plane, MailCheck } from 'lucide-react';
 
 export default function SignUpPage() {
@@ -129,6 +130,14 @@ export default function SignUpPage() {
         </div>
       )}
 
+      <GoogleSignInButton onError={setError} />
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or with email</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -203,6 +212,12 @@ export default function SignUpPage() {
           ) : 'Create account'}
         </button>
       </form>
+
+      <p className="mt-4 text-xs text-center text-muted-foreground leading-relaxed">
+        By creating an account you agree to our{' '}
+        <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and{' '}
+        <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+      </p>
 
       <p className="mt-8 text-sm text-center text-muted-foreground">
         Already have an account?{' '}
