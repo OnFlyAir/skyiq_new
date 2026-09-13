@@ -36,8 +36,8 @@ async function ensureCoupon(env: StripeEnv) {
       body: form({
         id: RETENTION_COUPON_ID,
         percent_off: 20,
-        duration: 'forever',
-        name: 'SkyIQ loyalty discount (20% off)',
+        duration: 'once',
+        name: 'SkyIQ loyalty discount (20% off one month)',
       }),
     }, env);
   }
