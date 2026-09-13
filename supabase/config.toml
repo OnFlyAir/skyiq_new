@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.check-trial-reminders]
 verify_jwt = false
 
+[functions.convert-expiring-trials]
+verify_jwt = false
+
 [functions.create-checkout]
 verify_jwt = false
 

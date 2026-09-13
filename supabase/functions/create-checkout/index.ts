@@ -198,13 +198,18 @@ Deno.serve(async (req) => {
       body: form(sessionParams),
     }, env);
 
+    // Record the customer + intended cycle, but do NOT grant trial access
+    // here — the session may be abandoned. The `checkout.session.completed`
+    // webhook starts the 30-day trial clock once the $1 actually clears.
+    const nowIso = new Date().toISOString();
     await admin.from('subscriptions').upsert({
       user_id: user.id,
       stripe_customer_id: customerId,
-      status: existingSub?.status ?? 'trial',
+      status: existingSub?.status ?? 'expired',
       billing_cycle: cycle,
       aircraft_count: aircraftCount,
       monthly_amount_cents: amountCents,
+      ...(existingSub ? {} : { trial_starts_at: nowIso, trial_ends_at: nowIso }),
     } as any, { onConflict: 'user_id' });
 
     return new Response(JSON.stringify({

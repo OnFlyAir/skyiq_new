@@ -37,10 +37,20 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
     (async () => {
       const { data } = await supabase
         .from('subscriptions')
-        .select('status')
+        .select('status, trial_ends_at')
         .eq('user_id', profile.id)
         .maybeSingle();
-      if (!cancelled) setSubStatus(data?.status ?? null);
+      let status = (data as any)?.status ?? null;
+      // A trial that has run out no longer grants access — billing takes
+      // over from here (the daily conversion job starts the paid plan).
+      if (
+        status === 'trial' &&
+        (data as any)?.trial_ends_at &&
+        new Date((data as any).trial_ends_at).getTime() <= Date.now()
+      ) {
+        status = 'expired';
+      }
+      if (!cancelled) setSubStatus(status);
     })();
     return () => { cancelled = true; };
   }, [profile?.id, exempt]);
