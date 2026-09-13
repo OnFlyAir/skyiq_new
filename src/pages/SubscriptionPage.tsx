@@ -371,7 +371,7 @@ export default function SubscriptionPage() {
         </CardContent>
       </Card>
 
-      {/* Cancel subscription via email — we don't allow self-serve cancellation. */}
+      {/* Self-serve cancellation: reason -> 20% save offer -> emailed code */}
       {sub && !isExempt && (sub.status === 'trial' || sub.status === 'active') && (
         <Card>
           <CardHeader className="pb-3">
@@ -379,22 +379,36 @@ export default function SubscriptionPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              To cancel your plan, email us at{' '}
-              <a href="mailto:info@skyiq.net" className="font-medium text-primary hover:underline">info@skyiq.net</a>{' '}
-              and we'll take care of it within one business day.
+              You can cancel anytime. We'll email a 6-digit code to{' '}
+              <span className="font-medium text-foreground">{profile?.email}</span> to confirm, and you'll keep
+              access until the end of your current billing period.
             </p>
-            <Button asChild variant="outline" className="gap-1.5">
-              <a
-                href={`mailto:info@skyiq.net?subject=${encodeURIComponent('I want to cancel my subscription')}&body=${encodeURIComponent(
-                  `Hi SkyIQ team,\n\nI'd like to cancel my subscription.\n\nAccount email: ${profile?.email ?? ''}\nName: ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ')}\nCompany: ${profile?.company ?? ''}\n\nReason (optional):\n\nThanks.`
-                )}`}
-              >
-                <Mail className="h-4 w-4" /> Email info@skyiq.net to cancel
-              </a>
-            </Button>
+            {sub.retention_discount_percent ? (
+              <p className="text-sm text-green-700">
+                A {sub.retention_discount_percent}% loyalty discount is active on your plan.
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" onClick={() => setCancelOpen(true)}>
+                Cancel subscription
+              </Button>
+              <Button asChild variant="ghost" className="gap-1.5">
+                <a href="mailto:info@skyiq.net?subject=Subscription%20help">
+                  <Mail className="h-4 w-4" /> Talk to us instead
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
+
+      <CancelSubscriptionDialog
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        accountEmail={profile?.email}
+        alreadyDiscounted={!!sub?.retention_discount_percent}
+        onDone={load}
+      />
 
       {/* Pricing */}
       <Card>
