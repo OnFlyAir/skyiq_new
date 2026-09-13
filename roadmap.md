@@ -5,8 +5,12 @@
 - [x] Auto-start real Stripe subscription at trial end on saved card (convert-expiring-trials, daily 09:30 UTC)
 - [x] Expired trials blocked at ProtectedRoute
 - [x] Fixed broken cron auth (reminder job had been failing 401 daily)
-- [ ] BLOCKED ON USER: 9 of 10 existing accounts are flagged billing-exempt, including the three on legacy $1
-      recurring plans (ben@onflyair.com, pierce@onflyair.com, paiged115@yahoo.com) and the stale May-Jul trials.
-      Conversion + repricing skip them by design. User must say which accounts should start paying.
-      Then run convert-expiring-trials with {"repair_pricing": true} and/or clear the exempt flags.
+- [x] Existing accounts: ALL stay billing-exempt (user decision Sep 12) — nobody currently signed up pays.
+      New self-serve signups go through normal $1 trial -> paid conversion.
+
+## Onboarding readiness (Sep 13)
+- [x] Google sign-in on login + signup (managed OAuth, enabled)
+- [x] handle_new_user trigger now pulls full name from Google metadata
+- [x] Terms of Service (/terms) + Privacy Policy (/privacy) pages, linked from auth footer + signup consent line
+- [x] Trial copy aligned to "30 days" everywhere (was mixed 4 weeks / 28 days)
 - [x] Sent test of all 5 billing email types from info@skyiq.net to pierce@onflyair.com — all logged sent
