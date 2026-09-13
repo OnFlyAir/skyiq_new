@@ -142,6 +142,12 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     ) as any;
 
+    if (body.repair_pricing) {
+      const repaired = await repairPricing(supabase, env, dryRun, body.user_id);
+      return json({ mode: 'repair_pricing', dryRun, results: repaired });
+    }
+
+
     let query = supabase
       .from('subscriptions')
       .select('user_id, billing_cycle, trial_ends_at, stripe_customer_id, stripe_subscription_id, status')
