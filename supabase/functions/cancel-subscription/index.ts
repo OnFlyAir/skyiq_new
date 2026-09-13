@@ -11,7 +11,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { stripeFetch, form, type StripeEnv } from '../_shared/stripe-gateway.ts';
 import { sendBillingEmail } from '../_shared/billing-emails.ts';
 
-const RETENTION_COUPON_ID = 'skyiq_retention_20';
+const RETENTION_COUPON_ID = 'skyiq_retention_20_once';
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
