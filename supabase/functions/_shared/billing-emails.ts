@@ -141,6 +141,7 @@ const TYPE_CATEGORY: Record<BillingEmailType, 'critical' | 'changes' | 'lifecycl
   trial_ending: 'lifecycle',
   payment_failed: 'critical',
   subscription_canceled: 'critical',
+  cancel_code: 'critical',
   plan_changed: 'changes',
 };
 
