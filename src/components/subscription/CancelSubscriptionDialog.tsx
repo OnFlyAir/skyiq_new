@@ -61,7 +61,7 @@ export default function CancelSubscriptionDialog({
     setBusy(true);
     try {
       await call('accept_offer');
-      toast({ title: 'Discount applied', description: 'Your plan stays active with 20% off going forward.' });
+      toast({ title: 'Discount applied', description: 'Your plan stays active with 20% off your next month.' });
       onOpenChange(false); reset(); onDone();
     } catch (e) {
       toast({ title: 'Error', description: e instanceof Error ? e.message : 'Failed', variant: 'destructive' });
@@ -128,7 +128,7 @@ export default function CancelSubscriptionDialog({
               <DialogDescription>
                 {alreadyDiscounted
                   ? 'You already have a loyalty discount on this plan.'
-                  : 'Stay with SkyIQ and we\'ll take 20% off every future invoice, starting with your next one.'}
+                  : 'Stay with SkyIQ and we\'ll take 20% off your next month.'}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2 sm:gap-2">

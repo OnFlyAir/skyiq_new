@@ -11,7 +11,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { stripeFetch, form, type StripeEnv } from '../_shared/stripe-gateway.ts';
 import { sendBillingEmail } from '../_shared/billing-emails.ts';
 
-const RETENTION_COUPON_ID = 'skyiq_retention_20';
+const RETENTION_COUPON_ID = 'skyiq_retention_20_once';
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
@@ -36,8 +36,8 @@ async function ensureCoupon(env: StripeEnv) {
       body: form({
         id: RETENTION_COUPON_ID,
         percent_off: 20,
-        duration: 'forever',
-        name: 'SkyIQ loyalty discount (20% off)',
+        duration: 'once',
+        name: 'SkyIQ loyalty discount (20% off one month)',
       }),
     }, env);
   }
