@@ -9,3 +9,4 @@
       recurring plans (ben@onflyair.com, pierce@onflyair.com, paiged115@yahoo.com) and the stale May-Jul trials.
       Conversion + repricing skip them by design. User must say which accounts should start paying.
       Then run convert-expiring-trials with {"repair_pricing": true} and/or clear the exempt flags.
+- [ ] Send test of all billing email types from info@skyiq.net to pierce@onflyair.com (test-billing-emails function)
