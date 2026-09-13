@@ -25,10 +25,12 @@ export default function AuthLayout() {
             info@skyiq.net
           </a>
         </p>
-        <p>
-          <a href="/security" className="text-primary hover:underline font-medium">
-            Security &amp; data protection
-          </a>
+        <p className="flex items-center justify-center gap-3">
+          <a href="/security" className="text-primary hover:underline font-medium">Security</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms" className="text-primary hover:underline font-medium">Terms</a>
+          <span aria-hidden="true">·</span>
+          <a href="/privacy" className="text-primary hover:underline font-medium">Privacy</a>
         </p>
       </footer>
     </div>
