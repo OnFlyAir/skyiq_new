@@ -30,41 +30,40 @@ const baseStyle = `
   </style>`;
 
 function wrap(html: string) {
-  return `<!doctype html><html><head><meta charset="utf-8">${baseStyle}</head><body><div class="container">${html}<p class="brand">— OnFly Air Billing</p></div></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8">${baseStyle}</head><body><div class="container">${html}<p class="brand">— SkyIQ</p></div></body></html>`;
 }
 
 function build(type: BillingEmailType, data: Record<string, any> = {}): { subject: string; html: string } {
-  const appUrl = data.appUrl || 'https://skiiq2.lovable.app';
+  const appUrl = data.appUrl || 'https://app.skyiq.net';
   const subscriptionUrl = `${appUrl}/subscription`;
-  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
   switch (type) {
     case 'trial_started':
       return {
-        subject: 'Welcome to OnFly Air — your 30-day trial is active',
+        subject: 'Welcome to SkyIQ — your 30-day trial is active',
         html: wrap(`
           <h1 class="h1">Your trial has started</h1>
-          <p class="p">Welcome aboard${data.firstName ? `, ${data.firstName}` : ''}! Your 30-day trial of OnFly Air is now active for just $1.</p>
-          <p class="p">During your trial you have full access to fuel optimization, trip planning, and itinerary parsing. After your trial ends on <strong>${data.trialEndsAt || 'day 30'}</strong>, you'll be billed based on your active aircraft count.</p>
+          <p class="p">Welcome aboard${data.firstName ? `, ${data.firstName}` : ''}! Your 30-day SkyIQ trial is now active for just $1.</p>
+          <p class="p">During your trial you have full access to fuel optimization, trip planning, and itinerary parsing. After your trial ends on <strong>${data.trialEndsAt || 'day 30'}</strong>, your subscription will begin automatically.</p>
           <a class="btn" href="${subscriptionUrl}">View your subscription</a>
         `),
       };
     case 'trial_ending':
       return {
-        subject: 'Your OnFly Air trial ends in 3 days',
+        subject: 'Your SkyIQ trial ends in 3 days',
         html: wrap(`
           <h1 class="h1">Trial ending soon</h1>
-          <p class="p">Heads up${data.firstName ? `, ${data.firstName}` : ''} — your OnFly Air trial ends on <strong>${data.trialEndsAt}</strong>.</p>
-          <p class="p">To keep your access uninterrupted, make sure your payment method is up to date. You'll be charged ${data.amount ? fmt(data.amount) : 'based on your active aircraft count'} on your first billing cycle.</p>
+          <p class="p">Heads up${data.firstName ? `, ${data.firstName}` : ''} — your SkyIQ trial ends on <strong>${data.trialEndsAt}</strong>.</p>
+          <p class="p">To keep your access uninterrupted, make sure your payment method is up to date. Your subscription will begin automatically at the end of your trial.</p>
           <a class="btn" href="${subscriptionUrl}">Manage subscription</a>
         `),
       };
     case 'payment_failed':
       return {
-        subject: 'Action required: payment failed for OnFly Air',
+        subject: 'Action required: payment failed for SkyIQ',
         html: wrap(`
           <h1 class="h1">We couldn't process your payment</h1>
-          <p class="p">Your most recent OnFly Air payment of ${data.amount ? fmt(data.amount) : 'your subscription charge'} did not go through. Your account access has been paused.</p>
+          <p class="p">Your most recent SkyIQ payment did not go through. Your account access has been paused.</p>
           <p class="p">To restore access, please update your payment method as soon as possible.</p>
           <a class="btn" href="${subscriptionUrl}">Update payment method</a>
           <p class="meta">If you've already updated your payment method, you can ignore this email — access restores automatically once payment succeeds.</p>
@@ -72,24 +71,23 @@ function build(type: BillingEmailType, data: Record<string, any> = {}): { subjec
       };
     case 'subscription_canceled':
       return {
-        subject: 'Your OnFly Air subscription has been canceled',
+        subject: 'Your SkyIQ subscription has been canceled',
         html: wrap(`
           <h1 class="h1">Subscription canceled</h1>
-          <p class="p">Your OnFly Air subscription has been canceled and your account access has been disabled.</p>
+          <p class="p">Your SkyIQ subscription has been canceled and your account access has been disabled.</p>
           <p class="p">If this was unintentional or you'd like to come back, you can reactivate at any time.</p>
           <a class="btn" href="${subscriptionUrl}">Reactivate subscription</a>
         `),
       };
     case 'plan_changed':
       return {
-        subject: 'Your OnFly Air plan has been updated',
+        subject: 'Your SkyIQ plan has been updated',
         html: wrap(`
           <h1 class="h1">Plan updated</h1>
-          <p class="p">Your OnFly Air subscription has been updated. Here's a summary:</p>
+          <p class="p">Your SkyIQ subscription has been updated. Here's a summary:</p>
           <p class="p">
             <strong>Aircraft:</strong> ${data.aircraftCount ?? '—'}<br>
-            <strong>Billing cycle:</strong> ${data.billingCycle === 'annual' ? 'Annual (20% off)' : '4-week'}<br>
-            <strong>Next charge:</strong> ${data.amount ? fmt(data.amount) : '—'}
+            <strong>Billing cycle:</strong> ${data.billingCycle === 'annual' ? 'Annual' : '4-week'}<br>
           </p>
           <p class="p">Changes take effect at your next renewal on <strong>${data.nextRenewal || 'your next billing date'}</strong>.</p>
           <a class="btn" href="${subscriptionUrl}">View subscription</a>
