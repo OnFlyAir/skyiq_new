@@ -1,55 +1,40 @@
-# Turn on real Stripe billing after the $1 trial
+# Onboarding readiness — gap review and fixes
 
-## What I found
+## What I checked
 
-I traced the full billing chain (checkout → Stripe → webhook → database → access control) and checked live account data. **Right now, paid billing never starts.** Everyone who signs up stays on a free trial forever.
+Routes, auth flow, billing chain, scheduled jobs, security posture, demo, and sign-up pages.
 
-Evidence from the live data: every trial account has a Stripe customer but **no Stripe subscription**, and trials from May, June and July are still marked "trial" today — still with full access, never billed.
+## What's already solid (no work needed)
 
-The specific gaps:
+- **Billing engine**: $1 trial → 30 days → auto-conversion to tiered pricing ($200/$150/$100 per tail). Both daily jobs (trial reminders, trial conversion) are active and scheduled.
+- **Paywall**: expired trials and unpaid accounts are blocked at login; billing-exempt accounts (your friends) bypass it.
+- **Cancellation flow**: reason → 20%-off-one-month retention offer → 6-digit email code → cancel at period end. Live and tested.
+- **Security**: RLS locked down, immutable admin audit log, security page at /security, cookie consent gate for PostHog.
+- **Admin tools**: create users, manage fleets, subscriptions, email log, webhook events, audit log.
+- **Demo + guided tour** work end-to-end on desktop and mobile.
 
-1. **Nothing creates the recurring plan.** The $1 signup is a one-time charge only (deliberately, to avoid the old double-charge problem). The card is saved for later, but no code ever uses it to start the real plan. The comment in the checkout code says the subscription is "created later inside the app" — that part was never built.
-2. **Trial end does nothing.** The daily job emails "your trial is ending", then the trial end date simply passes. Access is never cut off and no charge is attempted.
-3. **Payment is never confirmed.** The trial row is written when checkout *opens*, not when the $1 actually clears. Someone can open checkout, close it, and still get a full trial.
-4. **Trial length is inconsistent.** Sign-up copy says 4 weeks; the database default gives 30 days.
-5. **Legacy $1 plans.** Three older accounts have a real Stripe subscription charging $1 per cycle instead of their true fleet price.
+## Gaps to fix before onboarding
 
-## What I'll build
+### 1. Google sign-in (you approved)
+- Add "Continue with Google" to both Login and Sign Up pages.
+- Uses Lovable's managed Google sign-in — I'll enable and configure it for you; no Google Console setup needed on your side.
+- New Google users flow into the same onboarding/$1 trial path as email users.
 
-### 1. Confirm the $1 payment properly
-Add handling for the checkout-completed event from Stripe. Only when the $1 actually clears do we:
-- mark the account as on trial, starting *then*,
-- set the trial end to exactly 28 days out,
-- store the saved card so it can be charged later,
-- enable the account.
+### 2. Terms of Service + Privacy Policy pages (you approved)
+- New `/terms` and `/privacy` pages with standard SaaS terms tailored to SkyIQ: fuel-planning service, uploaded itinerary data, Stripe billing, cancellation terms, data handling (no AI training on client data, per your security page).
+- Linked in the sign-up footer ("By continuing you agree to…") and the app footer, so users have a compliance click-through.
 
-### 2. New job: start the real plan at trial end
-A daily job that finds trials whose end date has arrived and, for each one:
-- counts the account's active aircraft and computes the tiered price (unchanged pricing: $200/$150/$100 per tail, 20% off annual),
-- creates the real recurring Stripe subscription on the saved card, on their chosen cycle,
-- marks the account active and emails a confirmation.
+### 3. Small polish items
+- Sign-up copy says "4 weeks" trial in places while billing grants 30 days — align wording to "30 days".
+- Add a link to /security from the login page so prospects see it pre-signup.
 
-Edge cases handled explicitly:
-- **No aircraft on file** → don't guess a price. Move the account to a "needs setup" state: access blocked with a clear prompt to add aircraft and activate, plus an email. No surprise charge.
-- **Card declines** → account goes past-due, the existing past-due email and access block kick in, Stripe retries.
-- **Billing-exempt / Admin / Dev** → skipped entirely.
-- Safe to run repeatedly; it will never double-charge or create two subscriptions.
+## Deliberately left alone
 
-### 3. Close the "free forever" hole
-Account access currently treats "trial" as valid regardless of date. It will additionally require the trial end date to still be in the future.
-
-### 4. Clean up existing accounts
-- The four expired trials (May–July) get flagged for your review in the admin area rather than being silently charged — you decide whether to activate or close them.
-- The three $1 legacy subscriptions get corrected to their true fleet price at their next renewal, with a plan-change email.
-
-### 5. Admin visibility
-Add a "Trial conversions" panel to the admin subscriptions page: upcoming conversions, conversions that failed, and accounts stuck without aircraft — with a manual "convert now" button.
+- Everyone currently signed up stays billing-exempt — new signups only go through real billing.
+- DFY fuel planning stays hidden from non-admins.
+- MFA / leaked-password checks stay deferred (can add later if you want).
 
 ## Technical notes
 
-- New edge function `convert-expiring-trials`, scheduled daily via pg_cron using the existing `CRON_SECRET` header pattern.
-- `payments-webhook` gains a `checkout.session.completed` case; it reads `payment_intent.payment_method` and stores it as the customer's default payment method (`invoice_settings.default_payment_method`) so off-session subscription creation succeeds.
-- Subscription creation uses the same inline `price_data` shape already used in `sync-subscription-billing`, so cycle switching and aircraft-count syncing keep working unchanged.
-- Idempotency: conversion only runs when `status = 'trial'` and `stripe_subscription_id is null`, and the row is stamped inside the same call.
-- `ProtectedRoute` gains a trial-expiry date check alongside the existing status check.
-- No pricing logic changes; `calcPriceCents` remains the single source of truth.
+- Google sign-in via `supabase--configure_social_auth` (managed), buttons call `lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })`; post-auth landing handled by existing RootRedirect.
+- Terms/Privacy are static pages, public routes, SEO metadata set, no database changes.
