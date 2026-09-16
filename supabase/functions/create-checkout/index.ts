@@ -43,7 +43,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as CheckoutBody;
     const cycle = body.cycle === 'annual' ? 'annual' : 'four_weekly';
     const env: StripeEnv = body.environment === 'live' ? 'live' : 'sandbox';
-    const returnUrl = body.return_url || 'https://skiiq2.lovable.app/subscription';
+    const baseReturnUrl = body.return_url || 'https://skiiq2.lovable.app/subscription';
+    // The caller may already pass query params (e.g. ?checkout=success), so
+    // join with the right separator — a second "?" makes the params unreadable.
+    const returnUrl = baseReturnUrl.includes('?')
+      ? `${baseReturnUrl}&`
+      : `${baseReturnUrl}?`;
 
     const admin = createClient(supabaseUrl, serviceKey) as any;
 
@@ -140,7 +145,7 @@ Deno.serve(async (req) => {
         mode: 'payment',
         ui_mode: 'embedded_page',
         customer: customerId!,
-        return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+        return_url: `${returnUrl}checkout=return&session_id={CHECKOUT_SESSION_ID}`,
         'line_items[0][quantity]': 1,
         'line_items[0][price_data][currency]': 'usd',
         'line_items[0][price_data][product_data][name]': 'SkyIQ — $1 trial (30 days)',
@@ -190,7 +195,7 @@ Deno.serve(async (req) => {
         mode: 'subscription',
         ui_mode: 'embedded_page',
         customer: customerId!,
-        return_url: `${returnUrl}?checkout=return&session_id={CHECKOUT_SESSION_ID}`,
+        return_url: `${returnUrl}checkout=return&session_id={CHECKOUT_SESSION_ID}`,
         'line_items[0][quantity]': 1,
         'line_items[0][price_data][currency]': 'usd',
         'line_items[0][price_data][product_data][name]': planName,
