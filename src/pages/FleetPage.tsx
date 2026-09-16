@@ -8,24 +8,30 @@ import type { Aircraft } from '@/types/database';
 import { Button } from '@/components/ui/button';
 
 export default function FleetPage() {
-  const { user } = useAuthContext();
+  const { user, loading: authLoading } = useAuthContext();
   const { active: demoActive, startDemo } = useDemo();
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for the session to hydrate before deciding the fleet is empty —
+    // otherwise a refresh briefly shows the "add your first aircraft" screen.
+    if (authLoading) return;
     if (user) {
       loadAircraft();
     } else {
+      setAircraft([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   async function loadAircraft() {
+    setLoading(true);
     const { data } = await supabase
       .from('aircrafts')
       .select('*')
       .eq('user_company', user!.id)
+      .neq('is_enabled', false)
       .order('tail_number');
 
     if (data) setAircraft(data as unknown as Aircraft[]);
