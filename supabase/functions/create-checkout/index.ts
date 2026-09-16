@@ -93,6 +93,19 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let customerId = existingSub?.stripe_customer_id;
+    // A saved customer id only exists in the Stripe environment it was created
+    // in. If the row carries an id from the other environment (or a deleted
+    // customer), Stripe rejects the session with "No such customer" — so
+    // verify it first and fall through to creating a fresh one.
+    if (customerId) {
+      try {
+        const existingCustomer = await stripeFetch(`/v1/customers/${customerId}`, { method: 'GET' }, env);
+        if (existingCustomer?.deleted) customerId = null;
+      } catch (_e) {
+        console.log(`Stripe customer ${customerId} not found in ${env}; creating a new one.`);
+        customerId = null;
+      }
+    }
     if (!customerId) {
       const customer = await stripeFetch('/v1/customers', {
         method: 'POST',
