@@ -32,7 +32,10 @@ export default function OnboardingPage() {
     track('onboarding_step_viewed', { step, total_steps: TOTAL_STEPS });
   }, [step]);
 
-  const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
+  const isExempt =
+    profile?.role_name === 'Admin' ||
+    profile?.role_name === 'Dev' ||
+    (profile as any)?.billing_exempt === true;
 
   // DFY signup carry-over from sign-up form
   useEffect(() => {
@@ -96,7 +99,7 @@ export default function OnboardingPage() {
           <img src={skyiqLogo} alt="SkyIQ" className="w-14 h-14 object-contain mx-auto" />
           <h1 className="text-2xl font-bold text-foreground">Activate your account</h1>
           <p className="text-sm text-muted-foreground">
-            Start your 4-week trial for $1.
+            Start your 30-day trial for $1.
           </p>
         </div>
 
@@ -134,15 +137,15 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <p className="text-sm text-foreground/90">
-                  Pay just <strong>$1 today</strong> and get <strong>4 full weeks</strong> of
+                  Pay just <strong>$1 today</strong> and get <strong>30 full days</strong> of
                   SkyIQ — every feature unlocked. You'll set your fleet size and choose a
                   billing plan inside the app whenever you're ready.
                 </p>
                 <ul className="space-y-1.5 text-sm">
                   {[
                     '$1 charged today',
-                    '4 full weeks of access — every feature unlocked',
-                    'Cancel before week 4 and pay nothing more',
+                    '30 full days of access — every feature unlocked',
+                    'Cancel before the trial ends and pay nothing more',
                   ].map((it) => (
                     <li key={it} className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
@@ -167,7 +170,7 @@ export default function OnboardingPage() {
                     <p className="text-xs text-muted-foreground">
                       {isExempt
                         ? `Your ${profile?.role_name} role is billing-exempt — no payment required.`
-                        : '$1 for your initial 4-week trial · cancel anytime'}
+                        : '$1 for your initial 30-day trial · cancel anytime'}
                     </p>
                   </div>
                 </div>

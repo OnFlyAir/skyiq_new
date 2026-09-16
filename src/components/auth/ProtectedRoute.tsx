@@ -29,26 +29,49 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
 
   // Fetch the user's subscription status once the profile is loaded.
   useEffect(() => {
-    if (!profile || exempt) {
+    if (exempt) {
       setSubStatus(null);
       return;
     }
+    if (!profile) {
+      // Profile still hydrating — keep the status "unresolved" so the
+      // paywall below waits instead of bouncing a paid user to onboarding
+      // on a hard refresh.
+      setSubStatus(undefined);
+      return;
+    }
     let cancelled = false;
+    setSubStatus(undefined);
+    // Straight after checkout Stripe sends the user back before the payment
+    // webhook has flipped the row to "trial" — poll briefly instead of
+    // slamming them into the blocked-billing screen.
+    const checkoutParam = new URLSearchParams(location.search).get('checkout');
+    const justPaid = checkoutParam === 'success' || checkoutParam === 'return';
     (async () => {
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('status, trial_ends_at')
-        .eq('user_id', profile.id)
-        .maybeSingle();
-      let status = (data as any)?.status ?? null;
-      // A trial that has run out no longer grants access — billing takes
-      // over from here (the daily conversion job starts the paid plan).
-      if (
-        status === 'trial' &&
-        (data as any)?.trial_ends_at &&
-        new Date((data as any).trial_ends_at).getTime() <= Date.now()
-      ) {
-        status = 'expired';
+      const read = async () => {
+        const { data } = await supabase
+          .from('subscriptions')
+          .select('status, trial_ends_at')
+          .eq('user_id', profile.id)
+          .maybeSingle();
+        let status = (data as any)?.status ?? null;
+        // A trial that has run out no longer grants access — billing takes
+        // over from here (the daily conversion job starts the paid plan).
+        if (
+          status === 'trial' &&
+          (data as any)?.trial_ends_at &&
+          new Date((data as any).trial_ends_at).getTime() <= Date.now()
+        ) {
+          status = 'expired';
+        }
+        return status;
+      };
+      let status = await read();
+      if (justPaid) {
+        for (let i = 0; i < 24 && !cancelled && !ACTIVE_STATUSES.has(status ?? ''); i++) {
+          await new Promise((r) => setTimeout(r, 2500));
+          status = await read();
+        }
       }
       if (!cancelled) setSubStatus(status);
     })();
@@ -82,6 +105,21 @@ export default function ProtectedRoute({ children, requireRole }: Props) {
   const disabled = profile && profile.is_enabled === false;
   if (disabled && !exempt && !demoActive && !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/subscription?blocked=1" replace />;
+  }
+
+  // Subscription status still resolving — hold the route rather than
+  // rendering protected content or bouncing to onboarding.
+  if (
+    !exempt &&
+    !demoActive &&
+    subStatus === undefined &&
+    !ALWAYS_ALLOWED.some((p) => location.pathname.startsWith(p))
+  ) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
   }
 
   // Paywall for brand-new users: no subscription yet → force onboarding.
