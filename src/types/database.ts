@@ -7,6 +7,7 @@ export interface Profile {
   role_name: string;
   is_enabled: boolean;
   is_billing_manager?: boolean;
+  billing_exempt?: boolean;
   created_on: string;
 }
 

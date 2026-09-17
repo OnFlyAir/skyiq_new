@@ -83,7 +83,10 @@ export default function SubscriptionPage() {
     || profile?.role_name === 'Dev'
     || !!profile?.is_billing_manager;
 
-  const isExempt = profile?.role_name === 'Admin' || profile?.role_name === 'Dev';
+  const isExempt =
+    profile?.role_name === 'Admin' ||
+    profile?.role_name === 'Dev' ||
+    profile?.billing_exempt === true;
   const isBlocked = profile?.is_enabled === false && !isExempt;
   const showCheckoutBanner = searchParams.get('blocked') === '1';
   const checkoutReturn = searchParams.get('checkout') === 'return';
